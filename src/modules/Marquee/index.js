@@ -37,7 +37,9 @@ export default class Marquee {
     this.fillText()
     const holderWidth = this.elements.$holder.offsetWidth
     const $allHolders = Dom.all(this.elements.$el, '[data-marquee-holder]')
-    gsap.set(this.elements.$marquee, { width: holderWidth * $allHolders.length })
+    const marqueeWidth = holderWidth * $allHolders.length
+
+    gsap.set(this.elements.$marquee, { width: marqueeWidth })
     this.initializeTween()
 
     if (Dom.inViewport(this.elements.$el)) {
@@ -76,6 +78,7 @@ export default class Marquee {
   play (rampUp = false) {
     this.playing = true
     gsap.killTweensOf(this.timeline)
+
     if (rampUp) {
       this.timeline.play()
       gsap.to(this.timeline, {
@@ -157,9 +160,5 @@ export default class Marquee {
   setHeight () {
     const height = this.elements.$item.offsetHeight + this.opts.extraHeight
     gsap.set(this.elements.$el, { height })
-  }
-
-  onResize () {
-    this.updateMarquee()
   }
 }
