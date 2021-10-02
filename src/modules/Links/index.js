@@ -82,6 +82,9 @@ export default class Links {
       anchor.addEventListener('click', e => {
         e.preventDefault()
         const href = anchor.getAttribute('href')
+        if (href === '#') {
+          return
+        }
 
         if (document.body.classList.contains('open-menu')) {
           this.app.mobileMenu.toggleMenuClosed()
