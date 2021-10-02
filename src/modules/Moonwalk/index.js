@@ -142,7 +142,7 @@ export default class Moonwalk {
    * Remove all moonwalks. Useful for clients who prefer reduced motion
    */
   removeAllWalks (container = document) {
-    const keys = ['data-moonwalk', 'data-moonwalk-run', 'data-moonwalk-section']
+    const keys = ['data-moonwalk', 'data-moonwalk-run', 'data-moonwalk-section', 'data-moonwalk-children']
     keys.forEach(key => {
       const elems = container.querySelectorAll(`[${key}]`)
       Array.from(elems).forEach(el => el.removeAttribute(key))
