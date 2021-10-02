@@ -1,3 +1,10 @@
+#### 3.42.1
+
+- Moonwalk: Also remove `-children` when reseting
+- FixedHeader: Only run `onAltBg` and `onNotAltBg` if `altBgColor` is set
+- Application: Set browser zoom as `--ec-zoom` variable. This is used
+  in EuropaCSS for scaling/zooming vw fontsizes.
+
 #### 3.42.0
 
 - FixedHeader: Try to fix scroll jank with content-visibility
