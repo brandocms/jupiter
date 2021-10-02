@@ -3,6 +3,7 @@ import { ScrollToPlugin } from 'gsap/ScrollToPlugin'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import rafCallback from '../../utils/rafCallback'
 import prefersReducedMotion from '../../utils/prefersReducedMotion'
+import zoom from '../../utils/zoom'
 import * as Events from '../../events'
 import Breakpoints from '../Breakpoints'
 import FeatureTests from '../FeatureTests'
@@ -36,7 +37,7 @@ const DEFAULT_OPTIONS = {
   disableWebpSafari: true,
 
   faderOpts: {
-    fadeIn: (callback = () => {}) => {
+    fadeIn: (callback = () => { }) => {
       const fader = document.querySelector('#fader')
       gsap.to(fader, {
         opacity: 0,
@@ -66,7 +67,8 @@ export default class Application {
       initialInnerHeight: 0,
       initialOuterHeight: 0,
       initialInnerWidth: 0,
-      initialOuterWidth: 0
+      initialOuterWidth: 0,
+      zoom: 1
     }
 
     this.position = {
@@ -78,6 +80,7 @@ export default class Application {
     this.focusableSelectors = this.opts.focusableSelectors
 
     this.featureTests = new FeatureTests(this, this.opts.featureTests)
+
     if (typeof this.opts.breakpointConfig === 'object') {
       this.breakpoints = new Breakpoints(this, this.opts.breakpointConfig)
     } else {
@@ -86,6 +89,7 @@ export default class Application {
 
     this.hacks()
 
+    this.getZoom()
     this.setDims()
     this.fontLoader = new Fontloader(this)
 
@@ -157,6 +161,15 @@ export default class Application {
       this.executeCallbacks(Events.APPLICATION_READY)
       this.fadeIn()
     })
+  }
+
+  getZoom () {
+    this._initialZoom = zoom.calculate(this.browser)
+  }
+
+  updateZoom () {
+    this.size.zoom = 1 + (zoom.calculate(this.browser) - this._initialZoom)
+    this.setZoom()
   }
 
   /**
@@ -398,6 +411,8 @@ export default class Application {
     root.style.setProperty('--vp-initial-outer-h', `${this.size.initialOuterHeight}px`)
     root.style.setProperty('--vp-initial-inner-w', `${this.size.initialInnerWidth}px`)
     root.style.setProperty('--vp-initial-outer-w', `${this.size.initialOuterWidth}px`)
+    root.style.setProperty('--ec-zoom', `${this.size.zoom}`)
+
     this.setvh100Max()
     this.setvh100()
 
@@ -406,6 +421,11 @@ export default class Application {
     this.size.height = window.innerHeight
     this.position.top = window.pageYOffset
     this.position.left = window.pageXOffset
+  }
+
+  setZoom () {
+    const root = document.querySelector(':root')
+    root.style.setProperty('--ec-zoom', `${this.size.zoom}`)
   }
 
   /**
@@ -440,6 +460,8 @@ export default class Application {
     this.size.height = window.innerHeight
     this.setvh100()
 
+    this.updateZoom()
+
     const evt = new CustomEvent(Events.APPLICATION_RESIZE, e)
     window.dispatchEvent(evt)
   }
@@ -473,7 +495,7 @@ export default class Application {
     }
   }
 
-  pollForElement (selector, time = 500, callback = () => {}) {
+  pollForElement (selector, time = 500, callback = () => { }) {
     const el = document.querySelector(selector)
     if (el !== null) {
       callback(el)
