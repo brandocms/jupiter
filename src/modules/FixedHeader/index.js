@@ -52,17 +52,21 @@ const DEFAULT_EVENTS = {
   },
 
   onAltBg: h => {
-    gsap.to(h.el, {
-      duration: 0.2,
-      backgroundColor: h.opts.altBgColor
-    })
+    if (h.opts.altBgColor) {
+      gsap.to(h.el, {
+        duration: 0.2,
+        backgroundColor: h.opts.altBgColor
+      })
+    }
   },
 
   onNotAltBg: h => {
-    gsap.to(h.el, {
-      duration: 0.4,
-      backgroundColor: h.opts.regBgColor
-    })
+    if (h.opts.regBgColor) {
+      gsap.to(h.el, {
+        duration: 0.4,
+        backgroundColor: h.opts.regBgColor
+      })
+    }
   },
 
   // eslint-disable-next-line no-unused-vars
@@ -124,8 +128,8 @@ const DEFAULT_OPTIONS = {
     offset: 0, // how far from the top before we trigger hide
     offsetSmall: 50, // how far from the top before we trigger the shrinked padding,
     offsetBg: 200, // how far down before changing backgroundcolor
-    regBgColor: 'transparent',
-    altBgColor: '#ffffff',
+    regBgColor: null,
+    altBgColor: null,
     ...DEFAULT_EVENTS
   }
 }
@@ -223,6 +227,7 @@ export default class FixedHeader {
       capture: false,
       passive: true
     })
+
     window.addEventListener(Events.APPLICATION_READY, this.unpinIfScrolled.bind(this))
 
     this.preflight()
@@ -231,7 +236,8 @@ export default class FixedHeader {
 
     this._bindMobileMenuListeners()
 
-    if (this.opts.unPinOnResize) {
+    // DON'T unpin on iOS since this will unpin when bottom menu bar appears on scrolling upwards!
+    if (this.opts.unPinOnResize && !this.app.featureTests.results.ios) {
       window.addEventListener(Events.APPLICATION_RESIZE, this.setResizeTimer.bind(this), false)
     }
 
@@ -283,7 +289,7 @@ export default class FixedHeader {
   setResizeTimer () {
     this._isResizing = true
     if (this._pinned) {
-      // unpin if resizing to prevent visual clutter
+      // unpin if resizing to prevent visual clutter.
       this.unpin()
     }
 
