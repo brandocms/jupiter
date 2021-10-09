@@ -182,11 +182,18 @@ export default class Moonwalk {
    */
   initializeRuns (container = document) {
     const runs = container.querySelectorAll('[data-moonwalk-run]')
-    return Array.from(runs).map(run => ({
-      el: run,
-      threshold: this.opts.runs[run.getAttribute('data-moonwalk-run')].threshold || 0,
-      callback: this.opts.runs[run.getAttribute('data-moonwalk-run')].callback
-    }))
+    return Array.from(runs).map(run => {
+      const foundRun = this.opts.runs[run.getAttribute('data-moonwalk-run')]
+      if (foundRun) {
+        return {
+          el: run,
+          threshold: foundRun.threshold || 0,
+          callback: foundRun.callback
+        }
+      }
+
+      return null
+    })
   }
 
   /**
