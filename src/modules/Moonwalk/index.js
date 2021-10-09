@@ -146,6 +146,7 @@ export default class Moonwalk {
     keys.forEach(key => {
       const elems = container.querySelectorAll(`[${key}]`)
       Array.from(elems).forEach(el => el.removeAttribute(key))
+      container.removeAttribute(key)
     })
   }
 
