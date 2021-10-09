@@ -150,6 +150,32 @@ export default class Moonwalk {
     })
   }
 
+  removeFor (container = document, selector) {
+    const keys = ['data-moonwalk', 'data-moonwalk-run', 'data-moonwalk-section', 'data-moonwalk-children']
+    keys.forEach(key => {
+      const elems = container.querySelectorAll(`${selector}[${key}]`)
+      Array.from(elems).forEach(el => el.removeAttribute(key))
+    })
+  }
+
+  /**
+  * Remove run matching name
+  */
+  removeRun (container = document, name) {
+    const key = 'data-moonwalk-run'
+    const elems = container.querySelectorAll(`[${key}="${name}"]`)
+    Array.from(elems).forEach(el => el.removeAttribute(key))
+  }
+
+  /**
+  * Remove all runs
+  */
+  removeRuns (container = document) {
+    const key = 'data-moonwalk-run'
+    const elems = container.querySelectorAll(`[${key}]`)
+    Array.from(elems).forEach(el => el.removeAttribute(key))
+  }
+
   /**
    * Add a random ID to each moonwalk element
    *
