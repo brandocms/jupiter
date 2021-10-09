@@ -461,6 +461,11 @@ export default class Moonwalk {
 
     for (let idx = 0; idx < this.runs.length; idx += 1) {
       const run = this.runs[idx]
+
+      if (!run) {
+        return
+      }
+
       // if this is the last section, set rootMargin to 0
       let rootMargin
 
