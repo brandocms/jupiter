@@ -1,6 +1,10 @@
+#### 3.42.2
+
+- Popup: Listen for ESC to close popup
+
 #### 3.42.1
 
-- Moonwalk: Also remove `-children` when reseting
+- Moonwalk: Also remove `-children` when resetting
 - FixedHeader: Only run `onAltBg` and `onNotAltBg` if `altBgColor` is set
 - Application: Set browser zoom as `--ec-zoom` variable. This is used
   in EuropaCSS for scaling/zooming vw fontsizes.

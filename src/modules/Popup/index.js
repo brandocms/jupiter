@@ -106,6 +106,8 @@ export default class Popup {
   }
 
   open (trigger, target) {
+    this.keyUpListener = this.onKeyup.bind(this)
+    document.addEventListener('keyup', this.keyUpListener)
     if (typeof target === 'string') {
       target = document.querySelector(target)
     }
@@ -118,7 +120,20 @@ export default class Popup {
   }
 
   close () {
+    document.removeEventListener('keyup', this.keyUpListener)
     this.opts.onClose(this)
     this.opts.tweenOut(this)
+  }
+
+  onKeyup (e) {
+    const key = e.keyCode || e.which
+
+    switch (key) {
+      case 27:
+        this.close()
+        break
+      default:
+        break
+    }
   }
 }
