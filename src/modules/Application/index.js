@@ -164,11 +164,51 @@ export default class Application {
   }
 
   getZoom () {
-    this._initialZoom = zoom.calculate(this.browser)
+    switch (this.browser) {
+      case 'chrome':
+        this._lastDevicePixelRatio = Math.round(window.devicePixelRatio * 100)
+        this._initialZoom = 1
+        break
+
+      case 'safari':
+        this._zoomSVG = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+        this._zoomSVG.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+        this._zoomSVG.setAttribute('version', '1.1')
+        gsap.set(this._zoomSVG, { display: 'none' })
+        document.body.appendChild(this._zoomSVG)
+        this._initialZoom = this._zoomSVG.currentScale
+        break
+
+      default:
+        this._initialZoom = zoom.calculate(this.browser)
+    }
+  }
+
+  zoomCalculateChrome () {
+    const currentDevicePixelRatio = Math.round(window.devicePixelRatio * 100)
+    const delta = (currentDevicePixelRatio - this._lastDevicePixelRatio) / 100
+    this.size.zoom += delta
+    this._lastDevicePixelRatio = currentDevicePixelRatio
+  }
+
+  zoomCalculateSafari () {
+    this.size.zoom = this._zoomSVG.currentScale
   }
 
   updateZoom () {
-    this.size.zoom = 1 + (zoom.calculate(this.browser) - this._initialZoom)
+    switch (this.browser) {
+      case 'chrome':
+        this.zoomCalculateChrome()
+        break
+
+      case 'safari':
+        this.zoomCalculateSafari()
+        break
+
+      default:
+        this.size.zoom = 1 + (zoom.calculate(this.browser) - this._initialZoom)
+    }
+
     this.setZoom()
   }
 
@@ -459,7 +499,6 @@ export default class Application {
     this.size.width = window.innerWidth
     this.size.height = window.innerHeight
     this.setvh100()
-
     this.updateZoom()
 
     const evt = new CustomEvent(Events.APPLICATION_RESIZE, e)
