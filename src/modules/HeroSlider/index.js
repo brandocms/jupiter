@@ -150,7 +150,7 @@ export default class HeroSlider {
    * Calculate which slide is next, and call the slide function
    */
   next () {
-    if (prefersReducedMotion()) {
+    if (prefersReducedMotion() && this.app.opts.respectReducedMotion) {
       return
     }
 

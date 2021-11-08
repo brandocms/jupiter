@@ -93,16 +93,16 @@ const DEFAULT_OPTIONS = {
 }
 
 export default class Moonwalk {
-  constructor (app, opts = {}, container = document) {
+  constructor (app, opts = {}, container = document.body) {
     this.app = app
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
-    if (container !== document) {
+    if (container !== document.body) {
       this.opts.on = () => {}
     }
     this.initialize(container)
   }
 
-  initialize (container = document) {
+  initialize (container = document.body) {
     if (this.opts.clearMoonwalkOnAnchors) {
       if (window.location.hash) {
         this.removeAllWalks()
@@ -122,7 +122,7 @@ export default class Moonwalk {
       this.clearLazyloads(container)
     }
 
-    if (prefersReducedMotion()) {
+    if (prefersReducedMotion() && this.app.opts.respectReducedMotion) {
       this.removeAllWalks(container)
     }
 
@@ -141,7 +141,7 @@ export default class Moonwalk {
   /**
    * Remove all moonwalks. Useful for clients who prefer reduced motion
    */
-  removeAllWalks (container = document) {
+  removeAllWalks (container = document.body) {
     const keys = ['data-moonwalk', 'data-moonwalk-run', 'data-moonwalk-section', 'data-moonwalk-children']
     keys.forEach(key => {
       const elems = container.querySelectorAll(`[${key}]`)
@@ -150,7 +150,7 @@ export default class Moonwalk {
     })
   }
 
-  removeFor (container = document, selector) {
+  removeFor (container = document.body, selector) {
     const keys = ['data-moonwalk', 'data-moonwalk-run', 'data-moonwalk-section', 'data-moonwalk-children']
     keys.forEach(key => {
       const elems = container.querySelectorAll(`${selector}[${key}]`)
@@ -161,7 +161,7 @@ export default class Moonwalk {
   /**
   * Remove run matching name
   */
-  removeRun (container = document, name) {
+  removeRun (container = document.body, name) {
     const key = 'data-moonwalk-run'
     const elems = container.querySelectorAll(`[${key}="${name}"]`)
     Array.from(elems).forEach(el => el.removeAttribute(key))
@@ -170,7 +170,7 @@ export default class Moonwalk {
   /**
   * Remove all runs
   */
-  removeRuns (container = document) {
+  removeRuns (container = document.body) {
     const key = 'data-moonwalk-run'
     const elems = container.querySelectorAll(`[${key}]`)
     Array.from(elems).forEach(el => el.removeAttribute(key))
@@ -207,7 +207,7 @@ export default class Moonwalk {
    * Go through each `data-moonwalk-run`, parse children, add IDs/indexes
    * (if wanted), initialize a new object for each.
    */
-  initializeRuns (container = document) {
+  initializeRuns (container = document.body) {
     const runs = container.querySelectorAll('[data-moonwalk-run]')
     return Array.from(runs).map(run => {
       const foundRun = this.opts.runs[run.getAttribute('data-moonwalk-run')]
@@ -227,7 +227,7 @@ export default class Moonwalk {
    * Go through each `data-moonwalk-section`, parse children, add IDs/indexes
    * (if wanted), initialize a new object for each.
    */
-  initializeSections (container = document) {
+  initializeSections (container = document.body) {
     const sections = container.querySelectorAll('[data-moonwalk-section]')
 
     if (container !== document && !sections.length && container.hasAttribute('data-moonwalk-section')) {
@@ -272,7 +272,7 @@ export default class Moonwalk {
    * Removes `data-moonwalk` from all elements who already have `data-ll-srcset´
    * Can be used if Moonwalking interferes with custom lazyloading animations
    */
-  clearLazyloads (container = document) {
+  clearLazyloads (container = document.body) {
     const srcsets = container.querySelectorAll('[data-ll-srcset][data-moonwalk]')
     Array.from(srcsets).forEach(srcset => srcset.removeAttribute('data-moonwalk'))
   }
