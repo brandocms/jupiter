@@ -1,3 +1,8 @@
+#### 3.42.4
+
+- Moonwalk: Fix fallback selector. This could have broken devices with
+  prefer reduced motion enabled.
+
 #### 3.42.3
 
 - Zoom: Change logic for Chrome/Safari
