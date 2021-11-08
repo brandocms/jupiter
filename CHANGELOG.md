@@ -1,3 +1,7 @@
+#### 3.42.3
+
+- Zoom: Change logic for Chrome/Safari
+
 #### 3.42.2
 
 - Popup: Listen for ESC to close popup
