@@ -180,7 +180,7 @@ export default class Lazyload {
       }
     }
 
-    if (!loadedSomething) {
+    if (!loadedSomething && sources.length > 0) {
       return
     }
 
