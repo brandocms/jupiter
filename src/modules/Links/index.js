@@ -17,7 +17,10 @@ const DEFAULT_OPTIONS = {
 
   onTransition: href => {
     const main = document.querySelector('main')
+    const header = document.querySelector('header[data-nav]')
+    const footer = document.querySelector('footer')
     const fader = document.querySelector('#fader')
+    console.log('transition')
 
     if (fader) {
       gsap.set(fader, { display: 'block', opacity: 0 })
@@ -26,6 +29,15 @@ const DEFAULT_OPTIONS = {
         y: 25,
         ease: 'power3.out'
       })
+
+      if (header) {
+        gsap.to(header, { duration: 0.2, opacity: 0 })
+      }
+
+      if (footer) {
+        gsap.to(footer, { duration: 0.2, opacity: 0 })
+      }
+
       gsap.to(fader, {
         duration: 0.2,
         opacity: 1,
@@ -39,6 +51,15 @@ const DEFAULT_OPTIONS = {
         y: 25,
         ease: 'power3.out'
       })
+      
+      if (header) {
+        gsap.to(header, { duration: 0.2, opacity: 0 })
+      }
+
+      if (footer) {
+        gsap.to(footer, { duration: 0.2, opacity: 0 })
+      }
+
       gsap.to(main, {
         duration: 0.2,
         opacity: 0,

@@ -1,3 +1,9 @@
+#### 3.42.5
+
+- Links: Fade out header/footer (if found) in default transition
+- Moonwalk: Don't wait for images with `data-placeholder`, render right away
+  and let Lazyload do the image reveal.
+
 #### 3.42.4
 
 - Moonwalk: Fix fallback selector. This could have broken devices with

@@ -617,13 +617,19 @@ export default class Moonwalk {
             // ensure image is loaded before we tween
             imageIsLoaded(entry.target).then(() => wrappedTweenFn())
           } else {
-            const imagesInEntry = entry.target.querySelectorAll('img')
-            if (imagesInEntry.length) {
-              // entry has children elements that are images
-              imagesAreLoaded(imagesInEntry).then(() => wrappedTweenFn())
-            } else {
-              // regular entry, just tween it
+            if (entry.target.hasAttribute('data-placeholder')) {              
+              // if the moonwalked element has data-placeholder, we don't want to wait
+              // for the image to load before tweening
               wrappedTweenFn()
+            } else {
+              const imagesInEntry = entry.target.querySelectorAll('img')
+              if (imagesInEntry.length) {
+                // entry has children elements that are images
+                imagesAreLoaded(imagesInEntry).then(() => wrappedTweenFn())
+              } else {
+                // regular entry, just tween it
+                wrappedTweenFn()
+              }
             }
           }
           self.unobserve(entry.target)
