@@ -5,7 +5,7 @@ export default class Typography {
     // Set some settings, by merging defaults and passed settings
     self.settings = {
       minWords: 4,
-      selector: 'h1,h2,h3,p',
+      selector: '[data-typo]',
       ignoreClass: 'no-typo-fix',
       ignoreExistingSpaceChars: false,
       ...settings
@@ -29,11 +29,6 @@ export default class Typography {
     const self = this
 
     self.elems.map(elem => {
-      // Bail out if the ignore class is present on this element
-      if (elem.classList.contains(self.settings.ignoreClass)) {
-        return false
-      }
-
       // Run the ignore checker nd bail if required
       if (self.shouldElementBeIgnored(elem)) {
         return false

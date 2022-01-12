@@ -105,6 +105,7 @@ export default class MobileMenu {
     this.app = app
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
 
+    this.open = false
     this.header = document.querySelector('header')
     this.bg = this.header.querySelector('.mobile-bg')
     this.logo = this.header.querySelector('figure.brand')
@@ -140,11 +141,13 @@ export default class MobileMenu {
   toggleMenuClosed () {
     // CLOSING MENU
     this.opts.closeTween(this)
+    this.open = false
   }
 
   toggleMenuOpen () {
     // OPENING MENU
     this.opts.openTween(this)
+    this.open = true
   }
 
   _emitMobileMenuOpenEvent () {

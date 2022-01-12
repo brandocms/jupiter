@@ -1,3 +1,9 @@
+#### 3.42.6
+
+- Typography: Better defaults
+- MobileMenu: set `this.open` boolean on opening/closing
+
+
 #### 3.42.5
 
 - Links: Fade out header/footer (if found) in default transition
