@@ -1,3 +1,8 @@
+#### 3.42.7
+
+- Links: Check for zero opacity body element on back/forward nav
+
+
 #### 3.42.6
 
 - Typography: Better defaults

@@ -15,8 +15,19 @@ gsap.defaults({ overwrite: 'auto', ease: 'sine.out' })
 
 window.onpageshow = event => {
   if (event.persisted) {
-    gsap.to(document.querySelector('#fader'), { duration: 0.35, autoAlpha: 0 })
-    gsap.to(document.querySelectorAll('[data-fader]'), { duration: 0.35, autoAlpha: 0 })
+    const f = document.querySelector('#fader')
+    if (f) {
+      gsap.to(f, { duration: 0.35, autoAlpha: 0 })
+    }
+
+    const dataFaders = document.querySelectorAll('[data-fader]')
+    if (dataFaders.length) {
+      gsap.to(dataFaders, { duration: 0.35, autoAlpha: 0 })
+    }
+
+    gsap.set(document.body, {
+      clearProps: 'opacity'
+    })
   }
 }
 
