@@ -507,12 +507,15 @@ export default class Application {
    * RAF'ed resize event
    */
   onResize (e) {
+    const widthChanged = (this.size.width !== window.innerWidth)
+    const heightChanged = (this.size.height !== window.innerHeight)
+
     this.size.width = window.innerWidth
     this.size.height = window.innerHeight
     this.setvh100()
     this.updateZoom()
 
-    const evt = new CustomEvent(Events.APPLICATION_RESIZE, e)
+    const evt = new CustomEvent(Events.APPLICATION_RESIZE, { detail: { widthChanged, heightChanged } })
     window.dispatchEvent(evt)
   }
 

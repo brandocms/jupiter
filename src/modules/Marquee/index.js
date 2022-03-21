@@ -3,8 +3,10 @@ import _defaultsDeep from 'lodash.defaultsdeep'
 import Dom from '../Dom'
 
 const DEFAULT_OPTIONS = {
-  speed: 25,
-  extraHeight: 0
+  speed: 100,
+  extraHeight: 0,
+  slowDownOnHover: true,
+  paddingLeft: 0
 }
 
 export default class Marquee {
@@ -26,18 +28,29 @@ export default class Marquee {
     window.addEventListener('APPLICATION:RESIZE', this.updateMarquee.bind(this))
     this.updateMarquee()
     this.setupObserver()
-    this.elements.$el.addEventListener('mouseenter', this.slowDown.bind(this))
-    this.elements.$el.addEventListener('mouseleave', this.speedUp.bind(this))
+    if (this.opts.slowDownOnHover) {
+      this.elements.$el.addEventListener('mouseenter', this.slowDown.bind(this))
+      this.elements.$el.addEventListener('mouseleave', this.speedUp.bind(this))
+    }
   }
 
-  updateMarquee () {
+  updateMarquee (e) {
+    if (e) {
+      // updating cause of a resize. we only care about width change
+      if (!e.detail.widthChanged) {
+        return
+      }
+    }
     this.killTweens()
     this.clearHolders()
     this.setHeight()
     this.fillText()
+
     const holderWidth = this.elements.$holder.offsetWidth
     const $allHolders = Dom.all(this.elements.$el, '[data-marquee-holder]')
     const marqueeWidth = holderWidth * $allHolders.length
+    
+    this.duration = holderWidth / this.opts.speed
 
     gsap.set(this.elements.$marquee, { width: marqueeWidth })
     this.initializeTween()
@@ -68,7 +81,7 @@ export default class Marquee {
 
     this.timeline = gsap.timeline({ paused: true })
     this.timeline
-      .to($allHolders, this.opts.speed, { xPercent: -100, ease: 'none' })
+      .to($allHolders, { xPercent: -100, ease: 'none', duration: this.duration })
       .repeat(-1)
 
     window.timeline = this.timeline

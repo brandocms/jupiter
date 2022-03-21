@@ -1,3 +1,12 @@
+#### 3.43.0
+
+- **BREAKING** Marquee: More consistent `speed`. This means you should probably 
+  verify that the speed you set looks ok with the new config
+- Marquee: Add `paddingLeft` and `slowDownOnHover` options
+- Application: send `widthChanged` and `heightChanged` booleans 
+  in `APPLICATION:RESIZE` event detail
+
+
 #### 3.42.7
 
 - Links: Check for zero opacity body element on back/forward nav
