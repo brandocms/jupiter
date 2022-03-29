@@ -1,3 +1,10 @@
+#### 3.44.0
+
+- Moonwalk: Add `data-moonwalked` to walked elements. Don't run again on
+  already walked elements.
+- Dom: Add `hasAttribute`
+
+
 #### 3.43.0
 
 - **BREAKING** Marquee: More consistent `speed`. This means you should probably 
