@@ -73,6 +73,10 @@ class DOM {
     return classes.map(className => element.classList.toggle(className))
   }
 
+  hasAttribute (element, attributeName) {
+    return element.hasAttribute(attributeName)
+  }
+
   overlapsVertically ($div1, $div2) {
     // Div 1 data
     const d1Offset = $div1.getBoundingClientRect()
