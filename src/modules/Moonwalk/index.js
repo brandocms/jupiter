@@ -655,6 +655,10 @@ export default class Moonwalk {
     let tweenPosition
     const startingPoint = tweenDuration - tweenOverlap
 
+    if (Dom.hasAttribute(target, 'data-moonwalked')) {
+      return
+    }
+
     if (section.timeline.isActive() && section.timeline.recent()) {
       if (section.timeline.recent().time() > startingPoint) {
         /* We're late for this tween if it was supposed to be sequential,
@@ -677,6 +681,7 @@ export default class Moonwalk {
       },
       tweenPosition()
     )
+    .call(() => { target.setAttribute('data-moonwalked', '') }, null, '<')
 
     if (alphaTween) {
       section.timeline.to(target, {
@@ -701,7 +706,7 @@ export default class Moonwalk {
     let tweenPosition
     const startingPoint = tweenDuration - tweenOverlap
 
-    if (Dom.hasClass(target, 'moonwalked')) {
+    if (Dom.hasAttribute(target, 'data-moonwalked')) {
       return
     }
 
@@ -726,6 +731,6 @@ export default class Moonwalk {
         duration: tweenDuration
       },
       tweenPosition()
-    )
+    ).call(() => { target.setAttribute('data-moonwalked', '') }, null, '<')
   }
 }
