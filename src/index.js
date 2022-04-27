@@ -31,6 +31,7 @@ import Popup from './modules/Popup'
 import ScrollSpy from './modules/ScrollSpy'
 import StackedBoxes from './modules/StackedBoxes'
 import StickyHeader from './modules/StickyHeader'
+import Toggler from './modules/Toggler'
 import Typography from './modules/Typography'
 
 import imageIsLoaded from './utils/imageIsLoaded'
@@ -63,6 +64,7 @@ export {
   ScrollSpy,
   StackedBoxes,
   StickyHeader,
+  Toggler,
   Typography,
 
   // Export utils

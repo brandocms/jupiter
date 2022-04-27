@@ -261,6 +261,57 @@ include images from this section. Otherwise, all lightboxed images will be inclu
 - `onPointerLeft/onPointerRight` - `function (lightbox)` - callback for when pointer direction changes
 
 
+## Toggler
+
+#### Example
+
+HTML
+```html
+<div data-toggle>
+  <button data-toggle-trigger>Click to expand <span class="arrow">&darr;</span></button>
+  <div class="panel" data-toggle-content>
+    <div class="panel-content">
+      Content goes here
+    </div>
+  </div>
+</div>
+```
+
+CSS
+```css
+[data-toggle-trigger] {
+  .arrow {
+    display: inline-block;
+    transform: scaleY(1);
+    transition: transform 250ms ease;
+    &.active {
+      transform: scaleY(-1);
+    }
+  }
+}
+
+[data-toggle-content] {
+  height: 0;
+  overflow: hidden;
+  opacity: 1;
+  position: relative;
+}
+```
+
+JS
+```es6
+import { Toggler } from '@brandocms/jupiter'
+
+app.togglers = []
+
+const togglers = Dom.all('[data-toggle]')
+togglers.forEach(toggleEl => {
+  app.togglers.push(new Toggler(app, toggleEl))
+})
+```
+
+#### Options
+
 
 ## Links
 
