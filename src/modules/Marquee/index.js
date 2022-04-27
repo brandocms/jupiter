@@ -6,7 +6,10 @@ const DEFAULT_OPTIONS = {
   speed: 100,
   extraHeight: 0,
   slowDownOnHover: true,
-  paddingLeft: 0
+  paddingLeft: 0,
+  onReveal: marqueeEl => {
+    gsap.to(marqueeEl, { opacity: 1 })
+  }
 }
 
 export default class Marquee {
@@ -25,13 +28,20 @@ export default class Marquee {
   }
 
   initialize () {
+    gsap.set(this.elements.$marquee, { opacity: 0 })
     window.addEventListener('APPLICATION:RESIZE', this.updateMarquee.bind(this))
+    window.addEventListener('APPLICATION:REVEALED', this.revealMarquee.bind(this))
     this.updateMarquee()
     this.setupObserver()
     if (this.opts.slowDownOnHover) {
       this.elements.$el.addEventListener('mouseenter', this.slowDown.bind(this))
       this.elements.$el.addEventListener('mouseleave', this.speedUp.bind(this))
     }
+  }
+
+  revealMarquee (e) {
+    this.updateMarquee()
+    this.opts.onReveal(this.elements.$marquee)
   }
 
   updateMarquee (e) {
