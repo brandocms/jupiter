@@ -51,6 +51,7 @@ export default class Marquee {
         return
       }
     }
+
     this.killTweens()
     this.clearHolders()
     this.setHeight()
@@ -170,14 +171,18 @@ export default class Marquee {
     this.elements.$holder.appendChild(Dom.new('<span>&nbsp;&mdash;&nbsp;</span>')[0])
 
     const textWidth = this.elements.$item.offsetWidth
-    const count = Math.ceil(this.app.size.width / textWidth) - 1
-
-    for (let i = 0; i < count; i += 1) {
-      this.elements.$holder.append(this.elements.$item.cloneNode(true))
-      this.elements.$holder.appendChild(Dom.new('<span>&nbsp;&mdash;&nbsp;</p>')[0])
+    if (textWidth) {
+      const count = Math.ceil(this.app.size.width / textWidth) - 1
+  
+      for (let i = 0; i < count; i += 1) {
+        this.elements.$holder.append(this.elements.$item.cloneNode(true))
+        this.elements.$holder.appendChild(Dom.new('<span>&nbsp;&mdash;&nbsp;</p>')[0])
+      }
+  
+      this.elements.$marquee.appendChild(this.elements.$holder.cloneNode(true))
+    } else {
+      console.error('no textWidth! probably image?', this.elements.$item)
     }
-
-    this.elements.$marquee.appendChild(this.elements.$holder.cloneNode(true))
   }
 
   setHeight () {
