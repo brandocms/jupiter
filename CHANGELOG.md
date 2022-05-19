@@ -1,3 +1,9 @@
+#### 3.45.0
+
+- Marquee: Reveal on `APPLICATION:REVEALED`
+- Add Toggler module
+
+
 #### 3.44.0
 
 - Moonwalk: Add `data-moonwalked` to walked elements. Don't run again on
