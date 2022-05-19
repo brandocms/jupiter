@@ -251,9 +251,11 @@ export default class FixedHeader {
     this.checkBg(true)
     this.checkTop(true)
 
-    setTimeout(() => {
-      this.el.setAttribute('data-header-transitions', '')
-    }, 350)
+    window.addEventListener(Events.APPLICATION_REVEALED, e => {
+      setTimeout(() => {
+        this.el.setAttribute('data-header-transitions', '')
+      }, 350)
+    })
   }
 
   lock () {
