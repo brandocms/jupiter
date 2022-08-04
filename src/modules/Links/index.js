@@ -15,7 +15,7 @@ const DEFAULT_OPTIONS = {
     links.app.scrollTo(target, links.opts.scrollDuration, links.opts.triggerEvents)
   },
 
-  onTransition: href => {
+  onTransition: (href, app) => {
     const main = document.querySelector('main')
     const header = document.querySelector('header[data-nav]')
     const footer = document.querySelector('footer')
@@ -152,7 +152,7 @@ export default class Links {
 
         if (href.indexOf(document.location.hostname) > -1 || href.startsWith('/')) {
           e.preventDefault()
-          this.opts.onTransition(href)
+          this.opts.onTransition(href, this.app)
         }
       })
     })
