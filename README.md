@@ -268,7 +268,7 @@ include images from this section. Otherwise, all lightboxed images will be inclu
 HTML
 ```html
 <div data-toggle>
-  <button data-toggle-trigger>Click to expand <span class="arrow">&darr;</span></button>
+  <button data-toggle-trigger>Click to expand <span class="arrow icon">&darr;</span></button>
   <div class="panel" data-toggle-content>
     <div class="panel-content">
       Content goes here

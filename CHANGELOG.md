@@ -1,3 +1,9 @@
+#### 3.46.0
+
+- **BREAKING** Marquee: Drop `paddingLeft` -- add `startProgress`. This sets where in the 
+  timeline we should start. Default is `0.5`
+
+
 #### 3.45.0
 
 - Marquee: Reveal on `APPLICATION:REVEALED`
