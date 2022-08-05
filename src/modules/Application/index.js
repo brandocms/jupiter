@@ -450,6 +450,13 @@ export default class Application {
     }
   }
 
+  _getBaseVW () {
+    const fontBasePx = Dom.getCSSVar('--font-base-px')
+    const fontBase = parseFloat(fontBasePx, 10)
+    const innerWidth = window.innerWidth
+    return `${fontBase / innerWidth * 100}vw`
+  }
+
   setDims () {
     const root = document.querySelector(':root')
 
@@ -457,21 +464,28 @@ export default class Application {
     this.size.initialOuterHeight = window.outerHeight
     this.size.initialInnerWidth = window.innerWidth
     this.size.initialOuterWidth = window.outerWidth
-
+    
     root.style.setProperty('--vp-initial-inner-h', `${this.size.initialInnerHeight}px`)
     root.style.setProperty('--vp-initial-outer-h', `${this.size.initialOuterHeight}px`)
     root.style.setProperty('--vp-initial-inner-w', `${this.size.initialInnerWidth}px`)
     root.style.setProperty('--vp-initial-outer-w', `${this.size.initialOuterWidth}px`)
     root.style.setProperty('--ec-zoom', `${this.size.zoom}`)
-
+    
     this.setvh100Max()
     this.setvh100()
+    this.setFontBaseVw()
 
     this.size.container = Dom.getCSSVar('--container-padding')
     this.size.width = window.innerWidth
     this.size.height = window.innerHeight
     this.position.top = window.pageYOffset
     this.position.left = window.pageXOffset
+  }
+
+  setFontBaseVw () {
+    const root = document.querySelector(':root')
+    this.size.baseVW = this._getBaseVW()
+    root.style.setProperty('--font-base-vw', `${this.size.baseVW}`)
   }
 
   setZoom () {
@@ -486,6 +500,12 @@ export default class Application {
     const root = document.querySelector(':root')
     root.style.setProperty('--vp-100vh', `${window.innerHeight}px`)
     root.style.setProperty('--vp-1vh', `${window.innerHeight * 0.01}px`)
+  }
+
+  setvw100 () {
+    const root = document.querySelector(':root')
+    root.style.setProperty('--vp-100vw', `${window.innerWidth}px`)
+    root.style.setProperty('--vp-1vw', `${window.innerWidth * 0.01}px`)
   }
 
   /**
@@ -514,6 +534,7 @@ export default class Application {
     this.size.height = window.innerHeight
     this.setvh100()
     this.updateZoom()
+    this.setFontBaseVw()
 
     const evt = new CustomEvent(Events.APPLICATION_RESIZE, { detail: { widthChanged, heightChanged } })
     window.dispatchEvent(evt)
