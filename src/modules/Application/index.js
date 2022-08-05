@@ -71,6 +71,7 @@ export default class Application {
     this.userAgent = navigator.userAgent
     this._lastWindowHeight = 0
     this.breakpoint = null
+    this.language = document.documentElement.lang
 
     this.size = {
       width: 0,
