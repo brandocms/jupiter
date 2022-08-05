@@ -6,7 +6,9 @@ const DEFAULT_OPTIONS = {
   speed: 100,
   extraHeight: 0,
   slowDownOnHover: true,
-  paddingLeft: 0,
+  paddingLeft: 0, //DEPRECATED
+  startProgress: 0,
+
   onReveal: marqueeEl => {
     gsap.to(marqueeEl, { opacity: 1 })
   }
@@ -87,13 +89,15 @@ export default class Marquee {
     const $allHolders = Dom.all(this.elements.$el, '[data-marquee-holder]')
 
     Array.from($allHolders).forEach((h, idx) => {
-      gsap.set(h, { position: 'absolute', left: h.offsetWidth * idx })
+      gsap.set(h, { position: 'absolute', left: (h.offsetWidth * idx) })
     })
 
     this.timeline = gsap.timeline({ paused: true })
     this.timeline
-      .to($allHolders, { xPercent: -100, ease: 'none', duration: this.duration })
+      .to($allHolders, { xPercent: -100, ease: 'none', duration: this.duration }, 'standard')
       .repeat(-1)
+
+    this.timeline.totalProgress(this.opts.startProgress)
 
     window.timeline = this.timeline
     window.marquee = this
@@ -172,7 +176,7 @@ export default class Marquee {
 
     const textWidth = this.elements.$item.offsetWidth
     if (textWidth) {
-      const count = Math.ceil(this.app.size.width / textWidth) - 1
+      const count = Math.max(Math.ceil(this.app.size.width / textWidth) - 1, 2)
   
       for (let i = 0; i < count; i += 1) {
         this.elements.$holder.append(this.elements.$item.cloneNode(true))
