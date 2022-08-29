@@ -18,6 +18,12 @@ export default class Typography {
       self.elems = [...parent.querySelectorAll(self.settings.selector)]
     }
 
+    // load children
+    const typoParents = document.querySelectorAll('[data-typo-children]')
+    typoParents.forEach(typoParent => {
+      self.elems = [...typoParent.children]
+    })
+
     this.apply()
   }
 

@@ -191,6 +191,14 @@ export default class Lazyload {
       img.removeAttribute('data-ll-blurred')
       img.removeAttribute('data-ll-loading')
       img.setAttribute('data-ll-loaded', '')
+
+      // set sizes attribute on load again, since firefox sometimes is a bit slow to 
+      // get the actual image width
+      const width = this.getWidth(img)
+      img.setAttribute('sizes', `${width}px`)
+      if (img.parentNode) {
+        Array.from(Dom.all(img.parentNode, 'source')).forEach(source => source.setAttribute('sizes', `${width}px`))
+      }
     }
 
     img.addEventListener('load', onload, false)

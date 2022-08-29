@@ -196,29 +196,41 @@ export default class Application {
     }
   }
 
-  zoomCalculateChrome () {
-    const currentDevicePixelRatio = Math.round(window.devicePixelRatio * 100)
-    const delta = (currentDevicePixelRatio - this._lastDevicePixelRatio) / 100
-    this.size.zoom += delta
-    this._lastDevicePixelRatio = currentDevicePixelRatio
+  zoomCalculateChrome (dimsChanged) {
+    // only calc new zoom if width/height changed
+    if (dimsChanged) {
+      const currentDevicePixelRatio = Math.round(window.devicePixelRatio * 100)
+      const delta = (currentDevicePixelRatio - this._lastDevicePixelRatio) / 100
+      this.size.zoom += delta
+      if (this.size.zoom === 0) { this.size.zoom = 1 }
+      this._lastDevicePixelRatio = currentDevicePixelRatio
+    } 
   }
 
   zoomCalculateSafari () {
+    // safari does not call resize when switching dpi/monitors
     this.size.zoom = this._zoomSVG.currentScale
   }
 
-  updateZoom () {
+  updateZoom (dimsChanged = false, dprDelta = 0) {
     switch (this.browser) {
       case 'chrome':
-        this.zoomCalculateChrome()
+        this.zoomCalculateChrome(dimsChanged)
         break
 
       case 'safari':
-        this.zoomCalculateSafari()
+        this.zoomCalculateSafari(dimsChanged)
         break
 
       default:
-        this.size.zoom = 1 + (zoom.calculate(this.browser) - this._initialZoom)
+        if ([1, -1].indexOf(dprDelta) === -1) {
+          if (dimsChanged) {
+            this.size.zoom = 1 + (zoom.calculate(this.browser) - this._initialZoom)
+            if (this.size.zoom === 0) { this.size.zoom = 1 }
+          }
+        } else {
+          this._initialZoom = Math.min(Math.max(this._initialZoom - dprDelta, 1), 2)
+        }
     }
 
     this.setZoom()
@@ -328,6 +340,10 @@ export default class Application {
       },
       ease: 'sine.inOut'
     })
+  }
+
+  hardScrollToTop () {
+    window.scrollTo(0, 0)
   }
 
   hardScrollTo (target) {
@@ -476,6 +492,7 @@ export default class Application {
     this.setvh100()
     this.setFontBaseVw()
 
+    this.size.devicePixelRatio = window.devicePixelRatio
     this.size.container = Dom.getCSSVar('--container-padding')
     this.size.width = window.innerWidth
     this.size.height = window.innerHeight
@@ -530,11 +547,15 @@ export default class Application {
   onResize (e) {
     const widthChanged = (this.size.width !== window.innerWidth)
     const heightChanged = (this.size.height !== window.innerHeight)
-
+    const dimsChanged = widthChanged || heightChanged
+    const dprDelta = this.size.devicePixelRatio - window.devicePixelRatio
+    
     this.size.width = window.innerWidth
     this.size.height = window.innerHeight
+    this.size.devicePixelRatio = window.devicePixelRatio
+
+    this.updateZoom(dimsChanged, dprDelta)
     this.setvh100()
-    this.updateZoom()
     this.setFontBaseVw()
 
     const evt = new CustomEvent(Events.APPLICATION_RESIZE, { detail: { widthChanged, heightChanged } })

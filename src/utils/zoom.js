@@ -24,15 +24,10 @@ const _mediaQueryBinarySearch = (property, unit, a, b, maxIter, epsilon) => {
   return ratio
 }
 
-/**
-Firefox: OK
-Chrome: get the devicePixelRatio
+const calculateFirefox = () => {
+  return Math.round(_mediaQueryBinarySearch('min--moz-device-pixel-ratio', '', 0, 10, 20, 0.0001) * 10) / 10
+}
 
-window.devicePixelRatio - initial 
-
- */
-
-const calculateFirefox = () => Math.round(_mediaQueryBinarySearch('min--moz-device-pixel-ratio', '', 0, 10, 20, 0.0001) * 10) / 10
 const calculateChrome = initial => Math.round(window.devicePixelRatio * 100) - initial
 const calculateDefault = () => Math.round(((window.outerWidth) / window.innerWidth) * 10) / 10
 

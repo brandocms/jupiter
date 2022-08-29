@@ -2,6 +2,8 @@
 
 - **BREAKING** Marquee: Drop `paddingLeft` -- add `startProgress`. This sets where in the 
   timeline we should start. Default is `0.5`
+- Application: Add `hardScrollToTop()`
+- Zoom: Try to improve zoom handling for chrome
 
 
 #### 3.45.0
