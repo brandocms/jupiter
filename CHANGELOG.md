@@ -1,3 +1,9 @@
+#### 3.46.1
+
+- Lazyload: Fix loading loop for Chrome. Only reset `sizes` on load for firefox browsers,
+  and when the image has not been loaded before.
+
+
 #### 3.46.0
 
 - **BREAKING** Marquee: Drop `paddingLeft` -- add `startProgress`. This sets where in the 

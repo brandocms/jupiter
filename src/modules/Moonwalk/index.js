@@ -249,7 +249,7 @@ export default class Moonwalk {
     }
 
     const timeline = gsap.timeline({
-      // autoRemoveChildren: true
+      autoRemoveChildren: true,
       smoothChildTiming: true
     })
 
@@ -562,8 +562,12 @@ export default class Moonwalk {
       for (let i = 0; i < entries.length; i += 1) {
         const entry = entries[i]
 
-        if (entry.isIntersecting) {
+        if (entry.isIntersecting || entry.intersectionRatio > 0) {
           section.running = true
+
+          if (entry.target.dataset.moonwalkId) {
+            console.debug('-- intersecting', entry.target.dataset.moonwalkId)
+          }
 
           const walkName = entry.target.getAttribute('data-moonwalk')
           const cfg = !walkName.length ? opts.walks.default : opts.walks[walkName]
