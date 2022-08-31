@@ -199,11 +199,12 @@ export default class Lazyload {
             .forEach(source => source.setAttribute('sizes', `${width}px`))
         }
       }
-      
+
       img.removeAttribute('data-ll-placeholder')
       img.removeAttribute('data-ll-blurred')
       img.removeAttribute('data-ll-loading')
       img.setAttribute('data-ll-loaded', '')
+      picture.setAttribute('data-ll-srcset-loaded', '')
     }
 
     img.addEventListener('load', onload, false)
