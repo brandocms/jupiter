@@ -249,8 +249,8 @@ export default class Moonwalk {
     }
 
     const timeline = gsap.timeline({
-      autoRemoveChildren: true,
-      smoothChildTiming: true
+      autoRemoveChildren: false,
+      smoothChildTiming: false      
     })
 
     return {
@@ -674,19 +674,18 @@ export default class Moonwalk {
         tweenPosition = () => `>${tweenOverlap}`
       }
     } else {
-      tweenPosition = () => '>'
+      tweenPosition = () => '+=0'
     }
 
     gsap.set(target, tweenTransition.from)
 
-    section.timeline.to(
-      target, {
-        ...tweenTransition.to,
-        duration: tweenDuration
-      },
-      tweenPosition()
-    )
-    .call(() => { target.setAttribute('data-moonwalked', '') }, null, '<')
+    const toTransition = {
+      ...tweenTransition.to,
+      duration: tweenDuration,
+      onComplete: () => target.setAttribute('data-moonwalked', '')
+    }
+
+    section.timeline.to(target, toTransition, tweenPosition())
 
     if (alphaTween) {
       section.timeline.to(target, {
@@ -725,7 +724,7 @@ export default class Moonwalk {
         tweenPosition = () => `>${tweenOverlap}`
       }
     } else {
-      tweenPosition = () => '>'
+      tweenPosition = () => '+=0'
     }
 
     section.timeline.to(
