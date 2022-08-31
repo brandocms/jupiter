@@ -1,3 +1,8 @@
+#### 3.46.2
+
+- Moonwalk: Set autoRemoveChildren to false to fix jumbled timelines.
+
+
 #### 3.46.1
 
 - Lazyload: Fix loading loop for Chrome. Only reset `sizes` on load for firefox browsers,
