@@ -1,3 +1,15 @@
+#### 3.46.3
+
+- Moonwalk: Set `data-moonwalk-section-ready` instead of tweening element.
+  EuropaCSS will add a rule for this attribute with opacity: 1. If you're
+  not using EuropaCSS, add this to your stylesheet if you want to use
+  Moonwalk without initial flickering:
+
+      html.moonwalk [data-moonwalk-section][data-moonwalk-section-ready] {
+        opacity: 1;
+      }
+
+
 #### 3.46.2
 
 - Moonwalk: Set autoRemoveChildren to false to fix jumbled timelines.
