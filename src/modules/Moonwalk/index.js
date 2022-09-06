@@ -350,7 +350,11 @@ export default class Moonwalk {
     if (section.stage.name) {
       // reset the element to its `from` state.
       const stageTween = walks[section.stage.name]
-      gsap.set(section.el, stageTween.transition.from)
+      if (!stageTween) {
+        console.error('==> JUPITER/MOONWALK: MISSING referenced moonwalk stage', section.stage.name)
+      } else {
+        gsap.set(section.el, stageTween.transition.from)
+      }
     }
 
     const observer = this.sectionObserver(section)
