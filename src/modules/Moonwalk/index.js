@@ -318,8 +318,8 @@ export default class Moonwalk {
    * @param {*} section
    */
   setupNamesAndStages (section) {
-    gsap.set(section.el, { opacity: 1 })
-
+    section.el.setAttribute('data-moonwalk-section-ready', '')
+    
     if (!section.stage.name && !section.name) {
       return
     }
