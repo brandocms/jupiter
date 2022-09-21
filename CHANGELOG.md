@@ -1,3 +1,8 @@
+#### 3.46.4
+
+- Typography: Allow multiple `data-typo-children` selectors on same page.
+
+
 #### 3.46.3
 
 - Moonwalk: Set `data-moonwalk-section-ready` instead of tweening element.

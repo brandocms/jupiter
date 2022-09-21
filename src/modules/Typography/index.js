@@ -11,17 +11,19 @@ export default class Typography {
       ...settings
     }
 
+    self.elems = []
+
     // Either load from root or the passed parent element
     if (typeof (parent) === 'undefined') {
-      self.elems = [...document.querySelectorAll(self.settings.selector)]
+      self.elems = [...self.elems, ...document.querySelectorAll(self.settings.selector)]
     } else {
-      self.elems = [...parent.querySelectorAll(self.settings.selector)]
+      self.elems = [...self.elems, ...parent.querySelectorAll(self.settings.selector)]
     }
 
     // load children
     const typoParents = document.querySelectorAll('[data-typo-children]')
     typoParents.forEach(typoParent => {
-      self.elems = [...typoParent.children]
+      self.elems = [...self.elems, ...typoParent.children]
     })
 
     this.apply()
