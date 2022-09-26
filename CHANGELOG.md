@@ -1,3 +1,11 @@
+#### 3.47.0
+
+- Application: Ensure header and footer's opacity is cleared out when arriving 
+  at page from using back button.
+- Marquee: Add `spacer` option to allow overriding
+- Add `EqualHeightImages` module
+
+
 #### 3.46.4
 
 - Typography: Allow multiple `data-typo-children` selectors on same page.

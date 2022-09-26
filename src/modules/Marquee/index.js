@@ -8,6 +8,7 @@ const DEFAULT_OPTIONS = {
   slowDownOnHover: true,
   paddingLeft: 0, //DEPRECATED
   startProgress: 0,
+  spacer: '<span>&nbsp;&mdash;&nbsp;</span>',
 
   onReveal: marqueeEl => {
     gsap.to(marqueeEl, { opacity: 1 })
@@ -172,20 +173,23 @@ export default class Marquee {
     this.elements.$holder.innerHTML = ''
     this.elements.$holder.appendChild(this.elements.$item)
 
-    this.elements.$holder.appendChild(Dom.new('<span>&nbsp;&mdash;&nbsp;</span>')[0])
-
     const textWidth = this.elements.$item.offsetWidth
     if (textWidth) {
+      if (this.opts.spacer) {
+        this.elements.$holder.appendChild(Dom.new(this.opts.spacer)[0])
+      }
       const count = Math.max(Math.ceil(this.app.size.width / textWidth) - 1, 2)
   
       for (let i = 0; i < count; i += 1) {
         this.elements.$holder.append(this.elements.$item.cloneNode(true))
-        this.elements.$holder.appendChild(Dom.new('<span>&nbsp;&mdash;&nbsp;</p>')[0])
+        if (this.opts.spacer) {
+          this.elements.$holder.appendChild(Dom.new(this.opts.spacer)[0])
+        }
       }
   
       this.elements.$marquee.appendChild(this.elements.$holder.cloneNode(true))
     } else {
-      console.error('no textWidth! probably image?', this.elements.$item)
+      console.error('no textWidth! probably image? Set width to elements inside holder', this.elements.$item)      
     }
   }
 

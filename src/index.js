@@ -15,6 +15,7 @@ import Cookies from './modules/Cookies'
 import CoverOverlay from './modules/CoverOverlay'
 import Dom from './modules/Dom'
 import Dropdown from './modules/Dropdown'
+import EqualHeightImages from './modules/EqualHeightImages'
 import * as Events from './events'
 import FixedHeader from './modules/FixedHeader'
 import FooterReveal from './modules/FooterReveal'
@@ -48,6 +49,7 @@ export {
   Dom,
   Draggable,
   Dropdown,
+  EqualHeightImages,
   Events,
   FixedHeader,
   FooterReveal,

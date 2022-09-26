@@ -25,9 +25,15 @@ window.onpageshow = event => {
       gsap.to(dataFaders, { duration: 0.35, autoAlpha: 0 })
     }
 
-    gsap.set(document.body, {
-      clearProps: 'opacity'
-    })
+    gsap.set(document.body, { clearProps: 'opacity' })
+
+    // check that navigation is visible
+    const $nav = Dom.find('header[data-nav]')
+    gsap.set($nav, { clearProps: 'opacity' })
+
+    // check that footer is visible
+    const $footer = Dom.find('footer')
+    gsap.set($footer, { clearProps: 'opacity' })
   }
 }
 
