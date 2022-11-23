@@ -4,13 +4,13 @@ import _defaultsDeep from 'lodash.defaultsdeep'
 const DEFAULT_OPTIONS = {}
 
 export default class CoverOverlay {
-  constructor (app, opts = {}) {
+  constructor(app, opts = {}) {
     this.app = app
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
     this.initialize()
   }
 
-  initialize () {
+  initialize() {
     const coveredModules = document.querySelectorAll('[data-cover-overlay]')
 
     Array.from(coveredModules).forEach(v => {
@@ -20,7 +20,10 @@ export default class CoverOverlay {
       const iframe = v.querySelector('iframe')
 
       if (iframe) {
-        iframe.setAttribute('allow', 'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture')
+        iframe.setAttribute(
+          'allow',
+          'accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture'
+        )
       }
 
       if (v.hasAttribute('data-cover-overlay-vimeo-play')) {

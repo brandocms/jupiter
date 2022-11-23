@@ -6,7 +6,7 @@ import * as Events from '../../events'
 const DEFAULT_OPTIONS = {}
 
 export default class EqualHeightElements {
-  constructor (app, selector, opts = {}, container = document.body) {
+  constructor(app, selector, opts = {}, container = document.body) {
     this.app = app
     this.container = container
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
@@ -18,7 +18,7 @@ export default class EqualHeightElements {
     })
   }
 
-  initialize () {
+  initialize() {
     const canvases = Dom.all(this.container, '[data-eq-height-elements]')
     Array.from(canvases).forEach(canvas => {
       let lastTop = null
@@ -29,7 +29,7 @@ export default class EqualHeightElements {
 
       eqElements.forEach(el => {
         const rect = el.getBoundingClientRect()
-        
+
         if (lastTop === null) {
           height = rect.height
           elements.push(el)
@@ -59,7 +59,10 @@ export default class EqualHeightElements {
 
       if (actionables.length) {
         actionables.forEach(a => {
-          gsap.set(a.elements, { minHeight: a.height, attr: { 'data-eq-height-elements-adjusted': true } })
+          gsap.set(a.elements, {
+            minHeight: a.height,
+            attr: { 'data-eq-height-elements-adjusted': true }
+          })
         })
       }
     })

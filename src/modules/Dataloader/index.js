@@ -1,16 +1,15 @@
-
 import Dom from '../Dom'
 import _defaultsDeep from 'lodash.defaultsdeep'
 
 /**
  * Load data by ajax
- * 
+ *
  * Example DOM:
- * 
+ *
  *  <div class="filter">
  *    <input type="text" data-loader-filter-for="news" placeholder="Search">
  *  </div>
- * 
+ *
  *  <div data-loader="/api/posts" data-loader-id="news">
  *    <ul>
  *      <li>
@@ -26,24 +25,24 @@ import _defaultsDeep from 'lodash.defaultsdeep'
  *      </button>
  *    </div>
  *  </div>
- * 
+ *
  */
 
 const DEFAULT_OPTIONS = {
   page: 0,
   loaderParam: 'all',
   filter: '',
-  onFetch: (dataloader) => {
+  onFetch: dataloader => {
     /**
-     * Called after fetch complete. Do your DOM manipulation here 
-     * 
-     * Example: 
-     * 
+     * Called after fetch complete. Do your DOM manipulation here
+     *
+     * Example:
+     *
      *    const mw = new Moonwalk(dataloader.app, configureMoonwalk(dataloader.app), dataloader.$el)
      *    new Lazyload(dataloader.app, { useNativeLazyloadIfAvailable: false }, dataloader.$el)
      *    new EqualHeightImages(dataloader.app, {}, dataloader.$el)
      *    mw.ready()
-    */
+     */
   }
 }
 
@@ -158,7 +157,7 @@ export default class Dataloader {
 
   /**
    * Update the MORE button
-   * 
+   *
    * Sets [data-loader-starved] attribute if there is no more to fetch
    */
   updateButton() {
@@ -173,4 +172,3 @@ export default class Dataloader {
     }
   }
 }
-

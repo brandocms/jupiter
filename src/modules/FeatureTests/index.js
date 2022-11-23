@@ -1,7 +1,7 @@
 import * as Events from '../../events'
 
 export default class FeatureTests {
-  constructor (app, tests) {
+  constructor(app, tests) {
     this.app = app
 
     this.testFns = {
@@ -40,13 +40,13 @@ export default class FeatureTests {
     this.bindEventTests()
   }
 
-  runTests (tests) {
+  runTests(tests) {
     tests.forEach(test => {
       this.testFor(test, this.testFns[test]())
     })
   }
 
-  testFor (feature, result) {
+  testFor(feature, result) {
     this.results[feature] = result
     document.documentElement.setAttribute(`data-${feature}`, result)
   }
@@ -55,7 +55,7 @@ export default class FeatureTests {
    * Check if we should outline elements. If the user hits TAB, we should outline,
    * otherwise we skip it.
    */
-  testOutlineEvents () {
+  testOutlineEvents() {
     document.addEventListener('mousedown', () => {
       this.testFor('outline', false)
     })
@@ -73,7 +73,7 @@ export default class FeatureTests {
    * Sometimes the initial test for touch/mouse fail, so
    * listen for events as well
    */
-  testTouchMouseEvents () {
+  testTouchMouseEvents() {
     const onTouchStart = () => {
       if (!this.results.touch) {
         this.results.touch = true
@@ -93,7 +93,7 @@ export default class FeatureTests {
 
     const onMouseMove = () => {
       if (!this.results.mouse) {
-        if ((Date.now() - this.devicelastTouched) > 300) {
+        if (Date.now() - this.devicelastTouched > 300) {
           this.results.touch = false
           this.results.mouse = true
           this.testFor('touch', false)
@@ -105,24 +105,29 @@ export default class FeatureTests {
     document.addEventListener('mousemove', onMouseMove, false)
   }
 
-  bindEventTests () {
+  bindEventTests() {
     this.testOutlineEvents()
     this.testTouchMouseEvents()
   }
 
-  testTouch () {
-    return ('ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0)
+  testTouch() {
+    return (
+      'ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0
+    )
   }
 
-  testIE11 () {
-    return '-ms-scroll-limit' in document.documentElement.style && '-ms-ime-align' in document.documentElement.style
+  testIE11() {
+    return (
+      '-ms-scroll-limit' in document.documentElement.style &&
+      '-ms-ime-align' in document.documentElement.style
+    )
   }
 
-  testIOS () {
+  testIOS() {
     return navigator.userAgent.match(/iphone|ipod|ipad/i)
   }
 
-  testBrowsers () {
+  testBrowsers() {
     let browser = 'unknown'
     let isChrome = false
     let isSafari = false
@@ -140,12 +145,14 @@ export default class FeatureTests {
       browser = 'safari'
       isSafari = true
     }
-    if ((isChrome) && (isSafari)) { browser = 'chrome' }
+    if (isChrome && isSafari) {
+      browser = 'chrome'
+    }
 
     return browser
   }
 
-  testWebview () {
+  testWebview() {
     return navigator.userAgent.match(/FBAN|FBAV|instagram|facebook|messenger/i)
   }
 }

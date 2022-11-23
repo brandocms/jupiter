@@ -44,7 +44,12 @@ const DEFAULT_OPTIONS = {
   },
 
   focusableSelectors: [
-    'a', 'input', 'select', 'button', 'textarea', 'iframe' // , 'video'?
+    'a',
+    'input',
+    'select',
+    'button',
+    'textarea',
+    'iframe' // , 'video'?
   ],
 
   bindScroll: true,
@@ -54,7 +59,7 @@ const DEFAULT_OPTIONS = {
   disableWebpSafari: true,
 
   faderOpts: {
-    fadeIn: (callback = () => { }) => {
+    fadeIn: (callback = () => {}) => {
       const fader = document.querySelector('#fader')
       gsap.to(fader, {
         opacity: 0,
@@ -74,7 +79,7 @@ const DEFAULT_OPTIONS = {
   }
 }
 export default class Application {
-  constructor (opts = {}) {
+  constructor(opts = {}) {
     this.debugType = 1
     this.debugOverlay = null
     this.userAgent = navigator.userAgent
@@ -162,7 +167,7 @@ export default class Application {
   /**
    * Main init. Called from client application on DOMReady.
    */
-  initialize () {
+  initialize() {
     this._emitBeforeInitializedEvent()
     this.setSection()
     this.executeCallbacks(Events.APPLICATION_PRELUDIUM)
@@ -173,10 +178,10 @@ export default class Application {
   }
 
   /**
-  * Application is initialized and ready.
-  * Fade in, then execute callbacks
-  */
-  ready () {
+   * Application is initialized and ready.
+   * Fade in, then execute callbacks
+   */
+  ready() {
     this.fontLoader.loadFonts(this.opts.fonts).then(() => {
       this._emitReadyEvent()
       this.executeCallbacks(Events.APPLICATION_READY)
@@ -184,7 +189,7 @@ export default class Application {
     })
   }
 
-  getZoom () {
+  getZoom() {
     switch (this.browser) {
       case 'chrome':
         this._lastDevicePixelRatio = Math.round(window.devicePixelRatio * 100)
@@ -205,23 +210,25 @@ export default class Application {
     }
   }
 
-  zoomCalculateChrome (dimsChanged) {
+  zoomCalculateChrome(dimsChanged) {
     // only calc new zoom if width/height changed
     if (dimsChanged) {
       const currentDevicePixelRatio = Math.round(window.devicePixelRatio * 100)
       const delta = (currentDevicePixelRatio - this._lastDevicePixelRatio) / 100
       this.size.zoom += delta
-      if (this.size.zoom === 0) { this.size.zoom = 1 }
+      if (this.size.zoom === 0) {
+        this.size.zoom = 1
+      }
       this._lastDevicePixelRatio = currentDevicePixelRatio
-    } 
+    }
   }
 
-  zoomCalculateSafari () {
+  zoomCalculateSafari() {
     // safari does not call resize when switching dpi/monitors
     this.size.zoom = this._zoomSVG.currentScale
   }
 
-  updateZoom (dimsChanged = false, dprDelta = 0) {
+  updateZoom(dimsChanged = false, dprDelta = 0) {
     switch (this.browser) {
       case 'chrome':
         this.zoomCalculateChrome(dimsChanged)
@@ -235,7 +242,9 @@ export default class Application {
         if ([1, -1].indexOf(dprDelta) === -1) {
           if (dimsChanged) {
             this.size.zoom = 1 + (zoom.calculate(this.browser) - this._initialZoom)
-            if (this.size.zoom === 0) { this.size.zoom = 1 }
+            if (this.size.zoom === 0) {
+              this.size.zoom = 1
+            }
           }
         } else {
           this._initialZoom = Math.min(Math.max(this._initialZoom - dprDelta, 1), 2)
@@ -248,14 +257,14 @@ export default class Application {
   /**
    * Fade in application, as declared in the `faderOpts`
    */
-  fadeIn () {
+  fadeIn() {
     this.opts.faderOpts.fadeIn(this._emitRevealedEvent.bind(this))
   }
 
   /**
    * Register callbacks by `type`
    */
-  registerCallback (type, callback) {
+  registerCallback(type, callback) {
     if (!Object.prototype.hasOwnProperty.call(this.callbacks, type)) {
       this.callbacks[type] = []
     }
@@ -265,7 +274,7 @@ export default class Application {
   /**
    * Execute callbacks by `type`
    */
-  executeCallbacks (type) {
+  executeCallbacks(type) {
     if (!Object.prototype.hasOwnProperty.call(this.callbacks, type)) {
       return
     }
@@ -275,16 +284,19 @@ export default class Application {
   /**
    * Set section
    */
-  setSection () {
+  setSection() {
     this.section = document.body.getAttribute('data-script')
   }
 
   /**
    * Check if document is scrolled
    */
-  isScrolled () {
-    return (window.pageYOffset
-      || document.documentElement.scrollTop) - (document.documentElement.clientTop || 0) > 0
+  isScrolled() {
+    return (
+      (window.pageYOffset || document.documentElement.scrollTop) -
+        (document.documentElement.clientTop || 0) >
+      0
+    )
   }
 
   /**
@@ -292,7 +304,7 @@ export default class Application {
    * `extraPaddedElements` can be a list of elements that also need padding, such as the header!
    * @param {*} extraPaddedElements
    */
-  scrollLock (extraPaddedElements = []) {
+  scrollLock(extraPaddedElements = []) {
     if (this.SCROLL_LOCKED) {
       return
     }
@@ -306,7 +318,7 @@ export default class Application {
     document.addEventListener('touchmove', this.scrollVoid, false)
   }
 
-  scrollRelease () {
+  scrollRelease() {
     if (!this.SCROLL_LOCKED) {
       return
     }
@@ -325,7 +337,7 @@ export default class Application {
    * @param {*} time
    * @param {*} emitEvents
    */
-  scrollTo (target, time = 0.8, emitEvents = true, ease = 'sine.inOut') {
+  scrollTo(target, time = 0.8, emitEvents = true, ease = 'sine.inOut') {
     let scrollToData
     const forcedScrollEventStart = new window.CustomEvent(Events.APPLICATION_FORCED_SCROLL_START)
     if (emitEvents) {
@@ -351,25 +363,25 @@ export default class Application {
     })
   }
 
-  hardScrollToTop () {
+  hardScrollToTop() {
     window.scrollTo(0, 0)
   }
 
-  hardScrollTo (target) {
+  hardScrollTo(target) {
     const element = Dom.find(target)
     if (element) {
       element.scrollIntoView()
     }
   }
 
-  scrollVoid (e) {
+  scrollVoid(e) {
     e.preventDefault()
   }
 
   /**
    * Get current scrollbar width — if there is none, there is none
    */
-  getCurrentScrollBarWidth () {
+  getCurrentScrollBarWidth() {
     return window.innerWidth - document.documentElement.clientWidth
   }
 
@@ -377,7 +389,7 @@ export default class Application {
    * Get scrollbar width by FORCE. No matter if there is
    * currently a scrollbar or not
    */
-  getScrollBarWidth () {
+  getScrollBarWidth() {
     if (!this.SCROLLBAR_WIDTH) {
       // Creating invisible container
       const outer = document.createElement('div')
@@ -391,7 +403,7 @@ export default class Application {
       outer.appendChild(inner)
 
       // Calculating difference between container's full width and the child width
-      this.SCROLLBAR_WIDTH = (outer.offsetWidth - inner.offsetWidth)
+      this.SCROLLBAR_WIDTH = outer.offsetWidth - inner.offsetWidth
 
       // Removing temporary elements from the DOM
       outer.parentNode.removeChild(outer)
@@ -401,7 +413,7 @@ export default class Application {
   /**
    * Ugly hacks
    */
-  hacks () {
+  hacks() {
     if (this.opts.disableWebpSafari) {
       if (this.browser === 'safari') {
         console.debug('==> disable webp')
@@ -413,11 +425,11 @@ export default class Application {
     }
   }
 
-  getIOSCurrentInnerHeight () {
+  getIOSCurrentInnerHeight() {
     return window.innerHeight
   }
 
-  getIOSInnerHeightMax () {
+  getIOSInnerHeightMax() {
     if (!navigator.userAgent.match(/iphone|ipod|ipad/i)) {
       return window.innerHeight
     }
@@ -454,21 +466,21 @@ export default class Application {
   /**
    * Event emitters
    */
-  _emitBeforeInitializedEvent () {
+  _emitBeforeInitializedEvent() {
     window.dispatchEvent(this.beforeInitializedEvent)
   }
 
-  _emitInitializedEvent () {
+  _emitInitializedEvent() {
     window.dispatchEvent(this.initializedEvent)
     this.INITIALIZED = true
   }
 
-  _emitReadyEvent () {
+  _emitReadyEvent() {
     window.dispatchEvent(this.readyEvent)
     document.body.dataset.appReady = true
   }
 
-  _emitRevealedEvent () {
+  _emitRevealedEvent() {
     if (!document.body.hasAttribute('data-app-revealed')) {
       document.body.dataset.appRevealed = true
       window.dispatchEvent(this.revealedEvent)
@@ -476,14 +488,14 @@ export default class Application {
     }
   }
 
-  _getBaseVW () {
+  _getBaseVW() {
     const fontBasePx = Dom.getCSSVar('--font-base-px')
     const fontBase = parseFloat(fontBasePx, 10)
     const innerWidth = window.innerWidth
-    return `${fontBase / innerWidth * 100}vw`
+    return `${(fontBase / innerWidth) * 100}vw`
   }
 
-  setDims () {
+  setDims() {
     const root = document.querySelector(':root')
 
     this.size.initialInnerHeight = window.innerHeight
@@ -491,14 +503,14 @@ export default class Application {
     this.size.initialInnerWidth = window.innerWidth
     this.size.initialOuterWidth = window.outerWidth
     this.size.scrollHeight = document.body.scrollHeight
-    
+
     root.style.setProperty('--vp-initial-inner-h', `${this.size.initialInnerHeight}px`)
     root.style.setProperty('--vp-initial-outer-h', `${this.size.initialOuterHeight}px`)
     root.style.setProperty('--vp-initial-inner-w', `${this.size.initialInnerWidth}px`)
     root.style.setProperty('--vp-initial-outer-w', `${this.size.initialOuterWidth}px`)
     root.style.setProperty('--ec-zoom', `${this.size.zoom}`)
     root.style.setProperty('--scroll-h', `${this.size.scrollHeight}px`)
-    
+
     this.setvh100Max()
     this.setvh100()
     this.setFontBaseVw()
@@ -511,13 +523,13 @@ export default class Application {
     this.position.left = window.pageXOffset
   }
 
-  setFontBaseVw () {
+  setFontBaseVw() {
     const root = document.querySelector(':root')
     this.size.baseVW = this._getBaseVW()
     root.style.setProperty('--font-base-vw', `${this.size.baseVW}`)
   }
 
-  setZoom () {
+  setZoom() {
     const root = document.querySelector(':root')
     root.style.setProperty('--ec-zoom', `${this.size.zoom}`)
   }
@@ -525,13 +537,13 @@ export default class Application {
   /**
    * Inner height of mobiles may change when showing hiding bottom bar.
    */
-  setvh100 () {
+  setvh100() {
     const root = document.querySelector(':root')
     root.style.setProperty('--vp-100vh', `${window.innerHeight}px`)
     root.style.setProperty('--vp-1vh', `${window.innerHeight * 0.01}px`)
   }
 
-  setvw100 () {
+  setvw100() {
     const root = document.querySelector(':root')
     root.style.setProperty('--vp-100vw', `${window.innerWidth}px`)
     root.style.setProperty('--vp-1vw', `${window.innerWidth * 0.01}px`)
@@ -540,32 +552,33 @@ export default class Application {
   /**
    * Get the max 100vh for iOS
    */
-  setvh100Max () {
+  setvh100Max() {
     const root = document.querySelector(':root')
     const vh100 = this.featureTests.results.ios
-      ? this.getIOSInnerHeightMax() : this.size.initialInnerHeight
+      ? this.getIOSInnerHeightMax()
+      : this.size.initialInnerHeight
     root.style.setProperty('--vp-100vh-max', `${vh100}px`)
     this.size.vh100max = vh100
   }
 
-  setScrollHeight () {
+  setScrollHeight() {
     const root = document.querySelector(':root')
     root.style.setProperty('--scroll-h', `${document.body.scrollHeight}px`)
   }
 
-  onBreakpointChanged () {
+  onBreakpointChanged() {
     this.size.container = Dom.getCSSVar('--container-padding')
   }
 
   /**
    * RAF'ed resize event
    */
-  onResize (e) {
-    const widthChanged = (this.size.width !== window.innerWidth)
-    const heightChanged = (this.size.height !== window.innerHeight)
+  onResize(e) {
+    const widthChanged = this.size.width !== window.innerWidth
+    const heightChanged = this.size.height !== window.innerHeight
     const dimsChanged = widthChanged || heightChanged
     const dprDelta = this.size.devicePixelRatio - window.devicePixelRatio
-    
+
     this.size.width = window.innerWidth
     this.size.height = window.innerHeight
     this.size.scrollHeight = document.body.scrollHeight
@@ -576,14 +589,16 @@ export default class Application {
     this.setScrollHeight()
     this.setFontBaseVw()
 
-    const evt = new CustomEvent(Events.APPLICATION_RESIZE, { detail: { widthChanged, heightChanged } })
+    const evt = new CustomEvent(Events.APPLICATION_RESIZE, {
+      detail: { widthChanged, heightChanged }
+    })
     window.dispatchEvent(evt)
   }
 
   /**
-  * RAF'ed scroll event
-  */
-  onScroll (e) {
+   * RAF'ed scroll event
+   */
+  onScroll(e) {
     if (this.SCROLL_LOCKED) {
       e.preventDefault()
       return
@@ -596,7 +611,7 @@ export default class Application {
     window.dispatchEvent(evt)
   }
 
-  onVisibilityChange (e) {
+  onVisibilityChange(e) {
     let evt = new CustomEvent(Events.APPLICATION_VISIBILITY_CHANGE, e)
     window.dispatchEvent(evt)
 
@@ -609,7 +624,7 @@ export default class Application {
     }
   }
 
-  pollForElement (selector, time = 500, callback = () => { }) {
+  pollForElement(selector, time = 500, callback = () => {}) {
     const el = document.querySelector(selector)
     if (el !== null) {
       callback(el)
@@ -620,7 +635,7 @@ export default class Application {
     }
   }
 
-  pollForVar (variable, time = 500, callback = () => { }) {
+  pollForVar(variable, time = 500, callback = () => {}) {
     if (variable !== null) {
       callback(variable)
     } else {
@@ -630,7 +645,7 @@ export default class Application {
     }
   }
 
-  setupDebug () {
+  setupDebug() {
     this.setupGridoverlay()
     this.debugOverlay = document.querySelector('.dbg-breakpoints')
     if (!this.debugOverlay) {
@@ -643,10 +658,10 @@ export default class Application {
     userAgent.innerHTML = `<b>&rarr; ${this.userAgent}</b> >> <span>KOPIER</span>`
 
     const span = userAgent.querySelector('span')
-    const windowWidth = window.innerWidth || document.documentElement.clientWidth
-      || document.body.clientWidth
-    const windowHeight = window.innerHeight || document.documentElement.clientHeight
-      || document.body.clientHeight
+    const windowWidth =
+      window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth
+    const windowHeight =
+      window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight
 
     span.addEventListener('click', () => {
       const copyText = userAgent.querySelector('b')
@@ -670,7 +685,7 @@ ${JSON.stringify(this.featureTests.results, undefined, 2)}
     })
   }
 
-  toggleDebug () {
+  toggleDebug() {
     const tl = gsap.timeline()
     const breakpoint = this.debugOverlay.querySelector('.breakpoint')
     const userAgent = this.debugOverlay.querySelector('.user-agent')
@@ -686,21 +701,27 @@ ${JSON.stringify(this.featureTests.results, undefined, 2)}
         // hide all except branding
         tl.to([breakpoint, userAgent], { duration: 0.3, autoAlpha: 0 })
           .to([breakpoint, userAgent], { duration: 0.7, width: 0 })
-          .call(() => { gsap.set([breakpoint, userAgent], { display: 'none' }) })
+          .call(() => {
+            gsap.set([breakpoint, userAgent], { display: 'none' })
+          })
         break
 
       case 1:
         //
         gsap.set(breakpoint, { width: 'auto', display: 'block' })
-        tl.from(breakpoint, { duration: 0.7, width: 0 })
-          .to(breakpoint, { duration: 0.3, autoAlpha: 1 })
+        tl.from(breakpoint, { duration: 0.7, width: 0 }).to(breakpoint, {
+          duration: 0.3,
+          autoAlpha: 1
+        })
         break
 
       case 2:
         //
         gsap.set(userAgent, { width: 'auto', display: 'block' })
-        tl.from(userAgent, { duration: 0.7, width: 0 })
-          .to(userAgent, { duration: 0.3, autoAlpha: 1 })
+        tl.from(userAgent, { duration: 0.7, width: 0 }).to(userAgent, {
+          duration: 0.3,
+          autoAlpha: 1
+        })
         break
 
       default:
@@ -711,7 +732,7 @@ ${JSON.stringify(this.featureTests.results, undefined, 2)}
   /**
    * CTRL-G to show grid overlay
    */
-  setupGridoverlay () {
+  setupGridoverlay() {
     const gridKeyPressed = e => {
       if (e.keyCode === 71 && e.ctrlKey) {
         const guides = Dom.find('.dbg-grid')
@@ -751,7 +772,7 @@ ${JSON.stringify(this.featureTests.results, undefined, 2)}
    * Add in extra selectors that are focusable
    * @param {array} extraSelectors
    */
-  addFocusableSelectors (extraSelectors) {
+  addFocusableSelectors(extraSelectors) {
     if (extraSelectors.length) {
       this.focusableSelectors = this.focusableSelectors.concat(extraSelectors)
     }
@@ -761,7 +782,7 @@ ${JSON.stringify(this.featureTests.results, undefined, 2)}
    * Set focusable selectors. Replaces default array.
    * @param {array} selectors
    */
-  setFocusableSelectors (selectors) {
+  setFocusableSelectors(selectors) {
     if (selectors.length) {
       this.focusableSelectors = selectors
     }
@@ -770,7 +791,7 @@ ${JSON.stringify(this.featureTests.results, undefined, 2)}
   /**
    * Returns focusable selectors as a comma separated list
    */
-  getFocusableSelectors () {
+  getFocusableSelectors() {
     return this.focusableSelectors.join(',')
   }
 }

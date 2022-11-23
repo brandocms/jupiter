@@ -1,5 +1,5 @@
 export default class Typography {
-  constructor (parent, settings = {}) {
+  constructor(parent, settings = {}) {
     const self = this
 
     // Set some settings, by merging defaults and passed settings
@@ -14,7 +14,7 @@ export default class Typography {
     self.elems = []
 
     // Either load from root or the passed parent element
-    if (typeof (parent) === 'undefined') {
+    if (typeof parent === 'undefined') {
       self.elems = [...self.elems, ...document.querySelectorAll(self.settings.selector)]
     } else {
       self.elems = [...self.elems, ...parent.querySelectorAll(self.settings.selector)]
@@ -33,7 +33,7 @@ export default class Typography {
    * Apply formatting to the loaded elements
    * @return void
    */
-  apply () {
+  apply() {
     const self = this
 
     self.elems.map(elem => {
@@ -46,7 +46,10 @@ export default class Typography {
       let result = ''
 
       // Split words/tags into array
-      let textItems = elem.innerHTML.trim().replace(/&nbsp;/g, ' ').split(/ (?=[^>]*(?:<|$))/)
+      let textItems = elem.innerHTML
+        .trim()
+        .replace(/&nbsp;/g, ' ')
+        .split(/ (?=[^>]*(?:<|$))/)
 
       // Check if the text warrants this module
       if (textItems.length < self.settings.minWords) {
@@ -73,12 +76,12 @@ export default class Typography {
    * Apply the orphans filter to the passed text and return it
    * @param {string} textItems
    */
-  preventOrphans (textItems) {
+  preventOrphans(textItems) {
     // Find the second to last work
-    const targetWord = textItems[(textItems.length - 2)]
+    const targetWord = textItems[textItems.length - 2]
 
     // Stick a no break space to the end of the word and replace the instance in the array
-    textItems[(textItems.length - 2)] = `${targetWord}&nbsp;`
+    textItems[textItems.length - 2] = `${targetWord}&nbsp;`
 
     return textItems
   }
@@ -87,7 +90,7 @@ export default class Typography {
    * Reset any formatting
    * @return void
    */
-  reset () {
+  reset() {
     const self = this
 
     self.elems.map(elem => {
@@ -107,12 +110,12 @@ export default class Typography {
    * @param {HTMLElement} elem
    * @returns boolean
    */
-  shouldElementBeIgnored (elem) {
+  shouldElementBeIgnored(elem) {
     const self = this
 
     // Check if the element already contains 1 or more &nbsp; characters and the
     // ignore setting is true. If so: bail.
-    if ((elem.innerHTML.indexOf('&nbsp;') > -1) && self.settings.ignoreExistingSpaceChars) {
+    if (elem.innerHTML.indexOf('&nbsp;') > -1 && self.settings.ignoreExistingSpaceChars) {
       return true
     }
 

@@ -32,16 +32,16 @@ const calculateFirefox = () => {
   )
 }
 
-const calculateChrome = (initial) => Math.round(window.devicePixelRatio * 100) - initial
+const calculateChrome = initial => Math.round(window.devicePixelRatio * 100) - initial
 const calculateDefault = () => Math.round((window.outerWidth / window.innerWidth) * 10) / 10
 
 const impls = {
   firefox: calculateFirefox,
   chrome: calculateChrome,
-  default: calculateDefault,
+  default: calculateDefault
 }
 
 export default {
   calculate: (browser, initial) =>
-    impls[browser] ? impls[browser](initial) : impls.default(initial),
+    impls[browser] ? impls[browser](initial) : impls.default(initial)
 }

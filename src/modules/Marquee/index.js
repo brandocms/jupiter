@@ -16,7 +16,7 @@ const DEFAULT_OPTIONS = {
 }
 
 export default class Marquee {
-  constructor (app, el, opts) {
+  constructor(app, el, opts) {
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
     this.app = app
     this.elements = {}
@@ -30,7 +30,7 @@ export default class Marquee {
     this.initialize()
   }
 
-  initialize () {
+  initialize() {
     gsap.set(this.elements.$marquee, { opacity: 0 })
     window.addEventListener('APPLICATION:RESIZE', this.updateMarquee.bind(this))
     window.addEventListener('APPLICATION:REVEALED', this.revealMarquee.bind(this))
@@ -42,12 +42,12 @@ export default class Marquee {
     }
   }
 
-  revealMarquee (e) {
+  revealMarquee(e) {
     this.updateMarquee()
     this.opts.onReveal(this.elements.$marquee)
   }
 
-  updateMarquee (e) {
+  updateMarquee(e) {
     if (e) {
       // updating cause of a resize. we only care about width change
       if (!e.detail.widthChanged) {
@@ -63,7 +63,7 @@ export default class Marquee {
     const holderWidth = this.elements.$holder.offsetWidth
     const $allHolders = Dom.all(this.elements.$el, '[data-marquee-holder]')
     const marqueeWidth = holderWidth * $allHolders.length
-    
+
     this.duration = holderWidth / this.opts.speed
 
     gsap.set(this.elements.$marquee, { width: marqueeWidth })
@@ -74,23 +74,23 @@ export default class Marquee {
     }
   }
 
-  clearHolders () {
+  clearHolders() {
     const $allHolders = Dom.all(this.elements.$el, '[data-marquee-holder]')
     Array.from($allHolders).forEach(h => gsap.set(h, { clearProps: 'all' }))
   }
 
-  killTweens () {
+  killTweens() {
     if (this.timeline) {
       this.timeline.kill()
       this.timeline = null
     }
   }
 
-  initializeTween () {
+  initializeTween() {
     const $allHolders = Dom.all(this.elements.$el, '[data-marquee-holder]')
 
     Array.from($allHolders).forEach((h, idx) => {
-      gsap.set(h, { position: 'absolute', left: (h.offsetWidth * idx) })
+      gsap.set(h, { position: 'absolute', left: h.offsetWidth * idx })
     })
 
     this.timeline = gsap.timeline({ paused: true })
@@ -104,7 +104,7 @@ export default class Marquee {
     window.marquee = this
   }
 
-  play (rampUp = false) {
+  play(rampUp = false) {
     this.playing = true
     gsap.killTweensOf(this.timeline)
 
@@ -121,7 +121,7 @@ export default class Marquee {
     }
   }
 
-  pause () {
+  pause() {
     this.playing = false
     gsap.to(this.timeline, {
       timeScale: 0.01,
@@ -132,14 +132,14 @@ export default class Marquee {
     })
   }
 
-  slowDown () {
+  slowDown() {
     gsap.to(this.timeline, {
       timeScale: 0.5,
       duration: 0.8
     })
   }
 
-  speedUp () {
+  speedUp() {
     gsap.to(this.timeline, {
       timeScale: 1,
       duration: 0.8,
@@ -147,26 +147,29 @@ export default class Marquee {
     })
   }
 
-  setupObserver () {
-    this.observer = new IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        const { isIntersecting } = entry;
+  setupObserver() {
+    this.observer = new IntersectionObserver(
+      entries => {
+        entries.forEach(entry => {
+          const { isIntersecting } = entry
 
-        if (isIntersecting && !this.playing) {
-          this.play()
-        } else if (!isIntersecting && this.playing) {
-          this.pause()
-        }
-      })
-    }, {
-      root: null,
-      threshold: 0
-    })
+          if (isIntersecting && !this.playing) {
+            this.play()
+          } else if (!isIntersecting && this.playing) {
+            this.pause()
+          }
+        })
+      },
+      {
+        root: null,
+        threshold: 0
+      }
+    )
 
     this.observer.observe(this.elements.$el)
   }
 
-  fillText () {
+  fillText() {
     this.elements.$marquee.innerHTML = ''
     this.elements.$marquee.appendChild(this.elements.$holder)
 
@@ -179,21 +182,24 @@ export default class Marquee {
         this.elements.$holder.appendChild(Dom.new(this.opts.spacer)[0])
       }
       const count = Math.max(Math.ceil(this.app.size.width / textWidth) - 1, 2)
-  
+
       for (let i = 0; i < count; i += 1) {
         this.elements.$holder.append(this.elements.$item.cloneNode(true))
         if (this.opts.spacer) {
           this.elements.$holder.appendChild(Dom.new(this.opts.spacer)[0])
         }
       }
-  
+
       this.elements.$marquee.appendChild(this.elements.$holder.cloneNode(true))
     } else {
-      console.error('no textWidth! probably image? Set width to elements inside holder', this.elements.$item)      
+      console.error(
+        'no textWidth! probably image? Set width to elements inside holder',
+        this.elements.$item
+      )
     }
   }
 
-  setHeight () {
+  setHeight() {
     const height = this.elements.$item.offsetHeight + this.opts.extraHeight
     gsap.set(this.elements.$el, { height })
   }

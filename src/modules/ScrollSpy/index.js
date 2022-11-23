@@ -4,30 +4,30 @@ import Dom from '../Dom'
 const DEFAULT_OPTIONS = {}
 
 export default class ScrollSpy {
-  constructor (app, opts = {}) {
+  constructor(app, opts = {}) {
     this.app = app
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
     this.initialize()
   }
 
-  initialize () {
+  initialize() {
     this.triggers = Dom.all('[data-scrollspy-trigger]')
     const config = {
       rootMargin: '-55px 0px -85%'
     }
 
-    const observer = new IntersectionObserver((entries => {
+    const observer = new IntersectionObserver(entries => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           this.intersectionHandler(entry)
         }
       })
-    }), config)
+    }, config)
 
     this.triggers.forEach(section => observer.observe(section))
   }
 
-  intersectionHandler (entry) {
+  intersectionHandler(entry) {
     const id = entry.target.dataset.scrollspyTrigger
     const currentlyActive = document.querySelector('[data-scrollspy-active]')
     const shouldBeActive = document.querySelector(`[data-scrollspy-target="${id}"]`)

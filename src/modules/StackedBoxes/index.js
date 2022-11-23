@@ -4,13 +4,13 @@ import _defaultsDeep from 'lodash.defaultsdeep'
 const DEFAULT_OPTIONS = {}
 
 export default class StackedBoxes {
-  constructor (app, opts = {}) {
+  constructor(app, opts = {}) {
     this.app = app
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
     this.initialize()
   }
 
-  initialize () {
+  initialize() {
     const boxes = document.querySelectorAll('[data-boxes-stacked]')
 
     const observer = new IntersectionObserver(entries => {
@@ -25,7 +25,7 @@ export default class StackedBoxes {
     })
   }
 
-  adjustBox (box) {
+  adjustBox(box) {
     const sizeTarget = box.querySelector('[data-boxes-stacked-size-target]')
     const sizeSrc = box.querySelector('[data-boxes-stacked-size-src]')
 
@@ -59,11 +59,11 @@ export default class StackedBoxes {
     }
   }
 
-  pull (box, amnt) {
+  pull(box, amnt) {
     gsap.set(box, { y: amnt * -1, marginBottom: amnt * -1 })
   }
 
-  size (target, src) {
+  size(target, src) {
     gsap.set(target, { height: src.clientHeight })
   }
 }

@@ -81,5 +81,5 @@ export {
   CSSPlugin,
   ScrollToPlugin,
   ScrollTrigger,
-  Hammer,
+  Hammer
 }

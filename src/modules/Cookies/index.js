@@ -24,38 +24,52 @@ const DEFAULT_OPTIONS = {
     const timeline = gsap.timeline()
 
     timeline
-      .fromTo(c.cc, {
-        duration: 0.5,
-        y: '120%',
-        display: 'block'
-      }, {
-        duration: 0.5,
-        y: '0%',
-        delay: '0.5',
-        ease: 'power3.out'
-      }, '0.5')
-      .fromTo(c.text, {
-        duration: 0.7,
-        opacity: 0
-      }, {
-        duration: 0.7,
-        opacity: 1,
-        ease: 'power3.out'
-      }, '-=0.35')
-      .fromTo(c.btns, {
-        duration: 0.7,
-        opacity: 0
-      }, {
-        duration: 0.7,
-        opacity: 1,
-        ease: 'power3.out'
-      },
-      '-=0.35')
+      .fromTo(
+        c.cc,
+        {
+          duration: 0.5,
+          y: '120%',
+          display: 'block'
+        },
+        {
+          duration: 0.5,
+          y: '0%',
+          delay: '0.5',
+          ease: 'power3.out'
+        },
+        '0.5'
+      )
+      .fromTo(
+        c.text,
+        {
+          duration: 0.7,
+          opacity: 0
+        },
+        {
+          duration: 0.7,
+          opacity: 1,
+          ease: 'power3.out'
+        },
+        '-=0.35'
+      )
+      .fromTo(
+        c.btns,
+        {
+          duration: 0.7,
+          opacity: 0
+        },
+        {
+          duration: 0.7,
+          opacity: 1,
+          ease: 'power3.out'
+        },
+        '-=0.35'
+      )
   }
 }
 
 export default class Cookies {
-  constructor (app, opts = {}) {
+  constructor(app, opts = {}) {
     this.app = app
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
 
@@ -69,27 +83,44 @@ export default class Cookies {
       return
     }
 
-    window.addEventListener(Events.APPLICATION_REVEALED, () => { this.opts.showCC(this) })
+    window.addEventListener(Events.APPLICATION_REVEALED, () => {
+      this.opts.showCC(this)
+    })
 
     this.btn.addEventListener('click', () => {
       this.opts.onAccept(this)
     })
   }
 
-  getCookie (sKey) {
+  getCookie(sKey) {
     if (!sKey) {
       return null
     }
-    return decodeURIComponent(document.cookie.replace(new RegExp(`(?:(?:^|.*;)\\s*${encodeURIComponent(sKey).replace(/[-.+*]/g, '\\$&')}\\s*\\=\\s*([^;]*).*$)|^.*$`), '$1')) || null
+    return (
+      decodeURIComponent(
+        document.cookie.replace(
+          new RegExp(
+            `(?:(?:^|.*;)\\s*${encodeURIComponent(sKey).replace(
+              /[-.+*]/g,
+              '\\$&'
+            )}\\s*\\=\\s*([^;]*).*$)|^.*$`
+          ),
+          '$1'
+        )
+      ) || null
+    )
   }
 
-  setCookie (sKey, sValue, vEnd, sPath, sDomain, bSecure) {
-    if (!sKey || /^(?:expires|max-age|path|domain|secure)$/i.test(sKey)) { return false }
+  setCookie(sKey, sValue, vEnd, sPath, sDomain, bSecure) {
+    if (!sKey || /^(?:expires|max-age|path|domain|secure)$/i.test(sKey)) {
+      return false
+    }
     let sExpires = ''
     if (vEnd) {
       switch (vEnd.constructor) {
         case Number:
-          sExpires = vEnd === Infinity ? '; expires=Fri, 31 Dec 9999 23:59:59 GMT' : `; max-age=${vEnd}`
+          sExpires =
+            vEnd === Infinity ? '; expires=Fri, 31 Dec 9999 23:59:59 GMT' : `; max-age=${vEnd}`
           break
         case String:
           sExpires = `; expires=${vEnd}`
@@ -101,23 +132,35 @@ export default class Cookies {
           break
       }
     }
-    document.cookie = `${encodeURIComponent(sKey)}=${encodeURIComponent(sValue)}${sExpires}${sDomain ? `; domain=${sDomain}` : ''}${sPath ? `; path=${sPath}` : ''}${bSecure ? '; secure' : ''}`
+    document.cookie = `${encodeURIComponent(sKey)}=${encodeURIComponent(sValue)}${sExpires}${
+      sDomain ? `; domain=${sDomain}` : ''
+    }${sPath ? `; path=${sPath}` : ''}${bSecure ? '; secure' : ''}`
     return true
   }
 
-  removeCookie (sKey, sPath, sDomain) {
-    if (!this.hasCookie(sKey)) { return false }
-    document.cookie = `${encodeURIComponent(sKey)}=; expires=Thu, 01 Jan 1970 00:00:00 GMT${sDomain ? `; domain=${sDomain}` : ''}${sPath ? `; path=${sPath}` : ''}`
+  removeCookie(sKey, sPath, sDomain) {
+    if (!this.hasCookie(sKey)) {
+      return false
+    }
+    document.cookie = `${encodeURIComponent(sKey)}=; expires=Thu, 01 Jan 1970 00:00:00 GMT${
+      sDomain ? `; domain=${sDomain}` : ''
+    }${sPath ? `; path=${sPath}` : ''}`
     return true
   }
 
-  hasCookie (sKey) {
-    if (!sKey || /^(?:expires|max-age|path|domain|secure)$/i.test(sKey)) { return false }
-    return (new RegExp(`(?:^|;\\s*)${encodeURIComponent(sKey).replace(/[-.+*]/g, '\\$&')}\\s*\\=`)).test(document.cookie)
+  hasCookie(sKey) {
+    if (!sKey || /^(?:expires|max-age|path|domain|secure)$/i.test(sKey)) {
+      return false
+    }
+    return new RegExp(
+      `(?:^|;\\s*)${encodeURIComponent(sKey).replace(/[-.+*]/g, '\\$&')}\\s*\\=`
+    ).test(document.cookie)
   }
 
-  keys () {
-    const aKeys = document.cookie.replace(/((?:^|\s*;)[^=]+)(?=;|$)|^\s*|\s*(?:=[^;]*)?(?:\1|$)/g, '').split(/\s*(?:=[^;]*)?;\s*/)
+  keys() {
+    const aKeys = document.cookie
+      .replace(/((?:^|\s*;)[^=]+)(?=;|$)|^\s*|\s*(?:=[^;]*)?(?:\1|$)/g, '')
+      .split(/\s*(?:=[^;]*)?;\s*/)
     for (let nLen = aKeys.length, nIdx = 0; nIdx < nLen; nIdx += 1) {
       aKeys[nIdx] = decodeURIComponent(aKeys[nIdx])
     }

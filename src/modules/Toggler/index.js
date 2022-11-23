@@ -2,7 +2,7 @@ import { gsap } from 'gsap'
 import Dom from '../Dom'
 
 const DEFAULT_OPTIONS = {}
-  
+
 export default class Toggler {
   constructor(app, el) {
     this.open = false

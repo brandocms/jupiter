@@ -93,7 +93,7 @@ const DEFAULT_OPTIONS = {
 }
 
 export default class Moonwalk {
-  constructor (app, opts = {}, container = document.body) {
+  constructor(app, opts = {}, container = document.body) {
     this.app = app
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
     if (container !== document.body) {
@@ -102,7 +102,7 @@ export default class Moonwalk {
     this.initialize(container)
   }
 
-  initialize (container = document.body) {
+  initialize(container = document.body) {
     if (this.opts.clearMoonwalkOnAnchors) {
       if (window.location.hash) {
         this.removeAllWalks()
@@ -111,7 +111,9 @@ export default class Moonwalk {
     }
 
     if (this.opts.clearNestedSections) {
-      container.querySelectorAll('[data-moonwalk-section] [data-moonwalk-section]').forEach(ms => ms.removeAttribute('data-moonwalk-section'))
+      container
+        .querySelectorAll('[data-moonwalk-section] [data-moonwalk-section]')
+        .forEach(ms => ms.removeAttribute('data-moonwalk-section'))
     }
 
     this.addClass()
@@ -134,15 +136,20 @@ export default class Moonwalk {
   /**
    * Add `moonwalk` class to html element to identify ourselves.
    */
-  addClass () {
+  addClass() {
     document.documentElement.classList.add('moonwalk')
   }
 
   /**
    * Remove all moonwalks. Useful for clients who prefer reduced motion
    */
-  removeAllWalks (container = document.body) {
-    const keys = ['data-moonwalk', 'data-moonwalk-run', 'data-moonwalk-section', 'data-moonwalk-children']
+  removeAllWalks(container = document.body) {
+    const keys = [
+      'data-moonwalk',
+      'data-moonwalk-run',
+      'data-moonwalk-section',
+      'data-moonwalk-children'
+    ]
     keys.forEach(key => {
       const elems = container.querySelectorAll(`[${key}]`)
       Array.from(elems).forEach(el => el.removeAttribute(key))
@@ -150,8 +157,13 @@ export default class Moonwalk {
     })
   }
 
-  removeFor (container = document.body, selector) {
-    const keys = ['data-moonwalk', 'data-moonwalk-run', 'data-moonwalk-section', 'data-moonwalk-children']
+  removeFor(container = document.body, selector) {
+    const keys = [
+      'data-moonwalk',
+      'data-moonwalk-run',
+      'data-moonwalk-section',
+      'data-moonwalk-children'
+    ]
     keys.forEach(key => {
       const elems = container.querySelectorAll(`${selector}[${key}]`)
       Array.from(elems).forEach(el => el.removeAttribute(key))
@@ -159,18 +171,18 @@ export default class Moonwalk {
   }
 
   /**
-  * Remove run matching name
-  */
-  removeRun (container = document.body, name) {
+   * Remove run matching name
+   */
+  removeRun(container = document.body, name) {
     const key = 'data-moonwalk-run'
     const elems = container.querySelectorAll(`[${key}="${name}"]`)
     Array.from(elems).forEach(el => el.removeAttribute(key))
   }
 
   /**
-  * Remove all runs
-  */
-  removeRuns (container = document.body) {
+   * Remove all runs
+   */
+  removeRuns(container = document.body) {
     const key = 'data-moonwalk-run'
     const elems = container.querySelectorAll(`[${key}]`)
     Array.from(elems).forEach(el => el.removeAttribute(key))
@@ -181,7 +193,7 @@ export default class Moonwalk {
    *
    * @param {*} section
    */
-  addIds (section) {
+  addIds(section) {
     Array.from(section.querySelectorAll('[data-moonwalk]')).forEach(el => {
       el.setAttribute('data-moonwalk-id', Math.random().toString(36).substring(7))
     })
@@ -192,7 +204,7 @@ export default class Moonwalk {
    *
    * @param {*} section
    */
-  addIndexes (section) {
+  addIndexes(section) {
     Object.keys(this.opts.walks).forEach(key => {
       const searchAttr = key === 'default' ? '[data-moonwalk=""]' : `[data-moonwalk="${key}"]`
       const elements = section.querySelectorAll(searchAttr)
@@ -207,7 +219,7 @@ export default class Moonwalk {
    * Go through each `data-moonwalk-run`, parse children, add IDs/indexes
    * (if wanted), initialize a new object for each.
    */
-  initializeRuns (container = document.body) {
+  initializeRuns(container = document.body) {
     const runs = container.querySelectorAll('[data-moonwalk-run]')
     return Array.from(runs).map(run => {
       const foundRun = this.opts.runs[run.getAttribute('data-moonwalk-run')]
@@ -227,17 +239,21 @@ export default class Moonwalk {
    * Go through each `data-moonwalk-section`, parse children, add IDs/indexes
    * (if wanted), initialize a new object for each.
    */
-  initializeSections (container = document.body) {
+  initializeSections(container = document.body) {
     const sections = container.querySelectorAll('[data-moonwalk-section]')
 
-    if (container !== document && !sections.length && container.hasAttribute('data-moonwalk-section')) {
+    if (
+      container !== document &&
+      !sections.length &&
+      container.hasAttribute('data-moonwalk-section')
+    ) {
       return [this.initializeSection(container)]
     }
 
     return Array.from(sections).map(section => this.initializeSection(section))
   }
 
-  initializeSection (section) {
+  initializeSection(section) {
     this.parseChildren(section)
 
     if (this.opts.uniqueIds) {
@@ -250,7 +266,7 @@ export default class Moonwalk {
 
     const timeline = gsap.timeline({
       autoRemoveChildren: false,
-      smoothChildTiming: false      
+      smoothChildTiming: false
     })
 
     return {
@@ -272,7 +288,7 @@ export default class Moonwalk {
    * Removes `data-moonwalk` from all elements who already have `data-ll-srcset´
    * Can be used if Moonwalking interferes with custom lazyloading animations
    */
-  clearLazyloads (container = document.body) {
+  clearLazyloads(container = document.body) {
     const srcsets = container.querySelectorAll('[data-ll-srcset][data-moonwalk]')
     Array.from(srcsets).forEach(srcset => srcset.removeAttribute('data-moonwalk'))
   }
@@ -284,7 +300,7 @@ export default class Moonwalk {
    *
    * @param {*} section
    */
-  parseChildren (section) {
+  parseChildren(section) {
     const mwc = Dom.all(section, '[data-moonwalk-children]')
 
     Array.from(mwc).forEach(c => {
@@ -299,7 +315,7 @@ export default class Moonwalk {
    * @param {*} element
    * @param {*} val
    */
-  setAttrs (element, val) {
+  setAttrs(element, val) {
     const affectedElements = []
 
     Array.prototype.forEach.call(element.children, c => {
@@ -317,14 +333,16 @@ export default class Moonwalk {
    *
    * @param {*} section
    */
-  setupNamesAndStages (section) {
+  setupNamesAndStages(section) {
     section.el.setAttribute('data-moonwalk-section-ready', '')
-    
+
     if (!section.stage.name && !section.name) {
       return
     }
 
-    const { opts: { walks } } = this
+    const {
+      opts: { walks }
+    } = this
 
     if (section.name) {
       // set initial tweens
@@ -334,15 +352,15 @@ export default class Moonwalk {
           section.el.querySelectorAll(sectionWalk.sectionTargets)
         )
       } else {
-        section.children = this.orderChildren(
-          section.el.children
-        )
+        section.children = this.orderChildren(section.el.children)
       }
 
-      const fromTransition = sectionWalk.alphaTween ? {
-        ...sectionWalk.transition.from,
-        opacity: 0
-      } : sectionWalk.transition.from
+      const fromTransition = sectionWalk.alphaTween
+        ? {
+            ...sectionWalk.transition.from,
+            opacity: 0
+          }
+        : sectionWalk.transition.from
 
       gsap.set(section.children, fromTransition)
     }
@@ -351,7 +369,10 @@ export default class Moonwalk {
       // reset the element to its `from` state.
       const stageTween = walks[section.stage.name]
       if (!stageTween) {
-        console.error('==> JUPITER/MOONWALK: MISSING referenced moonwalk stage', section.stage.name)
+        console.error(
+          '==> JUPITER/MOONWALK: MISSING referenced moonwalk stage',
+          section.stage.name
+        )
       } else {
         gsap.set(section.el, stageTween.transition.from)
       }
@@ -366,84 +387,88 @@ export default class Moonwalk {
    *
    * @param {*} section
    */
-  sectionObserver (section) {
+  sectionObserver(section) {
     const { opts } = this
     const { walks } = opts
 
-    return new IntersectionObserver((entries, self) => {
-      for (let i = 0; i < entries.length; i += 1) {
-        const entry = entries[i]
+    return new IntersectionObserver(
+      (entries, self) => {
+        for (let i = 0; i < entries.length; i += 1) {
+          const entry = entries[i]
 
-        if (entry.isIntersecting) {
-          /* stage section */
-          if (section.stage.name) {
-            if (!section.stage.running) {
-              // we have a stage and the section is not running.
-              // run stage tween
-              const stageTween = walks[section.stage.name]
+          if (entry.isIntersecting) {
+            /* stage section */
+            if (section.stage.name) {
+              if (!section.stage.running) {
+                // we have a stage and the section is not running.
+                // run stage tween
+                const stageTween = walks[section.stage.name]
 
-              const to = {
-                ...stageTween.transition.to,
-                duration: stageTween.duration
-              }
+                const to = {
+                  ...stageTween.transition.to,
+                  duration: stageTween.duration
+                }
 
-              section.timeline.to(entry.target, to, 0)
-              section.stage.firstTween = true
-            }
-          }
-
-          /* named section. stagger reveal children */
-          if (section.name) {
-            const tween = walks[section.name]
-
-            if (!tween) {
-              console.error(`==> JUPITER: Walk [${section.name}] not found in config`)
-            }
-
-            if (typeof tween.alphaTween === 'object') {
-              tween.alphaTween.duration = tween.alphaTween.duration
-                ? tween.alphaTween.duration : tween.duration
-            } else if (tween.alphaTween === true) {
-              tween.alphaTween = {
-                duration: tween.duration,
-                ease: 'sine.in'
+                section.timeline.to(entry.target, to, 0)
+                section.stage.firstTween = true
               }
             }
 
-            if (tween.startDelay) {
-              tween.transition.to = {
-                ...tween.transition.to,
-                delay: tween.startDelay
+            /* named section. stagger reveal children */
+            if (section.name) {
+              const tween = walks[section.name]
+
+              if (!tween) {
+                console.error(`==> JUPITER: Walk [${section.name}] not found in config`)
               }
-            }
 
-            section.timeline.staggerTo(
-              section.children,
-              tween.duration,
-              tween.transition.to,
-              tween.interval,
-              0
-            )
+              if (typeof tween.alphaTween === 'object') {
+                tween.alphaTween.duration = tween.alphaTween.duration
+                  ? tween.alphaTween.duration
+                  : tween.duration
+              } else if (tween.alphaTween === true) {
+                tween.alphaTween = {
+                  duration: tween.duration,
+                  ease: 'sine.in'
+                }
+              }
 
-            if (tween.alphaTween) {
+              if (tween.startDelay) {
+                tween.transition.to = {
+                  ...tween.transition.to,
+                  delay: tween.startDelay
+                }
+              }
+
               section.timeline.staggerTo(
                 section.children,
-                tween.alphaTween.duration,
-                {
-                  opacity: 1,
-                  ease: tween.alphaTween.ease,
-                  delay: tween.startDelay || 0
-                },
+                tween.duration,
+                tween.transition.to,
                 tween.interval,
                 0
               )
-            }
-          }
 
-          self.unobserve(entry.target)
+              if (tween.alphaTween) {
+                section.timeline.staggerTo(
+                  section.children,
+                  tween.alphaTween.duration,
+                  {
+                    opacity: 1,
+                    ease: tween.alphaTween.ease,
+                    delay: tween.startDelay || 0
+                  },
+                  tween.interval,
+                  0
+                )
+              }
+            }
+
+            self.unobserve(entry.target)
+          }
         }
-      }
-    }, { rootMargin: opts.rootMargin })
+      },
+      { rootMargin: opts.rootMargin }
+    )
   }
 
   /**
@@ -451,10 +476,14 @@ export default class Moonwalk {
    *
    * @param {*} children
    */
-  orderChildren (children) {
+  orderChildren(children) {
     return Array.from(children).sort((a, b) => {
-      const orderA = a.getAttribute('data-moonwalk-order') ? parseInt(a.getAttribute('data-moonwalk-order')) : null
-      const orderB = a.getAttribute('data-moonwalk-order') ? parseInt(b.getAttribute('data-moonwalk-order')) : null
+      const orderA = a.getAttribute('data-moonwalk-order')
+        ? parseInt(a.getAttribute('data-moonwalk-order'))
+        : null
+      const orderB = a.getAttribute('data-moonwalk-order')
+        ? parseInt(b.getAttribute('data-moonwalk-order'))
+        : null
 
       if (!orderA && !orderB) {
         return 0
@@ -472,7 +501,7 @@ export default class Moonwalk {
     })
   }
 
-  onReady () {
+  onReady() {
     if (this.opts.initialDelay) {
       setTimeout(() => {
         this.ready()
@@ -486,7 +515,7 @@ export default class Moonwalk {
    * Called on `APPLICATION_READY` event, if `config.fireOnReady`.
    * Otherwise must be triggered manually
    */
-  ready () {
+  ready() {
     const { opts } = this
 
     for (let idx = 0; idx < this.runs.length; idx += 1) {
@@ -537,19 +566,22 @@ export default class Moonwalk {
    * @param {*} run
    * @param {*} rootMargin
    */
-  runObserver (run, rootMargin) {
-    return new IntersectionObserver((entries, self) => {
-      for (let i = 0; i < entries.length; i += 1) {
-        const entry = entries[i]
-        if (entry.isIntersecting) {
-          run.callback(entry.target)
-          self.unobserve(entry.target)
+  runObserver(run, rootMargin) {
+    return new IntersectionObserver(
+      (entries, self) => {
+        for (let i = 0; i < entries.length; i += 1) {
+          const entry = entries[i]
+          if (entry.isIntersecting) {
+            run.callback(entry.target)
+            self.unobserve(entry.target)
+          }
         }
+      },
+      {
+        rootMargin,
+        threshold: run.threshold
       }
-    }, {
-      rootMargin,
-      threshold: run.threshold
-    })
+    )
   }
 
   /**
@@ -559,95 +591,85 @@ export default class Moonwalk {
    * @param {*} section
    * @param {*} rootMargin
    */
-  observer (section, rootMargin) {
+  observer(section, rootMargin) {
     const { opts } = this
 
-    return new IntersectionObserver((entries, self) => {
-      for (let i = 0; i < entries.length; i += 1) {
-        const entry = entries[i]
+    return new IntersectionObserver(
+      (entries, self) => {
+        for (let i = 0; i < entries.length; i += 1) {
+          const entry = entries[i]
 
-        if (entry.isIntersecting || entry.intersectionRatio > 0) {
-          section.running = true
+          if (entry.isIntersecting || entry.intersectionRatio > 0) {
+            section.running = true
 
-          if (entry.target.dataset.moonwalkId) {
-            console.debug('-- intersecting', entry.target.dataset.moonwalkId)
-          }
-
-          const walkName = entry.target.getAttribute('data-moonwalk')
-          const cfg = !walkName.length ? opts.walks.default : opts.walks[walkName]
-
-          const {
-            duration,
-            transition,
-            interval,
-            startDelay
-          } = cfg
-
-          let { alphaTween } = cfg
-          let overlap = (duration - interval) * -1 // flip it
-
-          if (section.stage.firstTween) {
-            overlap = 0
-            section.stage.firstTween = false
-          }
-
-          if (typeof alphaTween === 'object' && alphaTween !== null) {
-            alphaTween.duration = alphaTween.duration ? alphaTween.duration : duration
-          } else if (alphaTween === true) {
-            alphaTween = {
-              duration,
-              ease: 'sine.in'
+            if (entry.target.dataset.moonwalkId) {
+              console.debug('-- intersecting', entry.target.dataset.moonwalkId)
             }
-          }
 
-          const tween = transition ? this.tweenJS : this.tweenCSS
+            const walkName = entry.target.getAttribute('data-moonwalk')
+            const cfg = !walkName.length ? opts.walks.default : opts.walks[walkName]
 
-          const tweenFn = () => {
-            tween(
-              section,
-              entry.target,
-              duration,
-              interval,
-              transition,
-              overlap,
-              alphaTween
-            )
-          }
+            const { duration, transition, interval, startDelay } = cfg
 
-          const wrappedTweenFn = () => {
-            if (startDelay) {
-              gsap.delayedCall(startDelay, tweenFn)
-            } else {
-              tweenFn()
+            let { alphaTween } = cfg
+            let overlap = (duration - interval) * -1 // flip it
+
+            if (section.stage.firstTween) {
+              overlap = 0
+              section.stage.firstTween = false
             }
-          }
 
-          if (entry.target.tagName === 'IMG') {
-            // ensure image is loaded before we tween
-            imageIsLoaded(entry.target).then(() => wrappedTweenFn())
-          } else {
-            if (entry.target.hasAttribute('data-placeholder')) {              
-              // if the moonwalked element has data-placeholder, we don't want to wait
-              // for the image to load before tweening
-              wrappedTweenFn()
-            } else {
-              const imagesInEntry = entry.target.querySelectorAll('img')
-              if (imagesInEntry.length) {
-                // entry has children elements that are images
-                imagesAreLoaded(imagesInEntry).then(() => wrappedTweenFn())
-              } else {
-                // regular entry, just tween it
-                wrappedTweenFn()
+            if (typeof alphaTween === 'object' && alphaTween !== null) {
+              alphaTween.duration = alphaTween.duration ? alphaTween.duration : duration
+            } else if (alphaTween === true) {
+              alphaTween = {
+                duration,
+                ease: 'sine.in'
               }
             }
+
+            const tween = transition ? this.tweenJS : this.tweenCSS
+
+            const tweenFn = () => {
+              tween(section, entry.target, duration, interval, transition, overlap, alphaTween)
+            }
+
+            const wrappedTweenFn = () => {
+              if (startDelay) {
+                gsap.delayedCall(startDelay, tweenFn)
+              } else {
+                tweenFn()
+              }
+            }
+
+            if (entry.target.tagName === 'IMG') {
+              // ensure image is loaded before we tween
+              imageIsLoaded(entry.target).then(() => wrappedTweenFn())
+            } else {
+              if (entry.target.hasAttribute('data-placeholder')) {
+                // if the moonwalked element has data-placeholder, we don't want to wait
+                // for the image to load before tweening
+                wrappedTweenFn()
+              } else {
+                const imagesInEntry = entry.target.querySelectorAll('img')
+                if (imagesInEntry.length) {
+                  // entry has children elements that are images
+                  imagesAreLoaded(imagesInEntry).then(() => wrappedTweenFn())
+                } else {
+                  // regular entry, just tween it
+                  wrappedTweenFn()
+                }
+              }
+            }
+            self.unobserve(entry.target)
           }
-          self.unobserve(entry.target)
         }
+      },
+      {
+        rootMargin,
+        threshold: opts.threshold
       }
-    }, {
-      rootMargin,
-      threshold: opts.threshold
-    })
+    )
   }
 
   /**
@@ -660,7 +682,15 @@ export default class Moonwalk {
    * @param {*} tweenOverlap
    * @param {*} alphaTween
    */
-  tweenJS (section, target, tweenDuration, tweenInterval, tweenTransition, tweenOverlap, alphaTween) {
+  tweenJS(
+    section,
+    target,
+    tweenDuration,
+    tweenInterval,
+    tweenTransition,
+    tweenOverlap,
+    alphaTween
+  ) {
     let tweenPosition
     const startingPoint = tweenDuration - tweenOverlap
 
@@ -677,7 +707,7 @@ export default class Moonwalk {
         so insert at current time in timeline instead */
         tweenPosition = () => section.timeline.time()
       } else {
-        if (currentTime + (tweenOverlap * -1) < lastTweenEndTime) {
+        if (currentTime + tweenOverlap * -1 < lastTweenEndTime) {
           /* Still time, add as normal overlap at the end */
           tweenPosition = () => `>${tweenOverlap}`
         } else {
@@ -700,12 +730,16 @@ export default class Moonwalk {
     section.timeline.to(target, toTransition, tweenPosition())
 
     if (alphaTween) {
-      section.timeline.to(target, {
-        duration: alphaTween.duration,
-        opacity: 1,
-        ease: alphaTween.ease,
-        delay: alphaTween.delay ? alphaTween.delay : 0
-      }, '<')
+      section.timeline.to(
+        target,
+        {
+          duration: alphaTween.duration,
+          opacity: 1,
+          ease: alphaTween.ease,
+          delay: alphaTween.delay ? alphaTween.delay : 0
+        },
+        '<'
+      )
     }
   }
 
@@ -718,10 +752,10 @@ export default class Moonwalk {
    * @param {*} transition
    * @param {*} overlap
    */
-  tweenCSS (section, target, tweenDuration, tweenInterval, tweenTransition, tweenOverlap) {
+  tweenCSS(section, target, tweenDuration, tweenInterval, tweenTransition, tweenOverlap) {
     let tweenPosition
-    const startingPoint = tweenDuration - (tweenOverlap * -1)
-    
+    const startingPoint = tweenDuration - tweenOverlap * -1
+
     if (Dom.hasAttribute(target, 'data-moonwalked')) {
       return
     }
@@ -735,7 +769,7 @@ export default class Moonwalk {
         so insert at current time in timeline instead */
         tweenPosition = () => section.timeline.time()
       } else {
-        if (currentTime + (tweenOverlap * -1) < lastTweenEndTime) {
+        if (currentTime + tweenOverlap * -1 < lastTweenEndTime) {
           /* Still time, add as normal overlap at the end */
           tweenPosition = () => `>${tweenOverlap}`
         } else {
@@ -747,14 +781,17 @@ export default class Moonwalk {
       tweenPosition = () => '>'
     }
 
-    section.timeline.to(
-      target, {
-        css: {
-          className: target.className ? `${target.className} moonwalked` : 'moonwalked'
+    section.timeline
+      .to(
+        target,
+        {
+          css: {
+            className: target.className ? `${target.className} moonwalked` : 'moonwalked'
+          },
+          duration: tweenDuration
         },
-        duration: tweenDuration
-      },
-      tweenPosition()
-    ).call(() => target.setAttribute('data-moonwalked', ''), null, '>')
+        tweenPosition()
+      )
+      .call(() => target.setAttribute('data-moonwalked', ''), null, '>')
   }
 }

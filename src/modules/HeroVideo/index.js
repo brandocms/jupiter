@@ -62,7 +62,7 @@ const DEFAULT_OPTIONS = {
 }
 
 export default class HeroVideo {
-  constructor (app, opts = {}) {
+  constructor(app, opts = {}) {
     this.app = app
     this.booting = true
     this.playing = false
@@ -83,7 +83,7 @@ export default class HeroVideo {
     this.initialize()
   }
 
-  initialize () {
+  initialize() {
     this._addResizeHandler()
     // style the container
     gsap.set(this.el, {
@@ -163,21 +163,23 @@ export default class HeroVideo {
     })
   }
 
-  setSrc () {
+  setSrc() {
     const dataSrc = this.video.getAttribute('data-src')
     if (!dataSrc) {
       return
     }
     const dataObj = JSON.parse(dataSrc)
-    if (this.app.breakpoints.mediaQueries.iphone.matches
-        || this.app.breakpoints.mediaQueries.mobile.matches) {
+    if (
+      this.app.breakpoints.mediaQueries.iphone.matches ||
+      this.app.breakpoints.mediaQueries.mobile.matches
+    ) {
       this.video.setAttribute('src', dataObj.phone)
     } else {
       this.video.setAttribute('src', dataObj.desktop)
     }
   }
 
-  addEvents () {
+  addEvents() {
     this.video.addEventListener('canplay', () => {
       if (!this.playing) {
         if (!prefersReducedMotion()) {
@@ -209,7 +211,7 @@ export default class HeroVideo {
     }
   }
 
-  play () {
+  play() {
     if (this.cover) {
       this.opts.onFadeOutCover(this)
     }
@@ -217,20 +219,20 @@ export default class HeroVideo {
     this.playing = true
   }
 
-  pause () {
+  pause() {
     this.video.pause()
     this.playing = false
   }
 
-  fadeIn () {
+  fadeIn() {
     this.opts.onFadeIn(this)
   }
 
-  fadeInCover () {
+  fadeInCover() {
     this.opts.onFadeInCover(this)
   }
 
-  addObserver () {
+  addObserver() {
     const observer = new IntersectionObserver(entries => {
       const [{ isIntersecting }] = entries
       if (isIntersecting) {
@@ -252,7 +254,7 @@ export default class HeroVideo {
   /**
    * Add a window resize handler that resizes video width
    */
-  _addResizeHandler () {
+  _addResizeHandler() {
     this.observer = new IntersectionObserver(entries => {
       const [{ isIntersecting }] = entries
       if (isIntersecting) {
@@ -266,7 +268,7 @@ export default class HeroVideo {
     this.observer.observe(this.el)
   }
 
-  _resize () {
+  _resize() {
     gsap.to(this.video, {
       duration: 0.15,
       width: document.body.clientWidth,

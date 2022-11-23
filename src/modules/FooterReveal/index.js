@@ -7,7 +7,7 @@ const DEFAULT_OPTIONS = {
 }
 
 export default class FooterReveal {
-  constructor (app, opts) {
+  constructor(app, opts) {
     this.app = app
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
 

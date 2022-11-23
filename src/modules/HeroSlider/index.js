@@ -52,7 +52,9 @@ const DEFAULT_OPTIONS = {
       gsap.to(hs.el, {
         duration: 0.25,
         opacity: 1,
-        onComplete: () => { callback() }
+        onComplete: () => {
+          callback()
+        }
       })
     } else {
       gsap.to(hs.el, {
@@ -64,7 +66,7 @@ const DEFAULT_OPTIONS = {
 }
 
 export default class HeroSlider {
-  constructor (app, opts = {}) {
+  constructor(app, opts = {}) {
     this.app = app
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
 
@@ -81,7 +83,7 @@ export default class HeroSlider {
     this.initialize()
   }
 
-  initialize () {
+  initialize() {
     this._addResizeHandler()
     // style the container
     gsap.set(this.el, {
@@ -132,7 +134,7 @@ export default class HeroSlider {
 
     this.opts.onInitialize(this)
 
-    const callback = (this.slides.length > 1) ? this.next.bind(this) : () => {}
+    const callback = this.slides.length > 1 ? this.next.bind(this) : () => {}
 
     window.addEventListener(Events.APPLICATION_REVEALED, () => {
       /* Wait for the first image to load, then fade in container element */
@@ -149,7 +151,7 @@ export default class HeroSlider {
   /**
    * Calculate which slide is next, and call the slide function
    */
-  next () {
+  next() {
     if (prefersReducedMotion() && this.app.opts.respectReducedMotion) {
       return
     }
@@ -163,7 +165,7 @@ export default class HeroSlider {
       this._previousSlide = this.slides[this._currentSlideIdx]
       this._currentSlideIdx += 1
       if (this._currentSlideIdx === this.slideCount) {
-        [this._nextSlide] = this.slides
+        ;[this._nextSlide] = this.slides
       } else {
         this._nextSlide = this.slides[this._currentSlideIdx + 1]
       }
@@ -177,7 +179,7 @@ export default class HeroSlider {
   /**
    * Switches between slides
    */
-  slide (type) {
+  slide(type) {
     const timeline = gsap.timeline()
 
     switch (type) {
@@ -205,12 +207,16 @@ export default class HeroSlider {
           .set(this._previousSlide, {
             opacity: 0
           })
-          .call(() => {
-            this._nextSlide.style.zIndex = this.opts.zIndex.visible
-            this._currentSlide.style.zIndex = this.opts.zIndex.regular
-            this._previousSlide.style.zIndex = this.opts.zIndex.regular
-            this.next()
-          }, null, this)
+          .call(
+            () => {
+              this._nextSlide.style.zIndex = this.opts.zIndex.visible
+              this._currentSlide.style.zIndex = this.opts.zIndex.regular
+              this._previousSlide.style.zIndex = this.opts.zIndex.regular
+              this.next()
+            },
+            null,
+            this
+          )
 
         break
 
@@ -221,13 +227,17 @@ export default class HeroSlider {
             scale: 1.0,
             width: '100%'
           })
-          .fromTo(this._previousSlide, {
-            duration: this.opts.interval,
-            overflow: 'hidden'
-          }, {
-            duration: this.opts.interval,
-            scale: this.opts.transition.scale
-          })
+          .fromTo(
+            this._previousSlide,
+            {
+              duration: this.opts.interval,
+              overflow: 'hidden'
+            },
+            {
+              duration: this.opts.interval,
+              scale: this.opts.transition.scale
+            }
+          )
           .to(this._previousSlide, {
             duration: this.opts.transition.duration,
             width: 0,
@@ -261,7 +271,7 @@ export default class HeroSlider {
   /**
    * Add a window resize handler that resizes slide widths
    */
-  _addResizeHandler () {
+  _addResizeHandler() {
     this.observer = new IntersectionObserver(entries => {
       const [{ isIntersecting }] = entries
       if (isIntersecting) {
@@ -275,7 +285,7 @@ export default class HeroSlider {
     this.observer.observe(this.el)
   }
 
-  _resizeSlides () {
+  _resizeSlides() {
     gsap.to(this.images, {
       duration: 0.15,
       width: document.body.clientWidth,

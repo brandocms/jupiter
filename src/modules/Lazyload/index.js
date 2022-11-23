@@ -17,13 +17,13 @@ const DEFAULT_OPTIONS = {
 }
 
 export default class Lazyload {
-  constructor (app, opts = {}) {
+  constructor(app, opts = {}) {
     this.app = app
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
     this.initialize()
   }
 
-  initialize () {
+  initialize() {
     // initialize all images that have data-sizes="auto" and set sizes="<actual width>px"
     this.initializeAutoSizes()
     // look for lazyload sections. if we find, add an observer that triggers
@@ -76,7 +76,7 @@ export default class Lazyload {
     }
   }
 
-  initializeAutoSizes () {
+  initializeAutoSizes() {
     if (this.opts.updateSizes) {
       this.$autoSizesImages = Dom.all('[data-sizes="auto"]')
       this.autoSizes()
@@ -87,17 +87,19 @@ export default class Lazyload {
   /**
    * Set sizes attribute for all imgs with `data-sizes="auto"` and source within the <picture>
    */
-  autoSizes () {
+  autoSizes() {
     Array.from(this.$autoSizesImages).forEach(img => {
       const width = this.getWidth(img)
       img.setAttribute('sizes', `${width}px`)
       if (img.parentNode) {
-        Array.from(Dom.all(img.parentNode, 'source')).forEach(source => source.setAttribute('sizes', `${width}px`))
+        Array.from(Dom.all(img.parentNode, 'source')).forEach(source =>
+          source.setAttribute('sizes', `${width}px`)
+        )
       }
     })
   }
 
-  getWidth (img) {
+  getWidth(img) {
     let width = img.offsetWidth
     let parent = img.parentNode
 
@@ -109,7 +111,7 @@ export default class Lazyload {
     return width
   }
 
-  initializeSections () {
+  initializeSections() {
     const sections = document.querySelectorAll('[data-lazyload-section]')
     if (sections) {
       const sectionObserver = (section, children) => {
@@ -127,8 +129,7 @@ export default class Lazyload {
               self.unobserve(section)
             }
           })
-        },
-        this.opts.intersectionObserverConfig)
+        }, this.opts.intersectionObserverConfig)
       }
 
       sections.forEach(section => {
@@ -139,7 +140,7 @@ export default class Lazyload {
     }
   }
 
-  lazyloadImages (elements) {
+  lazyloadImages(elements) {
     elements.forEach(item => {
       if (item.isIntersecting || item.intersectionRatio > 0) {
         const image = item.target
@@ -149,7 +150,7 @@ export default class Lazyload {
     })
   }
 
-  lazyloadPictures (elements) {
+  lazyloadPictures(elements) {
     elements.forEach(item => {
       if (item.isIntersecting || item.intersectionRatio > 0) {
         const picture = item.target
@@ -159,12 +160,12 @@ export default class Lazyload {
     })
   }
 
-  swapImage (image) {
+  swapImage(image) {
     image.src = image.dataset.src
     image.setAttribute('data-ll-loaded', '')
   }
 
-  swapPicture (picture) {
+  swapPicture(picture) {
     // gather all the source elements in picture
     const sources = picture.querySelectorAll('source')
     let loadedSomething = false
@@ -188,15 +189,16 @@ export default class Lazyload {
 
     const onload = () => {
       if (!img.getAttribute('data-ll-loaded') && this.app.browser === 'firefox') {
-        // set sizes attribute on load again, 
-        // since firefox sometimes is a bit slow to 
+        // set sizes attribute on load again,
+        // since firefox sometimes is a bit slow to
         // get the actual image width
         const width = this.getWidth(img)
 
         img.setAttribute('sizes', `${width}px`)
         if (img.parentNode) {
-          Array.from(Dom.all(img.parentNode, 'source'))
-            .forEach(source => source.setAttribute('sizes', `${width}px`))
+          Array.from(Dom.all(img.parentNode, 'source')).forEach(source =>
+            source.setAttribute('sizes', `${width}px`)
+          )
         }
       }
 
@@ -225,7 +227,9 @@ export default class Lazyload {
     }
 
     // safari sometimes caches, so force load
-    if (img.complete) { onload() }
+    if (img.complete) {
+      onload()
+    }
 
     dispatchElementEvent(img, IMAGE_LAZYLOADED)
   }

@@ -29,7 +29,7 @@ const DEFAULT_OPTIONS = {
 }
 
 export default class Dropdown {
-  constructor (app, opts = {}) {
+  constructor(app, opts = {}) {
     this.app = app
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
     this.elements = {}
@@ -42,24 +42,24 @@ export default class Dropdown {
     this.initialize()
   }
 
-  initialize () {
+  initialize() {
     this.timeline.from(
-      this.elements.menu, {
+      this.elements.menu,
+      {
         duration: 0.3,
         className: `${this.elements.menu.className} zero-height`
-      }, 'open'
+      },
+      'open'
     )
     this.timeline.to(
-      this.elements.menu, {
+      this.elements.menu,
+      {
         height: 'auto'
-      }, 'open'
+      },
+      'open'
     )
 
-    this.timeline.from(
-      this.elements.menuItems,
-      this.opts.tweens.items,
-      'open+=.1'
-    )
+    this.timeline.from(this.elements.menuItems, this.opts.tweens.items, 'open+=.1')
 
     if (!this.elements.trigger) {
       return
@@ -67,7 +67,7 @@ export default class Dropdown {
     this.elements.trigger.addEventListener('click', this.onClick.bind(this))
   }
 
-  onClick (event) {
+  onClick(event) {
     event.preventDefault()
     event.stopPropagation()
 
@@ -80,7 +80,7 @@ export default class Dropdown {
     }
   }
 
-  openMenu () {
+  openMenu() {
     if (!this.opts.multipleActive) {
       if (this.app.currentMenu) {
         this.app.currentMenu.closeMenu()
@@ -96,7 +96,7 @@ export default class Dropdown {
     }
   }
 
-  closeMenu () {
+  closeMenu() {
     this.app.currentMenu = null
     this.open = false
 

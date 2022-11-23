@@ -1,15 +1,15 @@
 class DOM {
-  constructor () {
+  constructor() {
     this.body = document.body
     this.html = document.documentElement
   }
 
-  new (arg) {
+  new(arg) {
     const doc = new DOMParser().parseFromString(arg.trim(), 'text/html')
     return Array.from(doc.body.childNodes)
   }
 
-  find (arg1, arg2) {
+  find(arg1, arg2) {
     if (typeof arg1 === 'string' && typeof arg2 === 'object') {
       throw new Error('Dom.find: Wrong syntax, use -> Dom.find(node, selector)')
     }
@@ -25,7 +25,7 @@ class DOM {
     return null
   }
 
-  all (arg1, arg2) {
+  all(arg1, arg2) {
     if (typeof arg1 === 'string') {
       return Array.from(document.querySelectorAll(arg1))
     }
@@ -37,47 +37,47 @@ class DOM {
     return []
   }
 
-  create (element, ...classes) {
+  create(element, ...classes) {
     const el = document.createElement(element)
     this.addClass(el, ...classes)
     return el
   }
 
-  append (element) {
+  append(element) {
     document.body.appendChild(element)
   }
 
-  remove (element) {
+  remove(element) {
     element.remove()
   }
 
-  addClass (element, ...classes) {
+  addClass(element, ...classes) {
     classes.forEach(className => {
       element.classList.add(className)
     })
     return element
   }
 
-  removeClass (element, ...classes) {
+  removeClass(element, ...classes) {
     classes.forEach(className => {
       element.classList.remove(className)
     })
     return element
   }
 
-  hasClass (element, className) {
+  hasClass(element, className) {
     return element.classList.contains(className)
   }
 
-  toggleClass (element, ...classes) {
+  toggleClass(element, ...classes) {
     return classes.map(className => element.classList.toggle(className))
   }
 
-  hasAttribute (element, attributeName) {
+  hasAttribute(element, attributeName) {
     return element.hasAttribute(attributeName)
   }
 
-  overlapsVertically ($div1, $div2) {
+  overlapsVertically($div1, $div2) {
     // Div 1 data
     const d1Offset = $div1.getBoundingClientRect()
     const d1Height = this.outerHeight($div1)
@@ -99,7 +99,7 @@ class DOM {
     return 0
   }
 
-  outerHeight (el) {
+  outerHeight(el) {
     let height = el.offsetHeight
     const style = getComputedStyle(el)
 
@@ -107,7 +107,7 @@ class DOM {
     return height
   }
 
-  outerWidth (el) {
+  outerWidth(el) {
     let width = el.offsetWidth
     const style = getComputedStyle(el)
 
@@ -115,23 +115,23 @@ class DOM {
     return width
   }
 
-  getCSSVar (key) {
+  getCSSVar(key) {
     return getComputedStyle(document.documentElement).getPropertyValue(key).trim()
   }
 
-  setCSSVar (key, val) {
+  setCSSVar(key, val) {
     document.documentElement.style.setProperty(`--${key}`, val)
   }
 
-  offset (el) {
-    const rect = el.getBoundingClientRect();
+  offset(el) {
+    const rect = el.getBoundingClientRect()
     return {
       top: rect.top + window.pageYOffset,
       left: rect.left + window.pageXOffset
     }
   }
 
-  position (el) {
+  position(el) {
     return {
       top: el.offsetTop,
       left: el.offsetLeft
@@ -143,15 +143,15 @@ class DOM {
    *
    * @param {*} el
    */
-  inViewport (el) {
+  inViewport(el) {
     const rect = el.getBoundingClientRect()
-    const windowHeight = (window.innerHeight || document.documentElement.clientHeight)
-    const windowWidth = (window.innerWidth || document.documentElement.clientWidth)
+    const windowHeight = window.innerHeight || document.documentElement.clientHeight
+    const windowWidth = window.innerWidth || document.documentElement.clientWidth
 
-    const vertInView = (rect.top <= windowHeight) && ((rect.top + rect.height) >= 0)
-    const horInView = (rect.left <= windowWidth) && ((rect.left + rect.width) >= 0)
+    const vertInView = rect.top <= windowHeight && rect.top + rect.height >= 0
+    const horInView = rect.left <= windowWidth && rect.left + rect.width >= 0
 
-    return (vertInView && horInView)
+    return vertInView && horInView
   }
 }
 

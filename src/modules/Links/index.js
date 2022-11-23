@@ -20,7 +20,7 @@ const DEFAULT_OPTIONS = {
     const header = document.querySelector('header[data-nav]')
     const footer = document.querySelector('footer')
     const fader = document.querySelector('#fader')
-  
+
     if (fader) {
       gsap.set(fader, { display: 'block', opacity: 0 })
       gsap.to(main, {
@@ -50,7 +50,7 @@ const DEFAULT_OPTIONS = {
         y: 25,
         ease: 'power3.out'
       })
-      
+
       if (header) {
         gsap.to(header, { duration: 0.2, opacity: 0 })
       }
@@ -71,7 +71,7 @@ const DEFAULT_OPTIONS = {
 }
 
 export default class Links {
-  constructor (app, opts = {}) {
+  constructor(app, opts = {}) {
     this.app = app
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
 
@@ -83,7 +83,7 @@ export default class Links {
     this.bindLinks(links)
   }
 
-  bindHeroLink () {
+  bindHeroLink() {
     const el = document.querySelector('[data-link-to-content]')
     if (el) {
       el.addEventListener('click', e => {
@@ -96,7 +96,7 @@ export default class Links {
     }
   }
 
-  bindAnchors (anchors) {
+  bindAnchors(anchors) {
     let wait = false
     Array.from(anchors).forEach(anchor => {
       anchor.addEventListener('click', e => {
@@ -121,7 +121,9 @@ export default class Links {
             this.opts.onAnchor(dataTarget, this)
 
             if (this.app.header && dataTarget.id !== 'top') {
-              setTimeout(() => { this.app.header.unpin() }, 800)
+              setTimeout(() => {
+                this.app.header.unpin()
+              }, 800)
             }
           }
         }
@@ -135,7 +137,7 @@ export default class Links {
     })
   }
 
-  bindLinks (links) {
+  bindLinks(links) {
     Array.from(links).forEach(link => {
       link.addEventListener('click', e => {
         const loadingContainer = document.querySelector('.loading-container')

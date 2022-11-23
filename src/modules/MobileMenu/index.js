@@ -17,47 +17,70 @@ const DEFAULT_OPTIONS = {
     document.body.classList.toggle('open-menu')
 
     timeline
-      .fromTo(m.bg, {
-        duration: 0.35,
-        x: '0%',
-        opacity: 0,
-        height: window.innerHeight
-      }, {
-        duration: 0.35,
-        opacity: 1,
-        ease: 'sine.in'
+      .fromTo(
+        m.bg,
+        {
+          duration: 0.35,
+          x: '0%',
+          opacity: 0,
+          height: window.innerHeight
+        },
+        {
+          duration: 0.35,
+          opacity: 1,
+          ease: 'sine.in'
+        }
+      )
+      .to(
+        m.logo,
+        {
+          duration: 0.35,
+          opacity: 0,
+          ease: 'power3.out'
+        },
+        '-=0.35'
+      )
+      .to(
+        m.header,
+        {
+          duration: 0.55,
+          backgroundColor: 'transparent',
+          ease: 'power3.out'
+        },
+        '-=0.35'
+      )
+      .call(() => {
+        m.nav.style.gridTemplateRows = 'auto 1fr'
       })
-      .to(m.logo, {
-        duration: 0.35,
-        opacity: 0,
-        ease: 'power3.out'
-      }, '-=0.35')
-      .to(m.header, {
-        duration: 0.55,
-        backgroundColor: 'transparent',
-        ease: 'power3.out'
-      }, '-=0.35')
-      .call(() => { m.nav.style.gridTemplateRows = 'auto 1fr' })
       .set(m.nav, { height: window.innerHeight })
       .set(m.content, { display: 'block' })
       .set(m.logoPath, { fill: m.opts.logoColor })
       .set(m.logo, { xPercent: 3 })
-      .staggerFromTo(m.lis, {
-        duration: 1,
-        opacity: 0,
-        x: 20
-      }, {
-        duration: 1,
-        x: 0,
-        opacity: 1,
-        ease: 'power3.out'
-      }, 0.05)
-      .to(m.logo, {
-        duration: 0.55,
-        opacity: 1,
-        xPercent: 0,
-        ease: 'power3.inOut'
-      }, '-=1.2')
+      .staggerFromTo(
+        m.lis,
+        {
+          duration: 1,
+          opacity: 0,
+          x: 20
+        },
+        {
+          duration: 1,
+          x: 0,
+          opacity: 1,
+          ease: 'power3.out'
+        },
+        0.05
+      )
+      .to(
+        m.logo,
+        {
+          duration: 0.55,
+          opacity: 1,
+          xPercent: 0,
+          ease: 'power3.inOut'
+        },
+        '-=1.2'
+      )
       .call(m._emitMobileMenuOpenEvent)
   },
 
@@ -66,31 +89,51 @@ const DEFAULT_OPTIONS = {
     const timeline = gsap.timeline()
 
     timeline
-      .call(() => { m.hamburger.classList.toggle('is-active') })
-      .fromTo(m.logo, {
-        duration: 0.2,
-        opacity: 1,
-        xPercent: 0
-      },
-      {
-        duration: 0.2,
-        opacity: 0,
-        xPercent: 5,
-        ease: 'power3.out'
+      .call(() => {
+        m.hamburger.classList.toggle('is-active')
       })
+      .fromTo(
+        m.logo,
+        {
+          duration: 0.2,
+          opacity: 1,
+          xPercent: 0
+        },
+        {
+          duration: 0.2,
+          opacity: 0,
+          xPercent: 5,
+          ease: 'power3.out'
+        }
+      )
       .set(m.logoPath, { clearProps: 'fill' })
-      .staggerTo(m.lis, {
-        duration: 0.5, opacity: 0, x: 20, ease: 'power3.out'
-      }, 0.04)
+      .staggerTo(
+        m.lis,
+        {
+          duration: 0.5,
+          opacity: 0,
+          x: 20,
+          ease: 'power3.out'
+        },
+        0.04
+      )
       .set(m.nav, { clearProps: 'height' })
-      .to(m.bg, {
-        duration: 0.25,
-        x: '100%',
-        ease: 'sine.in'
-      }, '-=0.3')
-      .call(() => { m._emitMobileMenuClosedEvent() })
+      .to(
+        m.bg,
+        {
+          duration: 0.25,
+          x: '100%',
+          ease: 'sine.in'
+        },
+        '-=0.3'
+      )
+      .call(() => {
+        m._emitMobileMenuClosedEvent()
+      })
       .set(m.content, { display: 'none' })
-      .call(() => { m.nav.style.gridTemplateRows = 'auto' })
+      .call(() => {
+        m.nav.style.gridTemplateRows = 'auto'
+      })
       .set(m.lis, { clearProps: 'opacity' })
       .to(m.logo, {
         duration: 0.35,
@@ -101,7 +144,7 @@ const DEFAULT_OPTIONS = {
 }
 
 export default class MobileMenu {
-  constructor (app, opts = {}) {
+  constructor(app, opts = {}) {
     this.app = app
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
 
@@ -112,7 +155,9 @@ export default class MobileMenu {
     this.logoPath = this.logo ? this.logo.querySelectorAll(this.opts.logoPathSelector) : null
     this.menuButton = this.header.querySelector('figure.menu-button')
     this.hamburger = this.menuButton ? this.menuButton.querySelector('.hamburger') : null
-    this.hamburgerInner = this.menuButton ? this.menuButton.querySelector('.hamburger-inner') : null
+    this.hamburgerInner = this.menuButton
+      ? this.menuButton.querySelector('.hamburger-inner')
+      : null
     this.content = this.header.querySelectorAll(this.opts.contentSelector)
     this.lis = this.header.querySelectorAll(this.opts.liSelector)
     this.nav = this.header.querySelector('nav')
@@ -126,11 +171,13 @@ export default class MobileMenu {
     }
 
     if (this.opts.onResize) {
-      window.addEventListener(Events.APPLICATION_RESIZE, () => { this.opts.onResize(this) })
+      window.addEventListener(Events.APPLICATION_RESIZE, () => {
+        this.opts.onResize(this)
+      })
     }
   }
 
-  toggleMenu () {
+  toggleMenu() {
     if (document.body.classList.contains('open-menu')) {
       this.toggleMenuClosed()
     } else {
@@ -138,24 +185,24 @@ export default class MobileMenu {
     }
   }
 
-  toggleMenuClosed () {
+  toggleMenuClosed() {
     // CLOSING MENU
     this.opts.closeTween(this)
     this.open = false
   }
 
-  toggleMenuOpen () {
+  toggleMenuOpen() {
     // OPENING MENU
     this.opts.openTween(this)
     this.open = true
   }
 
-  _emitMobileMenuOpenEvent () {
+  _emitMobileMenuOpenEvent() {
     const mobileMenuOpenEvent = new window.CustomEvent(Events.APPLICATION_MOBILE_MENU_OPEN)
     window.dispatchEvent(mobileMenuOpenEvent)
   }
 
-  _emitMobileMenuClosedEvent () {
+  _emitMobileMenuClosedEvent() {
     const mobileMenuClosedEvent = new window.CustomEvent(Events.APPLICATION_MOBILE_MENU_CLOSED)
     window.dispatchEvent(mobileMenuClosedEvent)
   }

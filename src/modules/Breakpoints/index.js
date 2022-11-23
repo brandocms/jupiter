@@ -3,12 +3,7 @@ import * as Events from '../../events'
 
 const DEFAULT_OPTIONS = {
   runListenerOnInit: false,
-  breakpoints: [
-    'xs',
-    'sm',
-    'md',
-    'lg'
-  ],
+  breakpoints: ['xs', 'sm', 'md', 'lg'],
 
   listeners: {
     // xs: (mq) => {
@@ -22,15 +17,17 @@ const DEFAULT_OPTIONS = {
 }
 
 export default class Breakpoints {
-  constructor (app, opts = {}) {
+  constructor(app, opts = {}) {
     this.app = app
     this.mediaQueries = {}
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
     window.addEventListener(Events.APPLICATION_PRELUDIUM, this.initialize.bind(this))
   }
 
-  initialize () {
-    this.opts.breakpoints.forEach(size => { this.mediaQueries[size] = this._getVal(`--breakpoint-${size}`) })
+  initialize() {
+    this.opts.breakpoints.forEach(size => {
+      this.mediaQueries[size] = this._getVal(`--breakpoint-${size}`)
+    })
 
     const keys = Object.keys(this.mediaQueries)
     keys.forEach(key => {
@@ -42,7 +39,9 @@ export default class Breakpoints {
         // max size
         query = `(min-width: ${this.mediaQueries[key]})`
       } else {
-        query = `(min-width: ${this.mediaQueries[key]}) and (max-width: ${parseInt(this.mediaQueries[next]) - 1}px)`
+        query = `(min-width: ${this.mediaQueries[key]}) and (max-width: ${
+          parseInt(this.mediaQueries[next]) - 1
+        }px)`
       }
 
       this.mediaQueries[key] = window.matchMedia(query)
@@ -63,15 +62,13 @@ export default class Breakpoints {
     this.setCurrentBreakpoint()
   }
 
-  getCurrentBreakpoint () {
-    const key = Object
-      .keys(this.mediaQueries)
-      .find(q => this.mediaQueries[q].matches)
+  getCurrentBreakpoint() {
+    const key = Object.keys(this.mediaQueries).find(q => this.mediaQueries[q].matches)
 
     return { key, mq: this.mediaQueries[key] }
   }
 
-  defaultListener (e) {
+  defaultListener(e) {
     if (e.matches) {
       this.setCurrentBreakpoint()
     }
@@ -79,12 +76,12 @@ export default class Breakpoints {
     window.dispatchEvent(evt)
   }
 
-  setCurrentBreakpoint () {
+  setCurrentBreakpoint() {
     const { key } = this.getCurrentBreakpoint()
     this.app.breakpoint = key
   }
 
-  _getVal (key) {
+  _getVal(key) {
     return getComputedStyle(document.documentElement).getPropertyValue(key).trim()
   }
 }

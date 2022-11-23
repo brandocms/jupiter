@@ -82,11 +82,11 @@ const DEFAULT_EVENTS = {
   // eslint-disable-next-line no-unused-vars
   onNotBottom: h => {},
   // eslint-disable-next-line no-unused-vars
-  onMobileMenuOpen: h => { },
+  onMobileMenuOpen: h => {},
   // eslint-disable-next-line no-unused-vars
-  onMobileMenuClose: h => { },
+  onMobileMenuClose: h => {},
   // eslint-disable-next-line no-unused-vars
-  onIntersect: h => { },
+  onIntersect: h => {},
   onOutline: h => {
     h.preventUnpin = true
     h.pin()
@@ -105,9 +105,7 @@ const DEFAULT_OPTIONS = {
     intersects: null,
     beforeEnter: h => {
       const timeline = gsap.timeline()
-      timeline
-        .set(h.el, { yPercent: -100 })
-        .set(h.lis, { opacity: 0 })
+      timeline.set(h.el, { yPercent: -100 }).set(h.lis, { opacity: 0 })
     },
 
     enter: h => {
@@ -135,7 +133,7 @@ const DEFAULT_OPTIONS = {
 }
 
 export default class FixedHeader {
-  constructor (app, opts = {}) {
+  constructor(app, opts = {}) {
     this.app = app
     this.mainOpts = _defaultsDeep(opts, DEFAULT_OPTIONS)
 
@@ -183,7 +181,7 @@ export default class FixedHeader {
     this.initialize()
   }
 
-  initialize () {
+  initialize() {
     // bind to canvas scroll
     this.lastKnownScrollY = this.getScrollY()
     this.lastKnownScrollHeight = document.body.scrollHeight
@@ -216,7 +214,11 @@ export default class FixedHeader {
     }
 
     if (this.mainOpts.unpinOnForcedScrollStart) {
-      window.addEventListener(Events.APPLICATION_FORCED_SCROLL_START, this.unpin.bind(this), false)
+      window.addEventListener(
+        Events.APPLICATION_FORCED_SCROLL_START,
+        this.unpin.bind(this),
+        false
+      )
     }
 
     if (this.mainOpts.pinOnForcedScrollEnd) {
@@ -246,7 +248,7 @@ export default class FixedHeader {
     this.opts.beforeEnter(this)
   }
 
-  preflight () {
+  preflight() {
     this.checkSize(true)
     this.checkBg(true)
     this.checkTop(true)
@@ -258,22 +260,25 @@ export default class FixedHeader {
     })
   }
 
-  lock () {
+  lock() {
     this.preventPin = true
     this.preventUnpin = true
   }
 
-  unlock () {
+  unlock() {
     this.preventPin = false
     this.preventUnpin = false
   }
 
-  isScrolled () {
-    return (window.pageYOffset
-      || document.documentElement.scrollTop) - (document.documentElement.clientTop || 0) > 0
+  isScrolled() {
+    return (
+      (window.pageYOffset || document.documentElement.scrollTop) -
+        (document.documentElement.clientTop || 0) >
+      0
+    )
   }
 
-  unpinIfScrolled () {
+  unpinIfScrolled() {
     if (this.isScrolled()) {
       // page is scrolled on ready -- ensure we unpin
       this.pageIsScrolledOnReady = true
@@ -281,7 +286,7 @@ export default class FixedHeader {
     }
   }
 
-  enter () {
+  enter() {
     if (this.opts.enter) {
       this.checkSize(true)
       this.checkBg(true)
@@ -290,7 +295,7 @@ export default class FixedHeader {
     }
   }
 
-  setResizeTimer () {
+  setResizeTimer() {
     this._isResizing = true
     if (this._pinned) {
       // unpin if resizing to prevent visual clutter.
@@ -307,11 +312,11 @@ export default class FixedHeader {
     }, 500)
   }
 
-  update () {
+  update() {
     this.redraw()
   }
 
-  checkSize (force) {
+  checkSize(force) {
     if (this.currentScrollY > this.opts.offsetSmall) {
       if (force) {
         this.small()
@@ -325,7 +330,7 @@ export default class FixedHeader {
     }
   }
 
-  checkBg (force) {
+  checkBg(force) {
     if (this.currentScrollY > this.opts.offsetBg) {
       if (force) {
         this.altBg()
@@ -339,7 +344,7 @@ export default class FixedHeader {
     }
   }
 
-  checkTop (force) {
+  checkTop(force) {
     if (this.currentScrollY <= this.opts.offset) {
       if (force) {
         this.top()
@@ -353,7 +358,7 @@ export default class FixedHeader {
     }
   }
 
-  checkBot (force) {
+  checkBot(force) {
     if (this.currentScrollY + this.getViewportHeight() >= this.getScrollerHeight()) {
       if (force) {
         this.bottom()
@@ -367,7 +372,7 @@ export default class FixedHeader {
     }
   }
 
-  checkPin (force, toleranceExceeded) {
+  checkPin(force, toleranceExceeded) {
     if (this.shouldUnpin(toleranceExceeded)) {
       if (this.mobileMenuOpen) {
         return
@@ -386,12 +391,13 @@ export default class FixedHeader {
     }
   }
 
-  redraw () {
+  redraw() {
     this.currentScrollY = this.getScrollY()
     this.currentScrollHeight = document.body.scrollHeight
     const toleranceExceeded = this.toleranceExceeded()
 
-    if (this.isOutOfBounds()) { // Ignore bouncy scrolling in OSX
+    if (this.isOutOfBounds()) {
+      // Ignore bouncy scrolling in OSX
       return
     }
 
@@ -415,35 +421,35 @@ export default class FixedHeader {
     this._firstLoad = false
   }
 
-  notTop () {
+  notTop() {
     this._top = false
     this.el.removeAttribute('data-header-top')
     this.el.setAttribute('data-header-not-top', '')
     this.opts.onNotTop(this)
   }
 
-  top () {
+  top() {
     this._top = true
     this.el.setAttribute('data-header-top', '')
     this.el.removeAttribute('data-header-not-top')
     this.opts.onTop(this)
   }
 
-  notBottom () {
+  notBottom() {
     this._bottom = false
     this.el.setAttribute('data-header-not-bottom', '')
     this.el.removeAttribute('data-header-bottom')
     this.opts.onNotBottom(this)
   }
 
-  bottom () {
+  bottom() {
     this._bottom = true
     this.el.setAttribute('data-header-bottom', '')
     this.el.removeAttribute('data-header-not-bottom')
     this.opts.onBottom(this)
   }
 
-  unpin () {
+  unpin() {
     if (this.preventUnpin) {
       return
     }
@@ -453,7 +459,7 @@ export default class FixedHeader {
     this.opts.onUnpin(this)
   }
 
-  pin () {
+  pin() {
     if (this.preventPin) {
       return
     }
@@ -463,42 +469,42 @@ export default class FixedHeader {
     this.opts.onPin(this)
   }
 
-  notSmall () {
+  notSmall() {
     this._small = false
     this.el.setAttribute('data-header-big', '')
     this.el.removeAttribute('data-header-small')
     this.opts.onNotSmall(this)
   }
 
-  small () {
+  small() {
     this._small = true
     this.el.setAttribute('data-header-small', '')
     this.el.removeAttribute('data-header-big')
     this.opts.onSmall(this)
   }
 
-  notAltBg () {
+  notAltBg() {
     this._altBg = false
     this.el.setAttribute('data-header-reg-bg', '')
     this.el.removeAttribute('data-header-alt-bg')
     this.opts.onNotAltBg(this)
   }
 
-  altBg () {
+  altBg() {
     this._altBg = true
     this.el.setAttribute('data-header-alt-bg', '')
     this.el.removeAttribute('data-header-reg-bg')
     this.opts.onAltBg(this)
   }
 
-  shouldUnpin (toleranceExceeded) {
+  shouldUnpin(toleranceExceeded) {
     const scrollingDown = this.currentScrollY > this.lastKnownScrollY
     const pastOffset = this.currentScrollY >= this.opts.offset
 
     return scrollingDown && pastOffset && toleranceExceeded
   }
 
-  shouldPin (toleranceExceeded) {
+  shouldPin(toleranceExceeded) {
     if (this._isResizing) {
       return false
     }
@@ -509,60 +515,55 @@ export default class FixedHeader {
     return (scrollingUp && toleranceExceeded) || pastOffset
   }
 
-  isOutOfBounds () {
+  isOutOfBounds() {
     const pastTop = this.currentScrollY < 0
-    const pastBottom = this.currentScrollY
-      + this.getScrollerPhysicalHeight()
-      > this.getScrollerHeight()
+    const pastBottom =
+      this.currentScrollY + this.getScrollerPhysicalHeight() > this.getScrollerHeight()
 
     return pastTop || pastBottom
   }
 
-  getScrollerPhysicalHeight () {
-    return (this.opts.canvas === window || this.opts.canvas === document.body)
+  getScrollerPhysicalHeight() {
+    return this.opts.canvas === window || this.opts.canvas === document.body
       ? this.getViewportHeight()
       : this.getElementPhysicalHeight(this.opts.canvas)
   }
 
-  getScrollerHeight () {
-    return (this.opts.canvas === window || this.opts.canvas === document.body)
+  getScrollerHeight() {
+    return this.opts.canvas === window || this.opts.canvas === document.body
       ? this.getDocumentHeight()
       : this.getElementHeight(this.opts.canvas)
   }
 
-  getDocumentHeight () {
+  getDocumentHeight() {
     const { body } = document
     const { documentElement } = document
 
     return Math.max(
-      body.scrollHeight, documentElement.scrollHeight,
-      body.offsetHeight, documentElement.offsetHeight,
-      body.clientHeight, documentElement.clientHeight
+      body.scrollHeight,
+      documentElement.scrollHeight,
+      body.offsetHeight,
+      documentElement.offsetHeight,
+      body.clientHeight,
+      documentElement.clientHeight
     )
   }
 
-  getViewportHeight () {
-    return window.innerHeight
-      || document.documentElement.clientHeight
-      || document.body.clientHeight
-  }
-
-  getElementHeight (el) {
-    return Math.max(
-      el.scrollHeight,
-      el.offsetHeight,
-      el.clientHeight
+  getViewportHeight() {
+    return (
+      window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight
     )
   }
 
-  getElementPhysicalHeight (el) {
-    return Math.max(
-      el.offsetHeight,
-      el.clientHeight
-    )
+  getElementHeight(el) {
+    return Math.max(el.scrollHeight, el.offsetHeight, el.clientHeight)
   }
 
-  getScrollY () {
+  getElementPhysicalHeight(el) {
+    return Math.max(el.offsetHeight, el.clientHeight)
+  }
+
+  getScrollY() {
     if (this.opts.canvas.pageYOffset !== undefined) {
       return this.opts.canvas.pageYOffset
     }
@@ -572,13 +573,16 @@ export default class FixedHeader {
     return (document.documentElement || document.body.parentNode || document.body).scrollTop
   }
 
-  toleranceExceeded () {
+  toleranceExceeded() {
     return Math.abs(this.currentScrollY - this.lastKnownScrollY) >= this.opts.tolerance
   }
 
-  _getOptionsForSection (section, opts) {
+  _getOptionsForSection(section, opts) {
     // if section is not a key in opts, return default opts
-    if (!Object.prototype.hasOwnProperty.call(opts, 'sections') || !Object.prototype.hasOwnProperty.call(opts.sections, section)) {
+    if (
+      !Object.prototype.hasOwnProperty.call(opts, 'sections') ||
+      !Object.prototype.hasOwnProperty.call(opts.sections, section)
+    ) {
       return opts.default
     }
 
@@ -588,17 +592,17 @@ export default class FixedHeader {
     return opts
   }
 
-  _bindMobileMenuListeners () {
+  _bindMobileMenuListeners() {
     window.addEventListener('APPLICATION:MOBILE_MENU:OPEN', this._onMobileMenuOpen.bind(this))
     window.addEventListener('APPLICATION:MOBILE_MENU:CLOSED', this._onMobileMenuClose.bind(this))
   }
 
-  _onMobileMenuOpen () {
+  _onMobileMenuOpen() {
     this.opts.onMobileMenuOpen(this)
     this.mobileMenuOpen = true
   }
 
-  _onMobileMenuClose () {
+  _onMobileMenuClose() {
     this.opts.onMobileMenuClose(this)
     this.mobileMenuOpen = false
   }

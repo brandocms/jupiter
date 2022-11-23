@@ -2,7 +2,6 @@ import { gsap } from 'gsap'
 import _defaultsDeep from 'lodash.defaultsdeep'
 
 const DEFAULT_OPTIONS = {
-
   /**
    * responsive
    *
@@ -23,20 +22,24 @@ const DEFAULT_OPTIONS = {
       duration: 0.3,
       opacity: 1,
       onComplete: () => {
-        gsap.fromTo(target, {
-          duration: 0.3,
-          yPercent: -50,
-          x: -5,
-          xPercent: -50,
-          opacity: 0,
-          display: 'block'
-        }, {
-          duration: 0.3,
-          yPercent: -50,
-          xPercent: -50,
-          x: 0,
-          opacity: 1
-        })
+        gsap.fromTo(
+          target,
+          {
+            duration: 0.3,
+            yPercent: -50,
+            x: -5,
+            xPercent: -50,
+            opacity: 0,
+            display: 'block'
+          },
+          {
+            duration: 0.3,
+            yPercent: -50,
+            xPercent: -50,
+            x: 0,
+            opacity: 1
+          }
+        )
       }
     })
   },
@@ -59,14 +62,14 @@ const DEFAULT_OPTIONS = {
 }
 
 export default class Popup {
-  constructor (app, opts = {}) {
+  constructor(app, opts = {}) {
     this.app = app
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
     this.createBackdrop()
     this.bindTriggers()
   }
 
-  bindTriggers () {
+  bindTriggers() {
     const triggers = document.querySelectorAll('[data-popup-trigger]')
     const closers = document.querySelectorAll('[data-popup-close]')
 
@@ -91,7 +94,7 @@ export default class Popup {
     })
   }
 
-  createBackdrop () {
+  createBackdrop() {
     const backdrop = document.createElement('div')
     backdrop.setAttribute('data-popup-backdrop', '')
     gsap.set(backdrop, { opacity: 0, display: 'none', zIndex: 4999 })
@@ -105,7 +108,7 @@ export default class Popup {
     this.backdrop = backdrop
   }
 
-  open (trigger, target) {
+  open(trigger, target) {
     this.keyUpListener = this.onKeyup.bind(this)
     document.addEventListener('keyup', this.keyUpListener)
     if (typeof target === 'string') {
@@ -119,13 +122,13 @@ export default class Popup {
     this.opts.tweenIn(trigger, target, this)
   }
 
-  close () {
+  close() {
     document.removeEventListener('keyup', this.keyUpListener)
     this.opts.onClose(this)
     this.opts.tweenOut(this)
   }
 
-  onKeyup (e) {
+  onKeyup(e) {
     const key = e.keyCode || e.which
 
     switch (key) {

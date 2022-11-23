@@ -53,8 +53,7 @@ const DEFAULT_OPTIONS = {
       return
     }
 
-    lightbox.timelines.caption
-      .to(lightbox.elements.caption, { duration: 0.4, autoAlpha: 0 })
+    lightbox.timelines.caption.to(lightbox.elements.caption, { duration: 0.4, autoAlpha: 0 })
   },
 
   onCaptionIn: (lightbox, captionHasChanged) => {
@@ -62,19 +61,16 @@ const DEFAULT_OPTIONS = {
       return
     }
 
-    lightbox.timelines.caption
-      .to(lightbox.elements.caption, { duration: 0.4, autoAlpha: 1 })
+    lightbox.timelines.caption.to(lightbox.elements.caption, { duration: 0.4, autoAlpha: 1 })
   },
 
   onImageOut: lightbox => {
-    lightbox.timelines.image
-      .to(lightbox.currentImage, { duration: 0.5, autoAlpha: 0 })
+    lightbox.timelines.image.to(lightbox.currentImage, { duration: 0.5, autoAlpha: 0 })
   },
 
   onImageIn: lightbox => {
     const delay = lightbox.firstTransition ? 0.6 : 0.4
-    lightbox.timelines.image
-      .to(lightbox.nextImage, { duration: 0.5, autoAlpha: 1, delay })
+    lightbox.timelines.image.to(lightbox.nextImage, { duration: 0.5, autoAlpha: 1, delay })
   },
 
   onBeforeOpen: () => {},
@@ -98,31 +94,34 @@ const DEFAULT_OPTIONS = {
       })
     }
 
-    gsap.to([
-      h.elements.imgWrapper,
-      h.elements.nextArrow,
-      h.elements.prevArrow,
-      h.elements.close,
-      h.elements.dots
-    ], {
-      duration: 0.50,
-      opacity: 0,
-      onComplete: () => {
-        gsap.to(h.elements.wrapper, {
-          duration: 0.45,
-          opacity: 0,
-          onComplete: () => {
-            h.app.scrollRelease()
-            h.destroy()
-          }
-        })
+    gsap.to(
+      [
+        h.elements.imgWrapper,
+        h.elements.nextArrow,
+        h.elements.prevArrow,
+        h.elements.close,
+        h.elements.dots
+      ],
+      {
+        duration: 0.5,
+        opacity: 0,
+        onComplete: () => {
+          gsap.to(h.elements.wrapper, {
+            duration: 0.45,
+            opacity: 0,
+            onComplete: () => {
+              h.app.scrollRelease()
+              h.destroy()
+            }
+          })
+        }
       }
-    })
+    )
   }
 }
 
 export default class Lightbox {
-  constructor (app, opts = {}) {
+  constructor(app, opts = {}) {
     this.app = app
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
     this.lightboxes = document.querySelectorAll('[data-lightbox]')
@@ -168,12 +167,12 @@ export default class Lightbox {
     })
   }
 
-  showBox (section, index) {
+  showBox(section, index) {
     this.opts.onBeforeOpen(this)
     this.buildBox(section, index)
   }
 
-  buildBox (section, index) {
+  buildBox(section, index) {
     this.elements.wrapper = document.createElement('div')
     this.elements.content = document.createElement('div')
     this.elements.imgWrapper = document.createElement('div')
@@ -289,7 +288,7 @@ export default class Lightbox {
     })
   }
 
-  close () {
+  close() {
     document.removeEventListener('keyup', this.onKeyup.bind(this))
     this.opts.onClose(this)
     this.opts.onAfterClose(this)
@@ -299,11 +298,11 @@ export default class Lightbox {
     this.imgs = []
   }
 
-  destroy () {
+  destroy() {
     this.elements.wrapper.parentNode.removeChild(this.elements.wrapper)
   }
 
-  setImg (section, index) {
+  setImg(section, index) {
     let captionHasChanged = false
 
     this.currentIndex = index
@@ -319,9 +318,7 @@ export default class Lightbox {
     activeDot.classList.add('active')
 
     if (this.elements.caption) {
-      captionHasChanged = (
-        this.previousCaption !== this.sections[section][index].alt
-      )
+      captionHasChanged = this.previousCaption !== this.sections[section][index].alt
       this.previousCaption = this.sections[section][index].alt
       this.opts.onCaptionOut(this, captionHasChanged)
       this.timelines.caption.call(() => {
@@ -372,7 +369,7 @@ export default class Lightbox {
     this.currentImage = this.nextImage
   }
 
-  getNextIdx (section) {
+  getNextIdx(section) {
     const index = this.currentIndex
     if (index === this.sections[section].length - 1) {
       return 0
@@ -380,7 +377,7 @@ export default class Lightbox {
     return index + 1
   }
 
-  getPrevIdx (section) {
+  getPrevIdx(section) {
     const index = this.currentIndex
     if (index === 0) {
       return this.sections[section].length - 1
@@ -388,11 +385,11 @@ export default class Lightbox {
     return index - 1
   }
 
-  onClick (e, section) {
+  onClick(e, section) {
     this.opts.onClick(this, section, e)
   }
 
-  onKeyup (e, section) {
+  onKeyup(e, section) {
     const key = e.keyCode || e.which
 
     switch (key) {
@@ -410,8 +407,8 @@ export default class Lightbox {
     }
   }
 
-  onMouseMove (e) {
-    if (e.clientX < (this.app.size.width / 2)) {
+  onMouseMove(e) {
+    if (e.clientX < this.app.size.width / 2) {
       if (this.pointerDirection === 'left') {
         return
       }
@@ -426,7 +423,7 @@ export default class Lightbox {
     }
   }
 
-  attachSwiper (section, el, initialIdx) {
+  attachSwiper(section, el, initialIdx) {
     const hammerManager = new Manager(el)
     const swipeHandler = new Swipe()
 

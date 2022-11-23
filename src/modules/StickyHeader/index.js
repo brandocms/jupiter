@@ -85,7 +85,10 @@ const DEFAULT_OPTIONS = {
         .set(h.auxEl, { yPercent: -100 })
         .set(h.lis, { opacity: 0 })
         .to(h.auxEl, 1, {
-          yPercent: 0, delay: h.opts.enterDelay, ease: 'power3.out', autoRound: true
+          yPercent: 0,
+          delay: h.opts.enterDelay,
+          ease: 'power3.out',
+          autoRound: true
         })
         .staggerTo(h.lis, 0.8, { opacity: 1, ease: 'sine.in' }, 0.1, '-=1')
     },
@@ -99,7 +102,7 @@ const DEFAULT_OPTIONS = {
 }
 
 export default class StickyHeader {
-  constructor (app, opts = {}) {
+  constructor(app, opts = {}) {
     this.app = app
     this.mainOpts = _defaultsDeep(opts, DEFAULT_OPTIONS)
 
@@ -119,7 +122,6 @@ export default class StickyHeader {
     if (!this.el) {
       return
     }
-
 
     const section = document.body.getAttribute('data-script')
     this.opts = this._getOptionsForSection(section, opts)
@@ -154,7 +156,7 @@ export default class StickyHeader {
     this.initialize()
   }
 
-  initialize () {
+  initialize() {
     // bind to canvas scroll
     this.lastKnownScrollY = this.getScrollY()
     this.currentScrollY = this.lastKnownScrollY
@@ -177,11 +179,9 @@ export default class StickyHeader {
     this.opts.beforeEnter(this)
   }
 
-  setupObserver () {
+  setupObserver() {
     this.observer = new IntersectionObserver(entries => {
-      const [{
-        isIntersecting
-      }] = entries
+      const [{ isIntersecting }] = entries
 
       if (isIntersecting) {
         if (this._navVisible !== true) {
@@ -207,19 +207,23 @@ export default class StickyHeader {
         this.unpin()
         this.preventPin = true
       })
-      window.addEventListener(Events.APPLICATION_FORCED_SCROLL_END, () => {
-        this.preventPin = false
-        this.pin()
-        this.preventUnpin = false
-      }, false)
+      window.addEventListener(
+        Events.APPLICATION_FORCED_SCROLL_END,
+        () => {
+          this.preventPin = false
+          this.pin()
+          this.preventUnpin = false
+        },
+        false
+      )
     }
   }
 
-  bindObserver () {
+  bindObserver() {
     this.observer.observe(this.el)
   }
 
-  setResizeTimer () {
+  setResizeTimer() {
     this._isResizing = true
     if (this._pinned) {
       // unpin if resizing to prevent visual clutter
@@ -236,29 +240,29 @@ export default class StickyHeader {
     }, 500)
   }
 
-  _hideAlt () {
+  _hideAlt() {
     this.unpin()
   }
 
-  _showAlt () {
+  _showAlt() {
     this.pin()
   }
 
-  update () {
+  update() {
     this.redraw(false)
   }
 
-  lock () {
+  lock() {
     this.preventPin = true
     this.preventUnpin = true
   }
 
-  unlock () {
+  unlock() {
     this.preventPin = false
     this.preventUnpin = false
   }
 
-  checkSize (force) {
+  checkSize(force) {
     if (this.currentScrollY > this.opts.offsetSmall) {
       if (force) {
         this.small()
@@ -272,7 +276,7 @@ export default class StickyHeader {
     }
   }
 
-  checkTop (force) {
+  checkTop(force) {
     if (this.currentScrollY <= this.opts.offset) {
       if (force) {
         this.top()
@@ -286,7 +290,7 @@ export default class StickyHeader {
     }
   }
 
-  checkBot (force) {
+  checkBot(force) {
     if (this.currentScrollY + this.getViewportHeight() >= this.getScrollerHeight()) {
       if (force) {
         this.bottom()
@@ -300,7 +304,7 @@ export default class StickyHeader {
     }
   }
 
-  checkPin (force, toleranceExceeded) {
+  checkPin(force, toleranceExceeded) {
     if (this._navVisible) {
       if (this._pinned) {
         this.unpin()
@@ -322,11 +326,12 @@ export default class StickyHeader {
     }
   }
 
-  redraw (force = false) {
+  redraw(force = false) {
     this.currentScrollY = this.getScrollY()
     const toleranceExceeded = this.toleranceExceeded()
 
-    if (this.isOutOfBounds()) { // Ignore bouncy scrolling in OSX
+    if (this.isOutOfBounds()) {
+      // Ignore bouncy scrolling in OSX
       return
     }
 
@@ -335,42 +340,42 @@ export default class StickyHeader {
     this._firstLoad = false
   }
 
-  notTop () {
+  notTop() {
     this._top = false
     this.el.removeAttribute('data-header-top')
     this.el.setAttribute('data-header-not-top', '')
     this.opts.onNotTop(this)
   }
 
-  top () {
+  top() {
     this._top = true
     this.el.setAttribute('data-header-top', '')
     this.el.removeAttribute('data-header-not-top')
     this.opts.onTop(this)
   }
 
-  notBottom () {
+  notBottom() {
     this._bottom = false
     this.el.setAttribute('data-header-not-bottom', '')
     this.el.removeAttribute('data-header-bottom')
     this.opts.onNotBottom(this)
   }
 
-  bottom () {
+  bottom() {
     this._bottom = true
     this.el.setAttribute('data-header-bottom', '')
     this.el.removeAttribute('data-header-not-bottom')
     this.opts.onBottom(this)
   }
 
-  unpin () {
+  unpin() {
     if (!this.preventUnpin) {
       this._pinned = false
       this.opts.onUnpin(this)
     }
   }
 
-  pin () {
+  pin() {
     if (!this.preventPin) {
       this._pinned = true
       this.opts.onSmall(this)
@@ -378,21 +383,21 @@ export default class StickyHeader {
     }
   }
 
-  notSmall () {
+  notSmall() {
     this._small = false
     this.auxEl.setAttribute('data-header-big', '')
     this.auxEl.removeAttribute('data-header-small')
     this.opts.onNotSmall(this)
   }
 
-  small () {
+  small() {
     this._small = true
     this.auxEl.setAttribute('data-header-small', '')
     this.auxEl.removeAttribute('data-header-big')
     this.opts.onSmall(this)
   }
 
-  shouldUnpin (toleranceExceeded) {
+  shouldUnpin(toleranceExceeded) {
     if (this._navVisible) {
       return true
     }
@@ -402,7 +407,7 @@ export default class StickyHeader {
     return scrollingDown && pastOffset && toleranceExceeded
   }
 
-  shouldPin (toleranceExceeded) {
+  shouldPin(toleranceExceeded) {
     if (this._isResizing) {
       return false
     }
@@ -411,60 +416,55 @@ export default class StickyHeader {
     return (scrollingUp && toleranceExceeded) || pastOffset
   }
 
-  isOutOfBounds () {
+  isOutOfBounds() {
     const pastTop = this.currentScrollY < 0
-    const pastBottom = this.currentScrollY
-      + this.getScrollerPhysicalHeight()
-      > this.getScrollerHeight()
+    const pastBottom =
+      this.currentScrollY + this.getScrollerPhysicalHeight() > this.getScrollerHeight()
 
     return pastTop || pastBottom
   }
 
-  getScrollerPhysicalHeight () {
-    return (this.opts.canvas === window || this.opts.canvas === document.body)
+  getScrollerPhysicalHeight() {
+    return this.opts.canvas === window || this.opts.canvas === document.body
       ? this.getViewportHeight()
       : this.getElementPhysicalHeight(this.opts.canvas)
   }
 
-  getScrollerHeight () {
-    return (this.opts.canvas === window || this.opts.canvas === document.body)
+  getScrollerHeight() {
+    return this.opts.canvas === window || this.opts.canvas === document.body
       ? this.getDocumentHeight()
       : this.getElementHeight(this.opts.canvas)
   }
 
-  getDocumentHeight () {
+  getDocumentHeight() {
     const { body } = document
     const { documentElement } = document
 
     return Math.max(
-      body.scrollHeight, documentElement.scrollHeight,
-      body.offsetHeight, documentElement.offsetHeight,
-      body.clientHeight, documentElement.clientHeight
+      body.scrollHeight,
+      documentElement.scrollHeight,
+      body.offsetHeight,
+      documentElement.offsetHeight,
+      body.clientHeight,
+      documentElement.clientHeight
     )
   }
 
-  getViewportHeight () {
-    return window.innerHeight
-      || document.documentElement.clientHeight
-      || document.body.clientHeight
-  }
-
-  getElementHeight (el) {
-    return Math.max(
-      el.scrollHeight,
-      el.offsetHeight,
-      el.clientHeight
+  getViewportHeight() {
+    return (
+      window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight
     )
   }
 
-  getElementPhysicalHeight (el) {
-    return Math.max(
-      el.offsetHeight,
-      el.clientHeight
-    )
+  getElementHeight(el) {
+    return Math.max(el.scrollHeight, el.offsetHeight, el.clientHeight)
   }
 
-  getScrollY () {
+  getElementPhysicalHeight(el) {
+    return Math.max(el.offsetHeight, el.clientHeight)
+  }
+
+  getScrollY() {
     if (this.opts.canvas.pageYOffset !== undefined) {
       return this.opts.canvas.pageYOffset
     }
@@ -474,13 +474,16 @@ export default class StickyHeader {
     return (document.documentElement || document.body.parentNode || document.body).scrollTop
   }
 
-  toleranceExceeded () {
+  toleranceExceeded() {
     return Math.abs(this.currentScrollY - this.lastKnownScrollY) >= this.opts.tolerance
   }
 
-  _getOptionsForSection (section, opts) {
+  _getOptionsForSection(section, opts) {
     // if section is not a key in opts, return default opts
-    if (!Object.prototype.hasOwnProperty.call(opts, 'sections') || !Object.prototype.hasOwnProperty.call(opts.sections, section)) {
+    if (
+      !Object.prototype.hasOwnProperty.call(opts, 'sections') ||
+      !Object.prototype.hasOwnProperty.call(opts.sections, section)
+    ) {
       return opts.default
     }
 
@@ -490,7 +493,7 @@ export default class StickyHeader {
     return opts
   }
 
-  _bindMobileMenuListeners () {
+  _bindMobileMenuListeners() {
     window.addEventListener(
       Events.APPLICATION_MOBILE_MENU_OPEN,
       this._onMobileMenuOpen.bind(this)
@@ -501,11 +504,11 @@ export default class StickyHeader {
     )
   }
 
-  _onMobileMenuOpen () {
+  _onMobileMenuOpen() {
     this.mobileMenuOpen = true
   }
 
-  _onMobileMenuClose () {
+  _onMobileMenuClose() {
     this.mobileMenuOpen = false
   }
 }
