@@ -62,6 +62,9 @@ const DEFAULT_OPTIONS = {
         delay: 0,
         duration: 0.65,
         onComplete: () => {
+          if (window.bfTO) {
+            clearTimeout(window.bfTO)
+          }
           gsap.set(fader, { display: 'none' })
           document.body.classList.remove('unloaded')
           callback()
