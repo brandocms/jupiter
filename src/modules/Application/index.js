@@ -325,7 +325,7 @@ export default class Application {
    * @param {*} time
    * @param {*} emitEvents
    */
-  scrollTo (target, time = 0.8, emitEvents = true) {
+  scrollTo (target, time = 0.8, emitEvents = true, ease = 'sine.inOut') {
     let scrollToData
     const forcedScrollEventStart = new window.CustomEvent(Events.APPLICATION_FORCED_SCROLL_START)
     if (emitEvents) {
@@ -347,7 +347,7 @@ export default class Application {
           window.dispatchEvent(forcedScrollEventEnd)
         }
       },
-      ease: 'sine.inOut'
+      ease
     })
   }
 
