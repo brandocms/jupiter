@@ -669,16 +669,24 @@ export default class Moonwalk {
     }
 
     if (section.timeline.isActive() && section.timeline.recent()) {
-      if (section.timeline.recent().time() > startingPoint) {
+      const currentTime = section.timeline.time()
+      const lastTweenTime = section.timeline.recent().time()
+      const lastTweenEndTime = section.timeline.recent().endTime()
+      if (lastTweenTime > startingPoint) {
         /* We're late for this tween if it was supposed to be sequential,
         so insert at current time in timeline instead */
         tweenPosition = () => section.timeline.time()
       } else {
-        /* Still time, add as normal overlap at the end */
-        tweenPosition = () => `>${tweenOverlap}`
+        if (currentTime + (tweenOverlap * -1) < lastTweenEndTime) {
+          /* Still time, add as normal overlap at the end */
+          tweenPosition = () => `>${tweenOverlap}`
+        } else {
+          /* Won't make it */
+          tweenPosition = () => section.timeline.time()
+        }
       }
     } else {
-      tweenPosition = () => '+=0'
+      tweenPosition = () => '>'
     }
 
     gsap.set(target, tweenTransition.from)
@@ -719,16 +727,24 @@ export default class Moonwalk {
     }
 
     if (section.timeline.isActive() && section.timeline.recent()) {
-      if (section.timeline.recent().time() > startingPoint) {
+      const currentTime = section.timeline.time()
+      const lastTweenTime = section.timeline.recent().time()
+      const lastTweenEndTime = section.timeline.recent().endTime()
+      if (lastTweenTime > startingPoint) {
         /* We're late for this tween if it was supposed to be sequential,
         so insert at current time in timeline instead */
         tweenPosition = () => section.timeline.time()
       } else {
-        /* Still time, add as normal overlap at the end */
-        tweenPosition = () => `>${tweenOverlap}`
+        if (currentTime + (tweenOverlap * -1) < lastTweenEndTime) {
+          /* Still time, add as normal overlap at the end */
+          tweenPosition = () => `>${tweenOverlap}`
+        } else {
+          /* Won't make it */
+          tweenPosition = () => section.timeline.time()
+        }
       }
     } else {
-      tweenPosition = () => '+=0'
+      tweenPosition = () => '>'
     }
 
     section.timeline.to(
