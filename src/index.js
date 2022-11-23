@@ -1,10 +1,4 @@
-import {
-  CSSPlugin,
-  Draggable,
-  ScrollToPlugin,
-  ScrollTrigger,
-  gsap
-} from 'gsap/all'
+import { CSSPlugin, Draggable, ScrollToPlugin, ScrollTrigger, gsap } from 'gsap/all'
 
 import Hammer from '@egjs/hammerjs'
 import _defaultsDeep from 'lodash.defaultsdeep'
@@ -13,8 +7,10 @@ import Application from './modules/Application'
 import Breakpoints from './modules/Breakpoints'
 import Cookies from './modules/Cookies'
 import CoverOverlay from './modules/CoverOverlay'
+import Dataloader from './modules/Dataloader'
 import Dom from './modules/Dom'
 import Dropdown from './modules/Dropdown'
+import EqualHeightElements from './modules/EqualHeightElements'
 import EqualHeightImages from './modules/EqualHeightImages'
 import * as Events from './events'
 import FixedHeader from './modules/FixedHeader'
@@ -46,9 +42,11 @@ export {
   Breakpoints,
   Cookies,
   CoverOverlay,
+  Dataloader,
   Dom,
   Draggable,
   Dropdown,
+  EqualHeightElements,
   EqualHeightImages,
   Events,
   FixedHeader,
@@ -83,5 +81,5 @@ export {
   CSSPlugin,
   ScrollToPlugin,
   ScrollTrigger,
-  Hammer
+  Hammer,
 }

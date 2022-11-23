@@ -1,6 +1,6 @@
-import imageIsLoaded from './imageIsLoaded';
+import imageIsLoaded from './imageIsLoaded'
 
-export default function imagesAreLoaded (imgs, lazy = false) {
+export default function imagesAreLoaded(imgs, lazy = false) {
   if (imgs && imgs.nodeType) {
     imgs = imgs.querySelectorAll('img')
   }
@@ -8,7 +8,7 @@ export default function imagesAreLoaded (imgs, lazy = false) {
   const promises = []
 
   for (let i = 0; i < imgs.length; i += 1) {
-    const img = imgs[i];
+    const img = imgs[i]
     promises.push(imageIsLoaded(img, lazy))
   }
 

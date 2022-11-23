@@ -1,13 +1,14 @@
 export default (url, completeCallback) => {
-  const script = document.createElement('script'); let done = false;
-  const head = document.getElementsByTagName('head')[0];
-  script.src = url;
+  const script = document.createElement('script')
+  let done = false
+  const head = document.getElementsByTagName('head')[0]
+  script.src = url
 
-  script.onreadystatechange = function cb () {
-    if (!done
-      && (!this.readyState
-      || this.readyState === 'loaded'
-      || this.readyState === 'complete')) {
+  script.onreadystatechange = function cb() {
+    if (
+      !done &&
+      (!this.readyState || this.readyState === 'loaded' || this.readyState === 'complete')
+    ) {
       done = true
       completeCallback()
 

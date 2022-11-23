@@ -1,6 +1,6 @@
 import { IMAGE_LAZYLOADED } from '../events'
 
-export default function imageIsLoaded (img, lazy = false) {
+export default function imageIsLoaded(img, lazy = false) {
   return new Promise(resolve => {
     if (lazy) {
       if (img.hasAttribute('data-ll-loaded')) {
