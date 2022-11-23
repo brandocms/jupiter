@@ -1,13 +1,16 @@
 import _defaultsDeep from 'lodash.defaultsdeep'
-import { IMAGE_LAZYLOADED, SECTION_LAZYLOADED } from '../../events'
 import dispatchElementEvent from '../../utils/dispatchElementEvent'
 import imagesAreLoaded from '../../utils/imagesAreLoaded'
 import Dom from '../Dom'
 import * as Events from '../../events'
 
 const DEFAULT_OPTIONS = {
-  intersectionObserverConfig: {
-    rootMargin: '350px 0px',
+  revealIntersectionObserverConfig: {
+    rootMargin: '0px 0px',
+    threshold: 0.0
+  },
+  loadIntersectionObserverConfig: {
+    rootMargin: '850px 500px',
     threshold: 0.0
   },
   useNativeLazyloadIfAvailable: true,
@@ -21,6 +24,10 @@ export default class Lazyload {
     this.app = app
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
     this.initialize()
+
+    this.app.registerCallback(Events.APPLICATION_REVEALED, () => {
+      this.initObserver(this.revealObserver, false)
+    })
   }
 
   initialize() {
@@ -40,40 +47,54 @@ export default class Lazyload {
 
       const lazyPictures = document.querySelectorAll('[data-ll-srcset]')
       lazyPictures.forEach(picture => {
-        picture.querySelectorAll('img').forEach(img => {
-          img.setAttribute('loading', 'lazy')
-        })
+        picture.querySelectorAll('img').forEach(img => img.setAttribute('loading', 'lazy'))
         this.swapPicture(picture)
       })
-    } else {
-      this.imgObserver = new IntersectionObserver(
-        this.lazyloadImages.bind(this),
-        this.opts.intersectionObserverConfig
-      )
 
-      this.lazyImages = document.querySelectorAll('[data-ll-image]')
-      this.lazyImages.forEach((img, idx) => {
-        img.setAttribute('data-ll-blurred', '')
-        img.setAttribute('data-ll-idx', idx)
-        img.style.setProperty('--ll-idx', idx)
-        this.imgObserver.observe(img)
-      })
+      return
+    }
 
-      this.pictureObserver = new IntersectionObserver(
-        this.lazyloadPictures.bind(this),
-        this.opts.intersectionObserverConfig
-      )
+    this.lazyPictures = document.querySelectorAll('[data-ll-srcset]')
 
-      this.lazyPictures = document.querySelectorAll('[data-ll-srcset]')
-      this.lazyPictures.forEach((picture, idx) => {
+    this.loadObserver = new IntersectionObserver(
+      this.handleLoadEntries.bind(this),
+      this.opts.loadIntersectionObserverConfig
+    )
+
+    this.revealObserver = new IntersectionObserver(
+      this.handleRevealEntries.bind(this),
+      this.opts.revealIntersectionObserverConfig
+    )
+
+    this.lazyPictures = document.querySelectorAll('[data-ll-srcset]')
+    this.initObserver(this.loadObserver)
+
+    // Deprecate data-ll-image sometime
+    this.imageObserver = new IntersectionObserver(
+      this.lazyloadImages.bind(this),
+      this.opts.intersectionObserverConfig
+    )
+
+    this.lazyImages = document.querySelectorAll('[data-ll-image]')
+    this.lazyImages.forEach((img, idx) => {
+      img.setAttribute('data-ll-blurred', '')
+      img.setAttribute('data-ll-idx', idx)
+      img.style.setProperty('--ll-idx', idx)
+      this.imageObserver.observe(img)
+    })
+  }
+
+  initObserver(observer, setAttrs = true) {
+    this.lazyPictures.forEach((picture, idx) => {
+      if (setAttrs) {
         picture.querySelectorAll('img:not([data-ll-loaded])').forEach(img => {
           img.setAttribute('data-ll-blurred', '')
           img.setAttribute('data-ll-idx', idx)
           img.style.setProperty('--ll-idx', idx)
         })
-        this.pictureObserver.observe(picture)
-      })
-    }
+      }
+      observer.observe(picture)
+    })
   }
 
   initializeAutoSizes() {
@@ -120,11 +141,11 @@ export default class Lazyload {
           entries.forEach(entry => {
             if (entry.isIntersecting || entry.intersectionRatio > 0) {
               imagesAreLoaded(imagesInSection, true).then(() => {
-                dispatchElementEvent(section, SECTION_LAZYLOADED)
+                dispatchElementEvent(section, Events.SECTION_LAZYLOADED)
               })
               children.forEach(picture => {
-                this.swapPicture(picture)
-                this.pictureObserver.unobserve(picture)
+                this.loadPicture(picture)
+                this.loadObserver.unobserve(picture)
               })
               self.unobserve(section)
             }
@@ -140,44 +161,41 @@ export default class Lazyload {
     }
   }
 
-  lazyloadImages(elements) {
-    elements.forEach(item => {
-      if (item.isIntersecting || item.intersectionRatio > 0) {
-        const image = item.target
-        this.swapImage(image)
-        this.imgObserver.unobserve(image)
-      }
-    })
-  }
-
-  lazyloadPictures(elements) {
+  // we load the picture a ways before it enters the viewport
+  handleLoadEntries(elements) {
     elements.forEach(item => {
       if (item.isIntersecting || item.intersectionRatio > 0) {
         const picture = item.target
-        this.swapPicture(picture)
-        this.pictureObserver.unobserve(picture)
+        this.loadPicture(picture)
+        this.loadObserver.unobserve(item.target)
       }
     })
   }
 
-  swapImage(image) {
-    image.src = image.dataset.src
-    image.setAttribute('data-ll-loaded', '')
+  // we reveal the picture when it enters the viewport
+  handleRevealEntries(elements) {
+    elements.forEach(item => {
+      if (item.isIntersecting || item.intersectionRatio > 0) {
+        const picture = item.target
+        this.revealPicture(picture)
+        this.revealObserver.unobserve(item.target)
+      }
+    })
   }
 
-  swapPicture(picture) {
+  loadPicture(picture) {
     // gather all the source elements in picture
     const sources = picture.querySelectorAll('source')
     let loadedSomething = false
 
     for (let s = 0; s < sources.length; s += 1) {
       const source = sources[s]
-      if (!source.hasAttribute('data-ll-loaded')) {
+      if (!source.hasAttribute('data-ll-ready')) {
         loadedSomething = true
       }
       if (source.hasAttribute('data-srcset')) {
         source.setAttribute('srcset', source.dataset.srcset)
-        source.setAttribute('data-ll-loaded', '')
+        source.setAttribute('data-ll-ready', '')
       }
     }
 
@@ -188,7 +206,7 @@ export default class Lazyload {
     const img = picture.querySelector('img')
 
     const onload = () => {
-      if (!img.getAttribute('data-ll-loaded') && this.app.browser === 'firefox') {
+      if (!img.getAttribute('data-ll-ready') && this.app.browser === 'firefox') {
         // set sizes attribute on load again,
         // since firefox sometimes is a bit slow to
         // get the actual image width
@@ -205,8 +223,8 @@ export default class Lazyload {
       img.removeAttribute('data-ll-placeholder')
       img.removeAttribute('data-ll-blurred')
       img.removeAttribute('data-ll-loading')
-      img.setAttribute('data-ll-loaded', '')
-      picture.setAttribute('data-ll-srcset-loaded', '')
+      img.setAttribute('data-ll-ready', '')
+      picture.setAttribute('data-ll-srcset-ready', '')
     }
 
     img.addEventListener('load', onload, false)
@@ -231,6 +249,31 @@ export default class Lazyload {
       onload()
     }
 
-    dispatchElementEvent(img, IMAGE_LAZYLOADED)
+    dispatchElementEvent(img, Events.IMAGE_LAZYLOADED)
+  }
+
+  /* reveal by just setting `data-ll-loaded` */
+  revealPicture(picture) {
+    const img = picture.querySelector('img')
+    if (img.hasAttribute('data-ll-loaded')) {
+      return
+    }
+    img.setAttribute('data-ll-loaded', '')
+    dispatchElementEvent(img, Events.IMAGE_REVEALED)
+  }
+
+  lazyloadImages(elements) {
+    elements.forEach(item => {
+      if (item.isIntersecting || item.intersectionRatio > 0) {
+        const image = item.target
+        this.swapImage(image)
+        this.imageObserver.unobserve(image)
+      }
+    })
+  }
+
+  swapImage(image) {
+    image.src = image.dataset.src
+    image.setAttribute('data-ll-loaded', '')
   }
 }
