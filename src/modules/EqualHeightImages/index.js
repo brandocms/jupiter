@@ -1,19 +1,21 @@
 import { gsap } from 'gsap'
 import Dom from '../Dom'
 import imagesAreLoaded from '../../utils/imagesAreLoaded'
+import _defaultsDeep from 'lodash.defaultsdeep'
+
+const DEFAULT_OPTIONS = {}
 
 export default class EqualHeightImages {
-  constructor (app) {
+  constructor(app, opts = {}, container = document.body) {
     this.app = app
+    this.container = container
+    this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
     this.initialize()
   }
 
-  initialize () {
-    const canvases = Dom.all('[data-eq-height-images]')
+  initialize() {
+    const canvases = Dom.all(this.container, '[data-eq-height-images]')
     Array.from(canvases).forEach(canvas => {
-      // if (app.breakpoints.mediaQueries.iphone.matches || app.breakpoints.mediaQueries.mobile.matches) {
-      //   return
-      // }
       let lastTop = null
       const actionables = []
       let elements = []
@@ -24,8 +26,6 @@ export default class EqualHeightImages {
         imgs.forEach(el => {
           const rect = el.getBoundingClientRect()
           const size = this.getImgSizeInfo(el)
-
-          console.log('go')
 
           if (lastTop === null) {
             height = size.height
@@ -62,12 +62,12 @@ export default class EqualHeightImages {
     })
   }
 
-  getRenderedSize (contains, cWidth, cHeight, width, height, pos) {
+  getRenderedSize(contains, cWidth, cHeight, width, height, pos) {
     const oRatio = width / height
     const cRatio = cWidth / cHeight
     // eslint-disable-next-line func-names
     return function () {
-      if (contains ? (oRatio > cRatio) : (oRatio < cRatio)) {
+      if (contains ? oRatio > cRatio : oRatio < cRatio) {
         this.width = cWidth
         this.height = cWidth / oRatio
       } else {
@@ -80,17 +80,16 @@ export default class EqualHeightImages {
     }.call({})
   }
 
-  getImgSizeInfo (img) {
-    const pos = window
-      .getComputedStyle(img)
-      .getPropertyValue('object-position')
-      .split(' ')
+  getImgSizeInfo(img) {
+    const pos = window.getComputedStyle(img).getPropertyValue('object-position').split(' ')
 
-    return this.getRenderedSize(true,
+    return this.getRenderedSize(
+      true,
       img.width,
       img.height,
       img.naturalWidth,
       img.naturalHeight,
-      parseInt(pos[0]))
+      parseInt(pos[0])
+    )
   }
 }
