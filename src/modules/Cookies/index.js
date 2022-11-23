@@ -83,7 +83,7 @@ export default class Cookies {
       return
     }
 
-    window.addEventListener(Events.APPLICATION_REVEALED, () => {
+    this.app.registerCallback(Events.APPLICATION_REVEALED, () => {
       this.opts.showCC(this)
     })
 

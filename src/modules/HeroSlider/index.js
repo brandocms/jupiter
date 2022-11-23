@@ -136,7 +136,7 @@ export default class HeroSlider {
 
     const callback = this.slides.length > 1 ? this.next.bind(this) : () => {}
 
-    window.addEventListener(Events.APPLICATION_REVEALED, () => {
+    this.app.registerCallback(Events.APPLICATION_REVEALED, () => {
       /* Wait for the first image to load, then fade in container element */
       const firstImg = this.slides[this._currentSlideIdx].querySelector('img')
 

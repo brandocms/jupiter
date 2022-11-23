@@ -225,14 +225,14 @@ export default class FixedHeader {
       window.addEventListener(Events.APPLICATION_FORCED_SCROLL_END, this.pin.bind(this), false)
     }
 
-    window.addEventListener(Events.APPLICATION_REVEALED, e => {
+    this.app.registerCallback(Events.APPLICATION_REVEALED, () => {
       window.addEventListener(Events.APPLICATION_SCROLL, this.update.bind(this), {
         capture: false,
         passive: true
       })
     })
 
-    window.addEventListener(Events.APPLICATION_READY, this.unpinIfScrolled.bind(this))
+    this.app.registerCallback(Events.APPLICATION_READY, this.unpinIfScrolled.bind(this))
 
     this.preflight()
 
@@ -253,7 +253,7 @@ export default class FixedHeader {
     this.checkBg(true)
     this.checkTop(true)
 
-    window.addEventListener(Events.APPLICATION_REVEALED, e => {
+    this.app.registerCallback(Events.APPLICATION_REVEALED, () => {
       setTimeout(() => {
         this.el.setAttribute('data-header-transitions', '')
       }, 350)
