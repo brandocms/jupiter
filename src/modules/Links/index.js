@@ -20,8 +20,7 @@ const DEFAULT_OPTIONS = {
     const header = document.querySelector('header[data-nav]')
     const footer = document.querySelector('footer')
     const fader = document.querySelector('#fader')
-    console.log('transition')
-
+  
     if (fader) {
       gsap.set(fader, { display: 'block', opacity: 0 })
       gsap.to(main, {
