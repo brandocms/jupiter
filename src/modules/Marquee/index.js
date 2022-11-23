@@ -11,7 +11,7 @@ const DEFAULT_OPTIONS = {
   spacer: '<span>&nbsp;&mdash;&nbsp;</span>',
 
   onReveal: marqueeEl => {
-    gsap.to(marqueeEl, { opacity: 1 })
+    gsap.to(marqueeEl, { opacity: 1, ease: 'none' })
   }
 }
 
