@@ -490,12 +490,14 @@ export default class Application {
     this.size.initialOuterHeight = window.outerHeight
     this.size.initialInnerWidth = window.innerWidth
     this.size.initialOuterWidth = window.outerWidth
+    this.size.scrollHeight = document.body.scrollHeight
     
     root.style.setProperty('--vp-initial-inner-h', `${this.size.initialInnerHeight}px`)
     root.style.setProperty('--vp-initial-outer-h', `${this.size.initialOuterHeight}px`)
     root.style.setProperty('--vp-initial-inner-w', `${this.size.initialInnerWidth}px`)
     root.style.setProperty('--vp-initial-outer-w', `${this.size.initialOuterWidth}px`)
     root.style.setProperty('--ec-zoom', `${this.size.zoom}`)
+    root.style.setProperty('--scroll-h', `${this.size.scrollHeight}px`)
     
     this.setvh100Max()
     this.setvh100()
@@ -546,6 +548,11 @@ export default class Application {
     this.size.vh100max = vh100
   }
 
+  setScrollHeight () {
+    const root = document.querySelector(':root')
+    root.style.setProperty('--scroll-h', `${document.body.scrollHeight}px`)
+  }
+
   onBreakpointChanged () {
     this.size.container = Dom.getCSSVar('--container-padding')
   }
@@ -561,10 +568,12 @@ export default class Application {
     
     this.size.width = window.innerWidth
     this.size.height = window.innerHeight
+    this.size.scrollHeight = document.body.scrollHeight
     this.size.devicePixelRatio = window.devicePixelRatio
 
     this.updateZoom(dimsChanged, dprDelta)
     this.setvh100()
+    this.setScrollHeight()
     this.setFontBaseVw()
 
     const evt = new CustomEvent(Events.APPLICATION_RESIZE, { detail: { widthChanged, heightChanged } })
