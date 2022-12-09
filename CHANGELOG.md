@@ -1,3 +1,15 @@
+#### 3.48.0
+
+- Add `Dataloader`
+- Add `EqualHeightElements`
+- Lazyload: Rewritten to use 2 observers. One for loading which will load more
+  eagerly and one for revealing which will react from bottom of viewport.
+  Now sets `data-ll-ready` when ready to reveal and `data-ll-loaded` when revealed
+- Moonwalk: Tweaks to the tween code.
+- Application: Set `scrollHeight` as CSS var
+- Application: Add `ease` param to `scrollTo`
+
+
 #### 3.47.0
 
 - Application: Ensure header and footer's opacity is cleared out when arriving 
