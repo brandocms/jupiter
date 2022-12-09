@@ -6,17 +6,18 @@ import * as Events from '../../events'
 
 const DEFAULT_OPTIONS = {
   revealIntersectionObserverConfig: {
-    rootMargin: '0px 0px',
+    rootMargin: '0px 100px 0px 100px',
     threshold: 0.0
   },
   loadIntersectionObserverConfig: {
-    rootMargin: '850px 500px',
+    rootMargin: '850px 500px 850px 500px',
     threshold: 0.0
   },
   useNativeLazyloadIfAvailable: true,
   mode: 'default',
   minSize: 40,
-  updateSizes: true
+  updateSizes: true,
+  registerCallback: true
 }
 
 export default class Lazyload {
@@ -25,9 +26,15 @@ export default class Lazyload {
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
     this.initialize()
 
-    this.app.registerCallback(Events.APPLICATION_REVEALED, () => {
-      this.initObserver(this.revealObserver, false)
-    })
+    if (this.opts.registerCallback) {
+      this.app.registerCallback(Events.APPLICATION_REVEALED, () => {
+        this.watch()
+      })
+    }
+  }
+
+  watch() {
+    this.initObserver(this.revealObserver, false)
   }
 
   initialize() {
