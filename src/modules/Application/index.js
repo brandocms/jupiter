@@ -31,6 +31,10 @@ window.onpageshow = event => {
     const $nav = Dom.find('header[data-nav]')
     gsap.set($nav, { clearProps: 'opacity' })
 
+    // check that main is visible
+    const $main = Dom.find('main')
+    gsap.set($main, { clearProps: 'opacity' })
+
     // check that footer is visible
     const $footer = Dom.find('footer')
     gsap.set($footer, { clearProps: 'opacity' })
