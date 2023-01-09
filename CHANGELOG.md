@@ -1,3 +1,8 @@
+#### 3.48.1
+
+- Force `main` visible on back button
+
+
 #### 3.48.0
 
 - Add `Dataloader`
