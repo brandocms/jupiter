@@ -82,6 +82,7 @@ const DEFAULT_OPTIONS = {
     }
   }
 }
+
 export default class Application {
   constructor(opts = {}) {
     this.debugType = 1
@@ -543,8 +544,9 @@ export default class Application {
    */
   setvh100() {
     const root = document.querySelector(':root')
-    root.style.setProperty('--vp-100vh', `${window.innerHeight}px`)
-    root.style.setProperty('--vp-1vh', `${window.innerHeight * 0.01}px`)
+    const height = this.featureTests.results.ios ? screen.height : window.innerHeight
+    root.style.setProperty('--vp-100vh', `${height}px`)
+    root.style.setProperty('--vp-1vh', `${height * 0.01}px`)
   }
 
   setvw100() {
