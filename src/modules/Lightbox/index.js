@@ -8,6 +8,9 @@ const DEFAULT_OPTIONS = {
   /* enable captions */
   captions: false,
 
+  /* enable index numbers */
+  numbers: false,
+
   /* enable swipe — this breaks native zoom! */
   swipe: true,
 
@@ -71,6 +74,10 @@ const DEFAULT_OPTIONS = {
   onImageIn: lightbox => {
     const delay = lightbox.firstTransition ? 0.6 : 0.4
     lightbox.timelines.image.to(lightbox.nextImage, { duration: 0.5, autoAlpha: 1, delay })
+  },
+
+  onNumbers: (lightbox, section) => {
+    lightbox.elements.numbers.innerHTML = `${lightbox.currentIndex + 1}/${section.length}`
   },
 
   onBeforeOpen: () => {},
@@ -177,6 +184,7 @@ export default class Lightbox {
     this.elements.content = document.createElement('div')
     this.elements.imgWrapper = document.createElement('div')
     this.elements.dots = document.createElement('div')
+    this.elements.numbers = document.createElement('div')
     this.elements.nextArrow = document.createElement('a')
     this.elements.prevArrow = document.createElement('a')
     this.elements.close = document.createElement('a')
@@ -188,6 +196,7 @@ export default class Lightbox {
     this.elements.prevArrow.classList.add('lightbox-prev')
     this.elements.close.classList.add('lightbox-close')
     this.elements.dots.classList.add('lightbox-dots')
+    this.elements.numbers.classList.add('lightbox-numbers')
     this.elements.wrapper.classList.add('lightbox-backdrop')
     this.elements.wrapper.setAttribute('data-lightbox-wrapper-section', section)
     this.elements.imgWrapper.classList.add('lightbox-image-wrapper')
@@ -210,9 +219,12 @@ export default class Lightbox {
       this.setImg(section, this.getPrevIdx(section))
     })
 
-    document.addEventListener('keyup', event => {
+    this.keyUpCallback = event => {
       this.onKeyup(event, section)
-    })
+    }
+
+    document.removeEventListener('keyup', this.keyUpCallback)
+    document.addEventListener('keyup', this.keyUpCallback)
 
     this.elements.wrapper.addEventListener('mousemove', event => {
       this.onMouseMove(event)
@@ -264,6 +276,10 @@ export default class Lightbox {
     this.elements.content.appendChild(this.elements.prevArrow)
     this.elements.content.appendChild(this.elements.dots)
 
+    if (this.opts.numbers) {
+      this.elements.content.appendChild(this.elements.numbers)
+    }
+
     if (this.opts.captions) {
       this.elements.caption = document.createElement('div')
       this.elements.caption.classList.add('lightbox-caption')
@@ -273,7 +289,7 @@ export default class Lightbox {
     this.elements.wrapper.appendChild(this.elements.content)
     document.body.appendChild(this.elements.wrapper)
 
-    this.setImg(section, index, this.getPrevIdx(index))
+    this.setImg(section, index, this.getPrevIdx(section))
     if (this.opts.swipe) {
       this.attachSwiper(section, this.elements.content, index)
     }
@@ -289,7 +305,7 @@ export default class Lightbox {
   }
 
   close() {
-    document.removeEventListener('keyup', this.onKeyup.bind(this))
+    document.removeEventListener('keyup', this.keyUpCallback)
     this.opts.onClose(this)
     this.opts.onAfterClose(this)
     this.currentIndex = null
@@ -324,6 +340,10 @@ export default class Lightbox {
       this.timelines.caption.call(() => {
         this.elements.caption.innerHTML = this.sections[section][index].alt
       })
+    }
+
+    if (this.elements.numbers) {
+      this.opts.onNumbers(this, this.sections[section])
     }
 
     if (this.currentImage) {
