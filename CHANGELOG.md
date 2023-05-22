@@ -1,3 +1,8 @@
+#### 3.48.4
+
+- Lazyload: Start watching if called when application is already revealed
+
+
 #### 3.48.3
 
 - Lightbox: Add index numbers (numbers: true)
