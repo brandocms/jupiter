@@ -27,9 +27,13 @@ export default class Lazyload {
     this.initialize()
 
     if (this.opts.registerCallback) {
-      this.app.registerCallback(Events.APPLICATION_REVEALED, () => {
+      if (this.app.state.revealed) {
         this.watch()
-      })
+      } else {
+        this.app.registerCallback(Events.APPLICATION_REVEALED, () => {
+          this.watch()
+        })
+      }
     }
   }
 
