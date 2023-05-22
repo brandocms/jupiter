@@ -107,6 +107,10 @@ export default class Application {
       left: 0
     }
 
+    this.state = {
+      revealed: false
+    }
+
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
     this.focusableSelectors = this.opts.focusableSelectors
 
@@ -487,6 +491,7 @@ export default class Application {
 
   _emitRevealedEvent() {
     if (!document.body.hasAttribute('data-app-revealed')) {
+      this.state.revealed = true
       document.body.dataset.appRevealed = true
       window.dispatchEvent(this.revealedEvent)
       this.executeCallbacks(Events.APPLICATION_REVEALED)
