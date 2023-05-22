@@ -1,3 +1,8 @@
+#### 3.48.3
+
+- Lightbox: Add index numbers (numbers: true)
+
+
 #### 3.48.2
 
 - Get vh100 by screen on iPhone/iOS
