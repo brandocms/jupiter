@@ -63,7 +63,8 @@ const DEFAULT_EVENTS = {
         h._hiding = false
       }
     })
-  }
+  },
+  onSmall: () => {}
 }
 
 const DEFAULT_OPTIONS = {

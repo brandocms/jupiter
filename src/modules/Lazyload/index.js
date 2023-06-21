@@ -77,7 +77,6 @@ export default class Lazyload {
       this.opts.revealIntersectionObserverConfig
     )
 
-    this.lazyPictures = document.querySelectorAll('[data-ll-srcset]')
     this.initObserver(this.loadObserver)
 
     // Deprecate data-ll-image sometime
@@ -98,6 +97,7 @@ export default class Lazyload {
   initObserver(observer, setAttrs = true) {
     this.lazyPictures.forEach((picture, idx) => {
       if (setAttrs) {
+        picture.setAttribute('data-ll-srcset-initialized', '')
         picture.querySelectorAll('img:not([data-ll-loaded])').forEach(img => {
           img.setAttribute('data-ll-blurred', '')
           img.setAttribute('data-ll-idx', idx)
@@ -185,11 +185,27 @@ export default class Lazyload {
 
   // we reveal the picture when it enters the viewport
   handleRevealEntries(elements) {
+    const srcsetReadyObserver = new MutationObserver(mutations => {
+      mutations.forEach(record => {
+        if (record.type === 'attributes' && record.attributeName === 'data-ll-srcset-ready') {
+          this.revealPicture(record.target)
+          this.revealObserver.unobserve(record.target)
+        }
+      })
+    })
+
     elements.forEach(item => {
       if (item.isIntersecting || item.intersectionRatio > 0) {
         const picture = item.target
-        this.revealPicture(picture)
-        this.revealObserver.unobserve(item.target)
+        const ready = item.target.hasAttribute('data-ll-srcset-ready')
+        if (!ready) {
+          // element is not loaded, observe the picture and wait for
+          // `data-ll-srcset-ready` before revealing
+          srcsetReadyObserver.observe(picture, { attributes: true })
+        } else {
+          this.revealPicture(picture)
+          this.revealObserver.unobserve(item.target)
+        }
       }
     })
   }
