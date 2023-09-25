@@ -115,12 +115,16 @@ class DOM {
     return width
   }
 
-  getCSSVar(key) {
-    return getComputedStyle(document.documentElement).getPropertyValue(key).trim()
+  getCSSVar(key, element = document.documentElement) {
+    return getComputedStyle(element).getPropertyValue(key).trim()
   }
 
-  setCSSVar(key, val) {
-    document.documentElement.style.setProperty(`--${key}`, val)
+  setCSSVar(key, val, element = document.documentElement) {
+    element.style.setProperty(`--${key}`, val)
+  }
+
+  removeCSSVar(key, element = document.documentElement) {
+    element.style.removeProperty(`--${key}`)
   }
 
   offset(el) {
