@@ -227,7 +227,10 @@ export default class Moonwalk {
         return {
           el: run,
           threshold: foundRun.threshold || 0,
-          callback: foundRun.callback
+          callback: foundRun.callback,
+          onExit: foundRun.onExit,
+          repeated: foundRun.repeated,
+          rootMargin: foundRun.rootMargin
         }
       }
 
@@ -531,7 +534,11 @@ export default class Moonwalk {
       if (idx === this.sections.length - 1) {
         rootMargin = '0px'
       } else {
-        rootMargin = opts.rootMargin
+        if (run.rootMargin) {
+          rootMargin = run.rootMargin
+        } else {
+          rootMargin = opts.rootMargin
+        }
       }
 
       const runObserver = this.runObserver(run, rootMargin)
@@ -572,8 +579,22 @@ export default class Moonwalk {
         for (let i = 0; i < entries.length; i += 1) {
           const entry = entries[i]
           if (entry.isIntersecting) {
-            run.callback(entry.target)
-            self.unobserve(entry.target)
+            const runRepeated = entry.target.hasAttribute('data-moonwalk-run-triggered')
+            run.callback(entry.target, runRepeated)
+            entry.target.setAttribute('data-moonwalk-run-triggered', '')
+            if (!run.onExit && !run.repeated) {
+              self.unobserve(entry.target)
+            }
+          } else {
+            if (run.onExit && entry.target.hasAttribute('data-moonwalk-run-triggered')) {
+              const runExited = entry.target.hasAttribute('data-moonwalk-run-exit-triggered')
+              // entry.target.removeAttribute('data-moonwalk-run-triggered')
+              entry.target.setAttribute('data-moonwalk-run-exit-triggered', '')
+              run.onExit(entry.target, runExited)
+              if (!run.repeated) {
+                self.unobserve(entry.target)
+              }
+            }
           }
         }
       },
