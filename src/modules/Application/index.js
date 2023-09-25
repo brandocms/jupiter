@@ -327,14 +327,14 @@ export default class Application {
     document.addEventListener('touchmove', this.scrollVoid, false)
   }
 
-  scrollRelease() {
+  scrollRelease(defaultOverflow = 'scroll') {
     if (!this.SCROLL_LOCKED) {
       return
     }
     const ev = new window.CustomEvent(Events.APPLICATION_SCROLL_RELEASED, this)
     window.dispatchEvent(ev)
     this.SCROLL_LOCKED = false
-    gsap.set(document.body, { clearProps: 'overflow' })
+    gsap.set(document.body, { overflow: defaultOverflow })
     gsap.set(this._scrollPaddedElements, { clearProps: 'paddingRight' })
     document.removeEventListener('touchmove', this.scrollVoid, false)
   }
