@@ -10,6 +10,14 @@ import Dom from '../Dom'
  *     <li>Item</li>
  *   </ul>
  * </ul>
+ *
+ * If you need to trigger a dropdown menu outside of the data-dropdown element, you can target it
+ * with
+ *
+ *    <li data-dropdown-trigger data-dropdown-target="#mydropdown">Trigger</li>
+ *
+ * This is useful if you run into clipping bugs/problems. Move your dropdown
+ * menu outside of the clipping container.
  */
 
 const DEFAULT_OPTIONS = {
@@ -37,29 +45,54 @@ export default class Dropdown {
     this.element = opts.el
     this.timeline = gsap.timeline({ paused: true, reversed: true })
     this.elements.trigger = Dom.find(this.element, this.opts.selectors.trigger)
-    this.elements.menu = Dom.find(this.element, this.opts.selectors.menu)
-    this.elements.menuItems = Dom.all(this.element, this.opts.selectors.menuItems)
+    if (this.elements.trigger.hasAttribute('data-dropdown-target')) {
+      const dropdownTarget = this.elements.trigger.getAttribute('data-dropdown-target')
+      this.elements.menu = Dom.find(dropdownTarget)
+    } else {
+      this.elements.menu = Dom.find(this.element, this.opts.selectors.menu)
+    }
+    this.elements.menuItems = Dom.all(this.elements.menu, this.opts.selectors.menuItems)
     this.initialize()
   }
 
   initialize() {
-    this.timeline.from(
-      this.elements.menu,
-      {
-        duration: 0.3,
-        className: `${this.elements.menu.className} zero-height`
-      },
-      'open'
-    )
-    this.timeline.to(
-      this.elements.menu,
-      {
-        height: 'auto'
-      },
-      'open'
-    )
+    this.timeline
+      .set(this.elements.menu, { display: 'none', clearProps: 'height' })
+      .set(this.elements.menu, { display: 'flex', opacity: 0 })
+      .from(
+        this.elements.menu,
+        {
+          duration: 0.1,
+          className: `${this.elements.menu.className} zero-height`
+        },
+        'open'
+      )
+      .to(
+        this.elements.menu,
+        {
+          height: 'auto',
+          duration: 0.1
+        },
+        'open'
+      )
+      .call(() => {
+        // check if we have space
+        const subMenuBound = this.elements.menu.getBoundingClientRect()
+        const windowHeight = window.innerHeight
 
-    this.timeline.from(this.elements.menuItems, this.opts.tweens.items, 'open+=.1')
+        const subMenuY = subMenuBound.y
+        const subMenuHeight = subMenuBound.height
+
+        Dom.setCSSVar('dropdown-menu-height', `${subMenuHeight}px`, this.elements.menu)
+
+        if (subMenuHeight + subMenuY > windowHeight) {
+          this.elements.menu.setAttribute('data-dropdown-placement', 'top')
+        } else {
+          this.elements.menu.setAttribute('data-dropdown-placement', 'bottom')
+        }
+      })
+      .to(this.elements.menu, { opacity: 1 })
+      .from(this.elements.menuItems, this.opts.tweens.items, 'open+=.1')
 
     if (!this.elements.trigger) {
       return
