@@ -1,3 +1,14 @@
+#### 3.50.0
+
+- Popover: Add initial version
+- Breakpoints: Rerun initialization on REVEAL
+- Moonwalk: Add `initialize` callback to runs
+- Dataloader: Allow setting custom key per param
+- EqualHeightImages: Recalculate on resize
+- Dropdown: Update dataset status on a lower level
+- Defaults: Don't set overwrite auto on tweens by default.
+
+
 #### 3.49.0
 
 - Lazyload: Add MutationObserver that will check for loading after initial try
