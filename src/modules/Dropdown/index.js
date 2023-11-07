@@ -105,10 +105,8 @@ export default class Dropdown {
     event.stopPropagation()
 
     if (this.open) {
-      delete this.elements.trigger.dataset.dropdownActive
       this.closeMenu()
     } else {
-      this.elements.trigger.dataset.dropdownActive = ''
       this.openMenu()
     }
   }
@@ -121,6 +119,7 @@ export default class Dropdown {
       this.app.currentMenu = this
     }
     this.open = true
+    this.elements.trigger.dataset.dropdownActive = ''
 
     if (this.timeline.reversed()) {
       this.timeline.play()
@@ -132,6 +131,7 @@ export default class Dropdown {
   closeMenu() {
     this.app.currentMenu = null
     this.open = false
+    delete this.elements.trigger.dataset.dropdownActive
 
     if (this.timeline.reversed()) {
       this.timeline.play()
