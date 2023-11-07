@@ -24,6 +24,7 @@ import Links from './modules/Links'
 import Marquee from './modules/Marquee'
 import MobileMenu from './modules/MobileMenu'
 import Moonwalk from './modules/Moonwalk'
+import Popover from './modules/Popover'
 import Popup from './modules/Popup'
 import ScrollSpy from './modules/ScrollSpy'
 import StackedBoxes from './modules/StackedBoxes'
@@ -60,6 +61,7 @@ export {
   Marquee,
   MobileMenu,
   Moonwalk,
+  Popover,
   Popup,
   ScrollSpy,
   StackedBoxes,
