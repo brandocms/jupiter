@@ -1,9 +1,12 @@
 import { gsap } from 'gsap'
 import Dom from '../Dom'
+import * as Events from '../../events'
 import imagesAreLoaded from '../../utils/imagesAreLoaded'
 import _defaultsDeep from 'lodash.defaultsdeep'
 
-const DEFAULT_OPTIONS = {}
+const DEFAULT_OPTIONS = {
+  listenForResize: true
+}
 
 export default class EqualHeightImages {
   constructor(app, opts = {}, container = document.body) {
@@ -11,6 +14,12 @@ export default class EqualHeightImages {
     this.container = container
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
     this.initialize()
+
+    if (opts.listenForResize) {
+      window.addEventListener(Events.APPLICATION_RESIZE, () => {
+        this.initialize()
+      })
+    }
   }
 
   initialize() {
