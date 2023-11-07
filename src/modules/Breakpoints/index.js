@@ -21,10 +21,15 @@ export default class Breakpoints {
     this.app = app
     this.mediaQueries = {}
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
-    window.addEventListener(Events.APPLICATION_PRELUDIUM, this.initialize.bind(this))
+    window.addEventListener(Events.APPLICATION_PRELUDIUM, () => {
+      this.initialize(false)
+    })
+    window.addEventListener(Events.APPLICATION_REVEALED, () => {
+      this.initialize(true)
+    })
   }
 
-  initialize() {
+  initialize(reveal = false) {
     this.opts.breakpoints.forEach(size => {
       this.mediaQueries[size] = this._getVal(`--breakpoint-${size}`)
     })
@@ -52,7 +57,7 @@ export default class Breakpoints {
       }
     })
 
-    if (this.opts.runListenerOnInit) {
+    if (reveal && this.opts.runListenerOnInit) {
       const { key, mq } = this.getCurrentBreakpoint()
       if (Object.prototype.hasOwnProperty.call(this.opts.listeners, key)) {
         this.opts.listeners[key](mq)
