@@ -224,9 +224,13 @@ export default class Moonwalk {
     return Array.from(runs).map(run => {
       const foundRun = this.opts.runs[run.getAttribute('data-moonwalk-run')]
       if (foundRun) {
+        if (foundRun.initialize) {
+          foundRun.initialize(run)
+        }
         return {
           el: run,
           threshold: foundRun.threshold || 0,
+          initialize: foundRun.initialize,
           callback: foundRun.callback,
           onExit: foundRun.onExit,
           repeated: foundRun.repeated,
@@ -578,7 +582,7 @@ export default class Moonwalk {
       (entries, self) => {
         for (let i = 0; i < entries.length; i += 1) {
           const entry = entries[i]
-          if (entry.isIntersecting) {
+          if (entry.isIntersecting && run.callback) {
             const runRepeated = entry.target.hasAttribute('data-moonwalk-run-triggered')
             run.callback(entry.target, runRepeated)
             entry.target.setAttribute('data-moonwalk-run-triggered', '')
