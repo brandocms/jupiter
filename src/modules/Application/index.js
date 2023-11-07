@@ -11,7 +11,9 @@ import Fontloader from '../Fontloader'
 import Dom from '../Dom'
 
 gsap.registerPlugin(ScrollToPlugin)
-gsap.defaults({ overwrite: 'auto', ease: 'sine.out' })
+gsap.defaults({
+  ease: 'sine.out'
+})
 
 window.onpageshow = event => {
   if (event.persisted) {
