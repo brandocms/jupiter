@@ -26,11 +26,21 @@ import _defaultsDeep from 'lodash.defaultsdeep'
  *    </div>
  *  </div>
  *
+ * You can set a custom key for each param:
+ *
+ * <a class="noanim" href="{{ category.url }}" data-loader-param-key="category" data-loader-param="all" data-loader-param-selected>All</a>
+ *
+ *
+ * You can also set a target for the canvas if the category selector and canvas are in different modules:
+ *
+ * <div data-loader="/api/posts" data-loader-id="news" data-loader-canvas-target="#news-canvas">
+ *
+ * <div data-loader-canvas id="#news-canvas">
  */
 
 const DEFAULT_OPTIONS = {
   page: 0,
-  loaderParam: 'all',
+  loaderParam: {},
   filter: '',
   onFetch: dataloader => {
     /**
@@ -51,7 +61,11 @@ export default class Dataloader {
     this.status = 'available'
     this.app = app
     this.$el = $el
-    this.$canvasEl = Dom.find($el, '[data-loader-canvas]')
+    if ($el.hasAttribute('data-loader-canvas-target')) {
+      this.$canvasEl = Dom.find($el.getAttribute('data-loader-canvas-target'))
+    } else {
+      this.$canvasEl = Dom.find($el, '[data-loader-canvas]')
+    }
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
     this.initialize()
   }
@@ -114,15 +128,20 @@ export default class Dataloader {
     this.opts.page = 0
     this.$paramEls.forEach($paramEl => $paramEl.removeAttribute('data-loader-param-selected'))
     e.currentTarget.setAttribute('data-loader-param-selected', '')
-    this.opts.loaderParam = e.currentTarget.dataset.loaderParam
+    const key = e.currentTarget.dataset.loaderParamKey || 'defaultParam'
+    this.opts.loaderParam[key] = e.currentTarget.dataset.loaderParam
+
     this.fetch()
   }
 
   fetch(addEntries = false) {
-    const param = this.opts.loaderParam
+    const { defaultParam, ...otherParams } = this.opts.loaderParam
     const filter = this.opts.filter
 
-    fetch(`${this.baseURL}/${param}/${this.opts.page}?` + new URLSearchParams({ filter }))
+    fetch(
+      `${this.baseURL}/${defaultParam ? defaultParam + '/' : ''}${this.opts.page}?` +
+        new URLSearchParams({ filter, ...otherParams })
+    )
       .then(res => {
         this.status = res.headers.get('jpt-dataloader') || 'available'
         this.updateButton()
