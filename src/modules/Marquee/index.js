@@ -63,8 +63,7 @@ export default class Marquee {
     const holderWidth = this.elements.$holder.offsetWidth
     const $allHolders = Dom.all(this.elements.$el, '[data-marquee-holder]')
     const marqueeWidth = holderWidth * $allHolders.length
-
-    this.duration = holderWidth / this.opts.speed
+    this.duration = (holderWidth + marqueeWidth) / this.opts.speed
 
     gsap.set(this.elements.$marquee, { width: marqueeWidth })
     this.initializeTween()
