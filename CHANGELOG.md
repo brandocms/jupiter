@@ -1,3 +1,8 @@
+#### 3.50.1
+
+- Links: Add `openExternalInWindow` to force external links to open in new window
+
+
 #### 3.50.0
 
 - Popover: Add initial version
