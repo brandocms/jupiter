@@ -8,6 +8,7 @@ const DEFAULT_OPTIONS = {
   triggerEvents: true,
   scrollDuration: 0.8,
   mobileMenuDelay: 800,
+  openExternalInWindow: true,
   linkQuery: 'a:not([href^="#"]):not([target="_blank"]):not([data-lightbox]):not(.noanim)',
   anchorQuery: 'a[href^="#"]:not(.noanim)',
 
@@ -139,9 +140,14 @@ export default class Links {
 
   bindLinks(links) {
     Array.from(links).forEach(link => {
+      const href = link.getAttribute('href')
+      const internalLink = href.indexOf(document.location.hostname) > -1 || href.startsWith('/')
+      if (this.opts.openExternalInWindow && !internalLink) {
+        link.setAttribute('target', '_blank')
+      }
+
       link.addEventListener('click', e => {
         const loadingContainer = document.querySelector('.loading-container')
-        const href = link.getAttribute('href')
 
         if (e.shiftKey || e.metaKey || e.ctrlKey) {
           return
@@ -151,7 +157,7 @@ export default class Links {
           loadingContainer.style.display = 'none'
         }
 
-        if (href.indexOf(document.location.hostname) > -1 || href.startsWith('/')) {
+        if (internalLink) {
           e.preventDefault()
           this.opts.onTransition(href, this.app)
         }
