@@ -22,9 +22,8 @@ export default class EqualHeightImages {
     }
   }
 
-  initialize() {
-    const canvases = Dom.all(this.container, '[data-eq-height-images]')
-    Array.from(canvases).forEach(canvas => {
+  run() {
+    Array.from(this.canvases).forEach(canvas => {
       let lastTop = null
       const actionables = []
       let elements = []
@@ -69,6 +68,11 @@ export default class EqualHeightImages {
         }
       })
     })
+  }
+
+  initialize() {
+    this.canvases = Dom.all(this.container, '[data-eq-height-images]')
+    this.run()
   }
 
   getRenderedSize(contains, cWidth, cHeight, width, height, pos) {
