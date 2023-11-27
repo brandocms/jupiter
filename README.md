@@ -321,6 +321,12 @@ togglers.forEach(toggleEl => {
   This affects the fixed header amongst other things.
 - `scrollDuration` - `number` - `0.8` - how long the scroll lasts
 
+By default anchor links get added to the browser history. You can skip this by setting
+`data-skip-history` on the link **target**:
+
+```html
+<a id="content" name="content" data-skip-history></a>
+```
 
 
 ## Moonwalk

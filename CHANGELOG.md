@@ -1,3 +1,11 @@
+#### 3.51.0
+
+- Links: Add anchor to browser history. Allow skipping with `data-skip-history` 
+  on link target
+- Dataloader: Allow multiple selected params across different keys
+- Dataloader: Add static `replaceInnerHTML(el, url)`
+
+
 #### 3.50.1
 
 - Links: Add `openExternalInWindow` to force external links to open in new window
