@@ -70,6 +70,19 @@ export default class Dataloader {
     this.initialize()
   }
 
+  static replaceInnerHTML(el, url) {
+    return new Promise(resolve => {
+      fetch(url)
+        .then(res => {
+          return res.text()
+        })
+        .then(html => {
+          el.innerHTML = html
+          return resolve(html)
+        })
+    })
+  }
+
   debounce(func, delay = 650) {
     let timerId
     return (...args) => {
