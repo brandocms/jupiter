@@ -48,9 +48,9 @@ const DEFAULT_OPTIONS = {
      *
      * Example:
      *
-     *    const mw = new Moonwalk(dataloader.app, configureMoonwalk(dataloader.app), dataloader.$el)
-     *    new Lazyload(dataloader.app, { useNativeLazyloadIfAvailable: false }, dataloader.$el)
-     *    new EqualHeightImages(dataloader.app, {}, dataloader.$el)
+     *    const mw = new Moonwalk(dataloader.app, configureMoonwalk(dataloader.app), dataloader.$canvasEl)
+     *    new Lazyload(dataloader.app, { useNativeLazyloadIfAvailable: false }, dataloader.$canvasEl)
+     *    new EqualHeightImages(dataloader.app, {}, dataloader.$canvasEl)
      *    mw.ready()
      */
   }
@@ -139,7 +139,16 @@ export default class Dataloader {
     this.loading()
     // reset page when switching param!
     this.opts.page = 0
-    this.$paramEls.forEach($paramEl => $paramEl.removeAttribute('data-loader-param-selected'))
+    const paramKey = e.currentTarget.dataset.loaderParamKey
+    this.$paramEls.forEach($paramEl => {
+      if (paramKey) {
+        if ($paramEl.dataset.loaderParamKey === paramKey) {
+          $paramEl.removeAttribute('data-loader-param-selected')
+        }
+      } else {
+        $paramEl.removeAttribute('data-loader-param-selected')
+      }
+    })
     e.currentTarget.setAttribute('data-loader-param-selected', '')
     const key = e.currentTarget.dataset.loaderParamKey || 'defaultParam'
     this.opts.loaderParam[key] = e.currentTarget.dataset.loaderParam
