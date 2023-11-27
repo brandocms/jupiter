@@ -62,9 +62,10 @@ export default class Dropdown {
       .from(
         this.elements.menu,
         {
-          duration: 0.1,
-          className: `${this.elements.menu.className} zero-height`
+          className: `${this.elements.menu.className} zero-height`,
+          duration: 0.1
         },
+
         'open'
       )
       .to(
