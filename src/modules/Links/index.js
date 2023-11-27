@@ -120,6 +120,9 @@ export default class Links {
 
           if (dataTarget) {
             this.opts.onAnchor(dataTarget, this)
+            if (!dataTarget.hasAttribute('data-skip-history')) {
+              history.pushState({}, '', href)
+            }
 
             if (this.app.header && dataTarget.id !== 'top') {
               setTimeout(() => {
@@ -141,6 +144,9 @@ export default class Links {
   bindLinks(links) {
     Array.from(links).forEach(link => {
       const href = link.getAttribute('href')
+      if (!href) {
+        return
+      }
       const internalLink = href.indexOf(document.location.hostname) > -1 || href.startsWith('/')
       if (this.opts.openExternalInWindow && !internalLink) {
         link.setAttribute('target', '_blank')
