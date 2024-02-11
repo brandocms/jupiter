@@ -78,7 +78,7 @@ export default class Dataloader {
         })
         .then(html => {
           el.innerHTML = html
-          return resolve(html)
+          return resolve(el)
         })
     })
   }
@@ -91,6 +91,10 @@ export default class Dataloader {
         func.apply(this, args)
       }, delay)
     }
+  }
+
+  updateBaseURL(url) {
+    this.baseURL = url
   }
 
   initialize() {
@@ -135,23 +139,56 @@ export default class Dataloader {
   }
 
   onParam(e) {
-    e.preventDefault()
     this.loading()
     // reset page when switching param!
     this.opts.page = 0
-    const paramKey = e.currentTarget.dataset.loaderParamKey
-    this.$paramEls.forEach($paramEl => {
-      if (paramKey) {
-        if ($paramEl.dataset.loaderParamKey === paramKey) {
-          $paramEl.removeAttribute('data-loader-param-selected')
+
+    // param can have multiple values
+    const multiVals = e.currentTarget.hasAttribute('data-loader-param-multi')
+
+    // special case if it's a checkbox!
+    if (e.currentTarget.getAttribute('type') === 'checkbox') {
+      const key = e.currentTarget.dataset.loaderParamKey || 'defaultParam'
+      this.opts.loaderParam[key] = e.currentTarget.checked
+    } else {
+      e.preventDefault()
+      if (e.currentTarget.hasAttribute('data-loader-param-selected')) {
+        // if already selected, clear it
+        const key = e.currentTarget.dataset.loaderParamKey || 'defaultParam'
+        if (multiVals) {
+          this.opts.loaderParam[key] = this.opts.loaderParam[key].filter(val => {
+            return val !== e.currentTarget.dataset.loaderParam
+          })
+        } else {
+          delete this.opts.loaderParam[key]
         }
+        e.currentTarget.removeAttribute('data-loader-param-selected')
+        console.log(this.opts.loaderParam[key])
       } else {
-        $paramEl.removeAttribute('data-loader-param-selected')
+        if (multiVals) {
+          const key = e.currentTarget.dataset.loaderParamKey || 'defaultParam'
+          if (!this.opts.loaderParam.hasOwnProperty(key)) {
+            this.opts.loaderParam[key] = []
+          }
+          this.opts.loaderParam[key].push(e.currentTarget.dataset.loaderParam)
+          e.currentTarget.setAttribute('data-loader-param-selected', '')
+        } else {
+          const paramKey = e.currentTarget.dataset.loaderParamKey
+          this.$paramEls.forEach($paramEl => {
+            if (paramKey) {
+              if ($paramEl.dataset.loaderParamKey === paramKey) {
+                $paramEl.removeAttribute('data-loader-param-selected')
+              }
+            } else {
+              $paramEl.removeAttribute('data-loader-param-selected')
+            }
+          })
+          e.currentTarget.setAttribute('data-loader-param-selected', '')
+          const key = e.currentTarget.dataset.loaderParamKey || 'defaultParam'
+          this.opts.loaderParam[key] = e.currentTarget.dataset.loaderParam
+        }
       }
-    })
-    e.currentTarget.setAttribute('data-loader-param-selected', '')
-    const key = e.currentTarget.dataset.loaderParamKey || 'defaultParam'
-    this.opts.loaderParam[key] = e.currentTarget.dataset.loaderParam
+    }
 
     this.fetch()
   }
