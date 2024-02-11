@@ -53,6 +53,7 @@ export default class Dropdown {
     }
     this.elements.menuItems = Dom.all(this.elements.menu, this.opts.selectors.menuItems)
     this.initialize()
+    this.checkForInitialOpen()
   }
 
   initialize() {
@@ -93,7 +94,9 @@ export default class Dropdown {
         }
       })
       .to(this.elements.menu, { opacity: 1 })
-      .from(this.elements.menuItems, this.opts.tweens.items, 'open+=.1')
+    if (this.elements.menuItems.length) {
+      this.timeline.from(this.elements.menuItems, this.opts.tweens.items, 'open+=.1')
+    }
 
     if (!this.elements.trigger) {
       return
@@ -138,6 +141,12 @@ export default class Dropdown {
       this.timeline.play()
     } else {
       this.timeline.reverse()
+    }
+  }
+
+  checkForInitialOpen() {
+    if (this.elements.trigger.hasAttribute('data-dropdown-active')) {
+      this.openMenu()
     }
   }
 }
