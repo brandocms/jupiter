@@ -26,8 +26,12 @@ export default class Popover {
 
     this.popover.classList.add(this.className)
 
-    this.trigger.addEventListener('mouseenter', this.handleMouseEnter.bind(this))
-    this.trigger.addEventListener('mouseleave', this.handleMouseLeave.bind(this))
+    if (!app.featureTests.results.touch) {
+      this.trigger.addEventListener('mouseenter', this.handleMouseEnter.bind(this))
+      this.trigger.addEventListener('mouseleave', this.handleMouseLeave.bind(this))
+    } else {
+      this.trigger.addEventListener('touchstart', this.handleTouchStart.bind(this))
+    }
   }
 
   handleMouseEnter(e) {
@@ -36,6 +40,10 @@ export default class Popover {
 
   handleMouseLeave(e) {
     this.hide()
+  }
+
+  handleTouchStart(e) {
+    this.toggle()
   }
 
   get isVisible() {
