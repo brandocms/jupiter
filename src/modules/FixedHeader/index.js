@@ -98,6 +98,7 @@ const DEFAULT_OPTIONS = {
   on: Events.APPLICATION_REVEALED,
   unpinOnForcedScrollStart: true,
   pinOnForcedScrollEnd: true,
+  rafScroll: true,
 
   default: {
     unPinOnResize: true,
@@ -226,7 +227,12 @@ export default class FixedHeader {
     }
 
     this.app.registerCallback(Events.APPLICATION_REVEALED, () => {
-      window.addEventListener(Events.APPLICATION_SCROLL, this.update.bind(this), {
+      let SCROLL_EVENT = Events.APPLICATION_SCROLL
+      if (!this.mainOpts.rafScroll) {
+        SCROLL_EVENT = 'scroll'
+      }
+
+      window.addEventListener(SCROLL_EVENT, this.redraw.bind(this), {
         capture: false,
         passive: true
       })
@@ -249,9 +255,11 @@ export default class FixedHeader {
   }
 
   preflight() {
-    this.checkSize(true)
-    this.checkBg(true)
-    this.checkTop(true)
+    if (!this.opts.enter) {
+      this.checkSize(true)
+      this.checkBg(true)
+      this.checkTop(true)
+    }
 
     this.app.registerCallback(Events.APPLICATION_REVEALED, () => {
       setTimeout(() => {
