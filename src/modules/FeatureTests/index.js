@@ -74,6 +74,31 @@ export default class FeatureTests {
    * listen for events as well
    */
   testTouchMouseEvents() {
+    if (window.PointerEvent && 'maxTouchPoints' in navigator) {
+      // if Pointer Events are supported, just check maxTouchPoints
+      if (navigator.maxTouchPoints > 0) {
+        this.results.touch = true
+        this.results.mouse = false
+        this.testFor('touch', true)
+        this.testFor('mouse', false)
+      }
+    } else {
+      // no Pointer Events...
+      if (window.matchMedia && window.matchMedia('(any-pointer:coarse)').matches) {
+        // check for any-pointer:coarse which mostly means touchscreen
+        this.results.touch = true
+        this.results.mouse = false
+        this.testFor('touch', true)
+        this.testFor('mouse', false)
+      } else if (window.TouchEvent || 'ontouchstart' in window) {
+        // last resort - check for exposed touch events API / event handler
+        this.results.touch = true
+        this.results.mouse = false
+        this.testFor('touch', true)
+        this.testFor('mouse', false)
+      }
+    }
+
     const onTouchStart = () => {
       if (!this.results.touch) {
         this.results.touch = true
