@@ -8,7 +8,8 @@ const DEFAULT_OPTIONS = {
     oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1)
 
     const timeline = gsap.timeline()
-    c.setCookie('cookielaw_accepted', 1, oneYearFromNow, '/')
+    c.setCookie('COOKIES_CONSENT_STATUS', 1, oneYearFromNow, '/')
+    c.opts.setCookies(c)
 
     timeline
       .to(c.cc, { duration: 0.35, y: '120%', ease: 'power3.in' }, '0')
@@ -16,8 +17,36 @@ const DEFAULT_OPTIONS = {
       .set(c.cc, { display: 'none' })
   },
 
+  onRefuse: c => {
+    const oneYearFromNow = new Date()
+    oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1)
+
+    const timeline = gsap.timeline()
+    c.setCookie('COOKIES_CONSENT_STATUS', 0, oneYearFromNow, '/')
+
+    timeline
+      .to(c.cc, { duration: 0.35, y: '120%', ease: 'power3.in' }, '0')
+      .to(c.inner, { duration: 0.3, opacity: 0, ease: 'power3.in' }, '0')
+      .set(c.cc, { display: 'none' })
+  },
+
+  alreadyConsented: c => {
+    // user has already consented to cookies. Can be used to update/load gtm etc.
+  },
+
+  alreadyRefused: c => {
+    // user has already refused cookies.
+  },
+
+  setCookies: c => {},
+
   showCC: c => {
-    if (c.hasCookie('cookielaw_accepted')) {
+    if (c.hasCookie('COOKIES_CONSENT_STATUS')) {
+      if (c.getCookie('COOKIES_CONSENT_STATUS') === '1') {
+        c.opts.alreadyConsented(c)
+      } else {
+        c.opts.alreadyRefused(c)
+      }
       return
     }
 
@@ -78,6 +107,7 @@ export default class Cookies {
     this.text = document.querySelector('.cookie-law-text')
     this.btns = document.querySelector('.cookie-law-buttons')
     this.btn = document.querySelector('.dismiss-cookielaw')
+    this.btnRefuse = document.querySelector('.refuse-cookielaw')
 
     if (!this.btn) {
       return
@@ -89,6 +119,9 @@ export default class Cookies {
 
     this.btn.addEventListener('click', () => {
       this.opts.onAccept(this)
+    })
+    this.btnRefuse.addEventListener('click', () => {
+      this.opts.onRefuse(this)
     })
   }
 
