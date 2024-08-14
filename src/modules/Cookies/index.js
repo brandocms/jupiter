@@ -120,9 +120,11 @@ export default class Cookies {
     this.btn.addEventListener('click', () => {
       this.opts.onAccept(this)
     })
-    this.btnRefuse.addEventListener('click', () => {
-      this.opts.onRefuse(this)
-    })
+    if (this.btnRefuse) {
+      this.btnRefuse.addEventListener('click', () => {
+        this.opts.onRefuse(this)
+      })
+    }
   }
 
   getCookie(sKey) {
