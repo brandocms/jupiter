@@ -1,3 +1,13 @@
+#### 3.52.0
+
+- Moonwalk: Add `clearNestedWalks: true` to default config to prevent slow moonwalks.
+
+
+#### 3.51.1
+
+- Cookies: Verify we have btnRefuse
+
+
 #### 3.51.0
 
 - Links: Add anchor to browser history. Allow skipping with `data-skip-history` 
