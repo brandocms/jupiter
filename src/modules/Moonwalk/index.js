@@ -43,6 +43,11 @@ const DEFAULT_OPTIONS = {
   clearNestedSections: true,
 
   /**
+   * Clear out all nested [data-moonwalk]s
+   */
+  clearNestedWalks: true,
+
+  /**
    * If page is linked with an anchor, remove moonwalk for the page
    */
   clearMoonwalkOnAnchors: true,
@@ -114,6 +119,12 @@ export default class Moonwalk {
       container
         .querySelectorAll('[data-moonwalk-section] [data-moonwalk-section]')
         .forEach(ms => ms.removeAttribute('data-moonwalk-section'))
+    }
+
+    if (this.opts.clearNestedWalks) {
+      container
+        .querySelectorAll('[data-moonwalk] [data-moonwalk]')
+        .forEach(ms => ms.removeAttribute('data-moonwalk'))
     }
 
     this.addClass()
