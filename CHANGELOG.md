@@ -1,3 +1,9 @@
+#### 3.53.0
+
+- Moonwalk: When `clearMoonwalkOnAnchors`, run all moonwalks up to the anchor point
+  instead of clearing them.
+
+
 #### 3.52.0
 
 - Moonwalk: Add `clearNestedWalks: true` to default config to prevent slow moonwalks.

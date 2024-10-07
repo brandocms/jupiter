@@ -108,13 +108,6 @@ export default class Moonwalk {
   }
 
   initialize(container = document.body) {
-    if (this.opts.clearMoonwalkOnAnchors) {
-      if (window.location.hash) {
-        this.removeAllWalks()
-        return
-      }
-    }
-
     if (this.opts.clearNestedSections) {
       container
         .querySelectorAll('[data-moonwalk-section] [data-moonwalk-section]')
@@ -125,6 +118,12 @@ export default class Moonwalk {
       container
         .querySelectorAll('[data-moonwalk] [data-moonwalk]')
         .forEach(ms => ms.removeAttribute('data-moonwalk'))
+    }
+
+    if (this.opts.clearMoonwalkOnAnchors) {
+      if (window.location.hash) {
+        this.walkToThisPoint(window.location.hash)
+      }
     }
 
     this.addClass()
@@ -152,15 +151,42 @@ export default class Moonwalk {
   }
 
   /**
+   * Matching moonwalk elements before the element matching the hash should be set to visible
+   * by setting the `data-moonwalked` attribute on `data-moonwalk` elements and
+   * `data-moonwalk-section-ready` on `data-moonwalk-section` elements.
+   */
+  walkToThisPoint(hash) {
+    // Find the target element using the hash
+    const targetElement = document.querySelector(hash)
+    if (!targetElement) return // Exit if the element is not found
+
+    // Get all elements with the 'data-moonwalk' attribute
+    const moonwalkElements = document.querySelectorAll('[data-moonwalk]')
+    moonwalkElements.forEach(el => {
+      const position = el.compareDocumentPosition(targetElement)
+      // Check if 'el' comes before 'targetElement' or is the same element
+      if (position & Node.DOCUMENT_POSITION_FOLLOWING || el === targetElement) {
+        el.setAttribute('data-moonwalked', '')
+        el.classList.add('moonwalked')
+      }
+    })
+
+    // Get all elements with the 'data-moonwalk-section' attribute
+    const moonwalkSectionElements = document.querySelectorAll('[data-moonwalk-section]')
+    moonwalkSectionElements.forEach(el => {
+      const position = el.compareDocumentPosition(targetElement)
+      // Check if 'el' comes before 'targetElement' or is the same element
+      if (position & Node.DOCUMENT_POSITION_FOLLOWING || el === targetElement) {
+        el.setAttribute('data-moonwalk-section-ready', '')
+      }
+    })
+  }
+
+  /**
    * Remove all moonwalks. Useful for clients who prefer reduced motion
    */
-  removeAllWalks(container = document.body) {
-    const keys = [
-      'data-moonwalk',
-      'data-moonwalk-run',
-      'data-moonwalk-section',
-      'data-moonwalk-children'
-    ]
+  removeAllWalks(container = document.body, beforeEl = nil) {
+    const keys = ['data-moonwalk', 'data-moonwalk-section', 'data-moonwalk-children']
     keys.forEach(key => {
       const elems = container.querySelectorAll(`[${key}]`)
       Array.from(elems).forEach(el => el.removeAttribute(key))
@@ -169,12 +195,7 @@ export default class Moonwalk {
   }
 
   removeFor(container = document.body, selector) {
-    const keys = [
-      'data-moonwalk',
-      'data-moonwalk-run',
-      'data-moonwalk-section',
-      'data-moonwalk-children'
-    ]
+    const keys = ['data-moonwalk', 'data-moonwalk-section', 'data-moonwalk-children']
     keys.forEach(key => {
       const elems = container.querySelectorAll(`${selector}[${key}]`)
       Array.from(elems).forEach(el => el.removeAttribute(key))
