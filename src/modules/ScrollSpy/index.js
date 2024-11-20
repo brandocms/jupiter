@@ -1,7 +1,9 @@
 import _defaultsDeep from 'lodash.defaultsdeep'
 import Dom from '../Dom'
 
-const DEFAULT_OPTIONS = {}
+const DEFAULT_OPTIONS = {
+  onIntersect: (target, trigger) => {}
+}
 
 export default class ScrollSpy {
   constructor(app, opts = {}) {
@@ -37,6 +39,7 @@ export default class ScrollSpy {
     }
     if (shouldBeActive) {
       shouldBeActive.dataset.scrollspyActive = ''
+      this.opts.onIntersect(entry.target, shouldBeActive)
     }
   }
 }

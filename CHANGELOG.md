@@ -1,3 +1,10 @@
+#### 3.54.0
+
+- ScrollSpy: Add `onIntersect(target, shouldBeActive)` to opts
+- Moonwalk: If all images within a mw element should be lazyloaded, don't wait for
+  them to load before revealing the element
+
+
 #### 3.53.0
 
 - Moonwalk: When `clearMoonwalkOnAnchors`, run all moonwalks up to the anchor point
@@ -16,7 +23,7 @@
 
 #### 3.51.0
 
-- Links: Add anchor to browser history. Allow skipping with `data-skip-history` 
+- Links: Add anchor to browser history. Allow skipping with `data-skip-history`
   on link target
 - Dataloader: Allow multiple selected params across different keys
 - Dataloader: Add static `replaceInnerHTML(el, url)`
@@ -77,7 +84,7 @@
 
 #### 3.47.0
 
-- Application: Ensure header and footer's opacity is cleared out when arriving 
+- Application: Ensure header and footer's opacity is cleared out when arriving
   at page from using back button.
 - Marquee: Add `spacer` option to allow overriding
 - Add `EqualHeightImages` module
@@ -113,7 +120,7 @@
 
 #### 3.46.0
 
-- **BREAKING** Marquee: Drop `paddingLeft` -- add `startProgress`. This sets where in the 
+- **BREAKING** Marquee: Drop `paddingLeft` -- add `startProgress`. This sets where in the
   timeline we should start. Default is `0.5`
 - Application: Add `hardScrollToTop()`
 - Zoom: Try to improve zoom handling for chrome
@@ -134,10 +141,10 @@
 
 #### 3.43.0
 
-- **BREAKING** Marquee: More consistent `speed`. This means you should probably 
+- **BREAKING** Marquee: More consistent `speed`. This means you should probably
   verify that the speed you set looks ok with the new config
 - Marquee: Add `paddingLeft` and `slowDownOnHover` options
-- Application: send `widthChanged` and `heightChanged` booleans 
+- Application: send `widthChanged` and `heightChanged` booleans
   in `APPLICATION:RESIZE` event detail
 
 
