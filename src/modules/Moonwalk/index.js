@@ -187,7 +187,7 @@ export default class Moonwalk {
   /**
    * Remove all moonwalks. Useful for clients who prefer reduced motion
    */
-  removeAllWalks(container = document.body, beforeEl = nil) {
+  removeAllWalks(container = document.body) {
     const keys = [
       'data-moonwalk',
       'data-moonwalk-section',
