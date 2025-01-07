@@ -1,3 +1,8 @@
+#### 3.54.1
+
+- Moonwalk: Fix typo in clearing moonwalks for reduced motion targets
+
+
 #### 3.54.0
 
 - ScrollSpy: Add `onIntersect(target, shouldBeActive)` to opts
