@@ -7,17 +7,17 @@ import * as Events from '../../events'
 const DEFAULT_OPTIONS = {
   revealIntersectionObserverConfig: {
     rootMargin: '0px 100px 0px 100px',
-    threshold: 0.0
+    threshold: 0.0,
   },
   loadIntersectionObserverConfig: {
     rootMargin: '850px 500px 850px 500px',
-    threshold: 0.0
+    threshold: 0.0,
   },
   useNativeLazyloadIfAvailable: true,
   mode: 'default',
   minSize: 40,
   updateSizes: true,
-  registerCallback: true
+  registerCallback: true,
 }
 
 export default class Lazyload {
@@ -49,16 +49,21 @@ export default class Lazyload {
     this.initializeSections()
 
     // if we have native lazyload, use it.
-    if ('loading' in HTMLImageElement.prototype && this.opts.useNativeLazyloadIfAvailable) {
+    if (
+      'loading' in HTMLImageElement.prototype &&
+      this.opts.useNativeLazyloadIfAvailable
+    ) {
       const lazyImages = document.querySelectorAll('[data-ll-image]')
-      lazyImages.forEach(img => {
+      lazyImages.forEach((img) => {
         img.setAttribute('loading', 'lazy')
         this.swapImage(img)
       })
 
       const lazyPictures = document.querySelectorAll('[data-ll-srcset]')
-      lazyPictures.forEach(picture => {
-        picture.querySelectorAll('img').forEach(img => img.setAttribute('loading', 'lazy'))
+      lazyPictures.forEach((picture) => {
+        picture
+          .querySelectorAll('img')
+          .forEach((img) => img.setAttribute('loading', 'lazy'))
         this.swapPicture(picture)
       })
 
@@ -98,7 +103,7 @@ export default class Lazyload {
     this.lazyPictures.forEach((picture, idx) => {
       if (setAttrs) {
         picture.setAttribute('data-ll-srcset-initialized', '')
-        picture.querySelectorAll('img:not([data-ll-loaded])').forEach(img => {
+        picture.querySelectorAll('img:not([data-ll-loaded])').forEach((img) => {
           img.setAttribute('data-ll-blurred', '')
           img.setAttribute('data-ll-idx', idx)
           img.style.setProperty('--ll-idx', idx)
@@ -106,6 +111,14 @@ export default class Lazyload {
       }
       observer.observe(picture)
     })
+  }
+
+  forceLoad($container = document.body) {
+    const images = Dom.all($container, '[data-ll-image]')
+    images.forEach((img) => this.swapImage(img))
+
+    const pictures = Dom.all($container, '[data-ll-srcset]')
+    pictures.forEach((picture) => this.revealPicture(picture))
   }
 
   initializeAutoSizes() {
@@ -120,11 +133,11 @@ export default class Lazyload {
    * Set sizes attribute for all imgs with `data-sizes="auto"` and source within the <picture>
    */
   autoSizes() {
-    Array.from(this.$autoSizesImages).forEach(img => {
+    Array.from(this.$autoSizesImages).forEach((img) => {
       const width = this.getWidth(img)
       img.setAttribute('sizes', `${width}px`)
       if (img.parentNode) {
-        Array.from(Dom.all(img.parentNode, 'source')).forEach(source =>
+        Array.from(Dom.all(img.parentNode, 'source')).forEach((source) =>
           source.setAttribute('sizes', `${width}px`)
         )
       }
@@ -149,12 +162,12 @@ export default class Lazyload {
       const sectionObserver = (section, children) => {
         const imagesInSection = Dom.all(section, 'img')
         return new IntersectionObserver((entries, self) => {
-          entries.forEach(entry => {
+          entries.forEach((entry) => {
             if (entry.isIntersecting || entry.intersectionRatio > 0) {
               imagesAreLoaded(imagesInSection, true).then(() => {
                 dispatchElementEvent(section, Events.SECTION_LAZYLOADED)
               })
-              children.forEach(picture => {
+              children.forEach((picture) => {
                 this.loadPicture(picture)
                 this.loadObserver.unobserve(picture)
               })
@@ -164,7 +177,7 @@ export default class Lazyload {
         }, this.opts.intersectionObserverConfig)
       }
 
-      sections.forEach(section => {
+      sections.forEach((section) => {
         const children = section.querySelectorAll('picture')
         const obs = sectionObserver(section, children)
         obs.observe(section)
@@ -174,7 +187,7 @@ export default class Lazyload {
 
   // we load the picture a ways before it enters the viewport
   handleLoadEntries(elements) {
-    elements.forEach(item => {
+    elements.forEach((item) => {
       if (item.isIntersecting || item.intersectionRatio > 0) {
         const picture = item.target
         this.loadPicture(picture)
@@ -185,16 +198,19 @@ export default class Lazyload {
 
   // we reveal the picture when it enters the viewport
   handleRevealEntries(elements) {
-    const srcsetReadyObserver = new MutationObserver(mutations => {
-      mutations.forEach(record => {
-        if (record.type === 'attributes' && record.attributeName === 'data-ll-srcset-ready') {
+    const srcsetReadyObserver = new MutationObserver((mutations) => {
+      mutations.forEach((record) => {
+        if (
+          record.type === 'attributes' &&
+          record.attributeName === 'data-ll-srcset-ready'
+        ) {
           this.revealPicture(record.target)
           this.revealObserver.unobserve(record.target)
         }
       })
     })
 
-    elements.forEach(item => {
+    elements.forEach((item) => {
       if (item.isIntersecting || item.intersectionRatio > 0) {
         const picture = item.target
         const ready = item.target.hasAttribute('data-ll-srcset-ready')
@@ -233,7 +249,10 @@ export default class Lazyload {
     const img = picture.querySelector('img')
 
     const onload = () => {
-      if (!img.getAttribute('data-ll-ready') && this.app.browser === 'firefox') {
+      if (
+        !img.getAttribute('data-ll-ready') &&
+        this.app.browser === 'firefox'
+      ) {
         // set sizes attribute on load again,
         // since firefox sometimes is a bit slow to
         // get the actual image width
@@ -241,7 +260,7 @@ export default class Lazyload {
 
         img.setAttribute('sizes', `${width}px`)
         if (img.parentNode) {
-          Array.from(Dom.all(img.parentNode, 'source')).forEach(source =>
+          Array.from(Dom.all(img.parentNode, 'source')).forEach((source) =>
             source.setAttribute('sizes', `${width}px`)
           )
         }
@@ -290,7 +309,7 @@ export default class Lazyload {
   }
 
   lazyloadImages(elements) {
-    elements.forEach(item => {
+    elements.forEach((item) => {
       if (item.isIntersecting || item.intersectionRatio > 0) {
         const image = item.target
         this.swapImage(image)
