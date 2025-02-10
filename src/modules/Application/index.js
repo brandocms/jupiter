@@ -12,10 +12,10 @@ import Dom from '../Dom'
 
 gsap.registerPlugin(ScrollToPlugin)
 gsap.defaults({
-  ease: 'sine.out'
+  ease: 'sine.out',
 })
 
-window.onpageshow = event => {
+window.onpageshow = (event) => {
   if (event.persisted) {
     const f = document.querySelector('#fader')
     if (f) {
@@ -46,7 +46,7 @@ window.onpageshow = event => {
 const DEFAULT_OPTIONS = {
   respectReducedMotion: true,
   featureTests: {
-    touch: true
+    touch: true,
   },
 
   focusableSelectors: [
@@ -55,7 +55,7 @@ const DEFAULT_OPTIONS = {
     'select',
     'button',
     'textarea',
-    'iframe' // , 'video'?
+    'iframe', // , 'video'?
   ],
 
   bindScroll: true,
@@ -79,10 +79,10 @@ const DEFAULT_OPTIONS = {
           gsap.set(fader, { display: 'none' })
           document.body.classList.remove('unloaded')
           callback()
-        }
+        },
       })
-    }
-  }
+    },
+  },
 }
 
 export default class Application {
@@ -101,16 +101,17 @@ export default class Application {
       initialOuterHeight: 0,
       initialInnerWidth: 0,
       initialOuterWidth: 0,
-      zoom: 1
+      zoom: 1,
     }
 
     this.position = {
       top: 0,
-      left: 0
+      left: 0,
     }
 
     this.state = {
-      revealed: false
+      revealed: false,
+      forcedScroll: false,
     }
 
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
@@ -144,33 +145,48 @@ export default class Application {
       gsap.globalTimeline.timeScale(200)
       document.documentElement.classList.add('prefers-reduced-motion')
     }
-    window.addEventListener(Events.BREAKPOINT_CHANGE, this.onBreakpointChanged.bind(this))
+    window.addEventListener(
+      Events.BREAKPOINT_CHANGE,
+      this.onBreakpointChanged.bind(this)
+    )
 
-    this.beforeInitializedEvent = new window.CustomEvent(Events.APPLICATION_PRELUDIUM, this)
-    this.initializedEvent = new window.CustomEvent(Events.APPLICATION_INITIALIZED, this)
+    this.beforeInitializedEvent = new window.CustomEvent(
+      Events.APPLICATION_PRELUDIUM,
+      this
+    )
+    this.initializedEvent = new window.CustomEvent(
+      Events.APPLICATION_INITIALIZED,
+      this
+    )
     this.readyEvent = new window.CustomEvent(Events.APPLICATION_READY, this)
-    this.revealedEvent = new window.CustomEvent(Events.APPLICATION_REVEALED, this)
+    this.revealedEvent = new window.CustomEvent(
+      Events.APPLICATION_REVEALED,
+      this
+    )
 
     /**
      * Grab common events and defer
      */
-    document.addEventListener('visibilitychange', this.onVisibilityChange.bind(this))
+    document.addEventListener(
+      'visibilitychange',
+      this.onVisibilityChange.bind(this)
+    )
     window.addEventListener('orientationchange', this.onResize.bind(this), {
       capture: false,
-      passive: true
+      passive: true,
     })
 
     if (opts.bindScroll) {
       window.addEventListener('scroll', rafCallback(this.onScroll.bind(this)), {
         capture: false,
-        passive: true
+        passive: true,
       })
     }
 
     if (opts.bindResize) {
       window.addEventListener('resize', rafCallback(this.onResize.bind(this)), {
         capture: false,
-        passive: true
+        passive: true,
       })
     }
   }
@@ -208,7 +224,10 @@ export default class Application {
         break
 
       case 'safari':
-        this._zoomSVG = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+        this._zoomSVG = document.createElementNS(
+          'http://www.w3.org/2000/svg',
+          'svg'
+        )
         this._zoomSVG.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
         this._zoomSVG.setAttribute('version', '1.1')
         gsap.set(this._zoomSVG, { display: 'none' })
@@ -252,13 +271,17 @@ export default class Application {
       default:
         if ([1, -1].indexOf(dprDelta) === -1) {
           if (dimsChanged) {
-            this.size.zoom = 1 + (zoom.calculate(this.browser) - this._initialZoom)
+            this.size.zoom =
+              1 + (zoom.calculate(this.browser) - this._initialZoom)
             if (this.size.zoom === 0) {
               this.size.zoom = 1
             }
           }
         } else {
-          this._initialZoom = Math.min(Math.max(this._initialZoom - dprDelta, 1), 2)
+          this._initialZoom = Math.min(
+            Math.max(this._initialZoom - dprDelta, 1),
+            2
+          )
         }
     }
 
@@ -289,7 +312,7 @@ export default class Application {
     if (!Object.prototype.hasOwnProperty.call(this.callbacks, type)) {
       return
     }
-    this.callbacks[type].forEach(cb => cb(this))
+    this.callbacks[type].forEach((cb) => cb(this))
   }
 
   /**
@@ -325,7 +348,9 @@ export default class Application {
     window.dispatchEvent(ev)
     this.SCROLL_LOCKED = true
     gsap.set(document.body, { overflow: 'hidden' })
-    gsap.set(this._scrollPaddedElements, { paddingRight: currentScrollbarWidth })
+    gsap.set(this._scrollPaddedElements, {
+      paddingRight: currentScrollbarWidth,
+    })
     document.addEventListener('touchmove', this.scrollVoid, false)
   }
 
@@ -350,7 +375,10 @@ export default class Application {
    */
   scrollTo(target, time = 0.8, emitEvents = true, ease = 'sine.inOut') {
     let scrollToData
-    const forcedScrollEventStart = new window.CustomEvent(Events.APPLICATION_FORCED_SCROLL_START)
+    const forcedScrollEventStart = new window.CustomEvent(
+      Events.APPLICATION_FORCED_SCROLL_START
+    )
+    this.state.forcedScroll = true
     if (emitEvents) {
       window.dispatchEvent(forcedScrollEventStart)
     }
@@ -365,12 +393,15 @@ export default class Application {
       duration: time,
       scrollTo: scrollToData,
       onComplete: () => {
-        const forcedScrollEventEnd = new window.CustomEvent(Events.APPLICATION_FORCED_SCROLL_END)
+        const forcedScrollEventEnd = new window.CustomEvent(
+          Events.APPLICATION_FORCED_SCROLL_END
+        )
         if (emitEvents) {
           window.dispatchEvent(forcedScrollEventEnd)
+          requestAnimationFrame(() => (this.state.forcedScroll = false))
         }
       },
-      ease
+      ease,
     })
   }
 
@@ -516,10 +547,22 @@ export default class Application {
     this.size.initialOuterWidth = window.outerWidth
     this.size.scrollHeight = document.body.scrollHeight
 
-    root.style.setProperty('--vp-initial-inner-h', `${this.size.initialInnerHeight}px`)
-    root.style.setProperty('--vp-initial-outer-h', `${this.size.initialOuterHeight}px`)
-    root.style.setProperty('--vp-initial-inner-w', `${this.size.initialInnerWidth}px`)
-    root.style.setProperty('--vp-initial-outer-w', `${this.size.initialOuterWidth}px`)
+    root.style.setProperty(
+      '--vp-initial-inner-h',
+      `${this.size.initialInnerHeight}px`
+    )
+    root.style.setProperty(
+      '--vp-initial-outer-h',
+      `${this.size.initialOuterHeight}px`
+    )
+    root.style.setProperty(
+      '--vp-initial-inner-w',
+      `${this.size.initialInnerWidth}px`
+    )
+    root.style.setProperty(
+      '--vp-initial-outer-w',
+      `${this.size.initialOuterWidth}px`
+    )
     root.style.setProperty('--ec-zoom', `${this.size.zoom}`)
     root.style.setProperty('--scroll-h', `${this.size.scrollHeight}px`)
 
@@ -551,7 +594,9 @@ export default class Application {
    */
   setvh100() {
     const root = document.querySelector(':root')
-    const height = this.featureTests.results.ios ? screen.height : window.innerHeight
+    const height = this.featureTests.results.ios
+      ? screen.height
+      : window.innerHeight
     root.style.setProperty('--vp-100vh', `${height}px`)
     root.style.setProperty('--vp-1vh', `${height * 0.01}px`)
   }
@@ -603,7 +648,7 @@ export default class Application {
     this.setFontBaseVw()
 
     const evt = new CustomEvent(Events.APPLICATION_RESIZE, {
-      detail: { widthChanged, heightChanged }
+      detail: { widthChanged, heightChanged },
     })
     window.dispatchEvent(evt)
   }
@@ -672,9 +717,13 @@ export default class Application {
 
     const span = userAgent.querySelector('span')
     const windowWidth =
-      window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth
+      window.innerWidth ||
+      document.documentElement.clientWidth ||
+      document.body.clientWidth
     const windowHeight =
-      window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight
+      window.innerHeight ||
+      document.documentElement.clientHeight ||
+      document.body.clientHeight
 
     span.addEventListener('click', () => {
       const copyText = userAgent.querySelector('b')
@@ -724,7 +773,7 @@ ${JSON.stringify(this.featureTests.results, undefined, 2)}
         gsap.set(breakpoint, { width: 'auto', display: 'block' })
         tl.from(breakpoint, { duration: 0.7, width: 0 }).to(breakpoint, {
           duration: 0.3,
-          autoAlpha: 1
+          autoAlpha: 1,
         })
         break
 
@@ -733,7 +782,7 @@ ${JSON.stringify(this.featureTests.results, undefined, 2)}
         gsap.set(userAgent, { width: 'auto', display: 'block' })
         tl.from(userAgent, { duration: 0.7, width: 0 }).to(userAgent, {
           duration: 0.3,
-          autoAlpha: 1
+          autoAlpha: 1,
         })
         break
 
@@ -746,7 +795,7 @@ ${JSON.stringify(this.featureTests.results, undefined, 2)}
    * CTRL-G to show grid overlay
    */
   setupGridoverlay() {
-    const gridKeyPressed = e => {
+    const gridKeyPressed = (e) => {
       if (e.keyCode === 71 && e.ctrlKey) {
         const guides = Dom.find('.dbg-grid')
         const cols = Dom.all(guides, 'b')
@@ -764,7 +813,7 @@ ${JSON.stringify(this.featureTests.results, undefined, 2)}
             ease: 'sine.inOut',
             onComplete: () => {
               guides.classList.toggle('visible')
-            }
+            },
           })
         } else {
           gsap.set(cols, { width: 0 })
@@ -773,7 +822,7 @@ ${JSON.stringify(this.featureTests.results, undefined, 2)}
             duration: 0.35,
             width: '100%',
             stagger: 0.02,
-            ease: 'sine.inOut'
+            ease: 'sine.inOut',
           })
         }
       }

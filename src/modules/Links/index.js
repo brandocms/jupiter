@@ -7,13 +7,24 @@ gsap.registerPlugin(ScrollToPlugin)
 const DEFAULT_OPTIONS = {
   triggerEvents: true,
   scrollDuration: 0.8,
+  scrollOffsetNav: false,
   mobileMenuDelay: 800,
   openExternalInWindow: true,
-  linkQuery: 'a:not([href^="#"]):not([target="_blank"]):not([data-lightbox]):not(.noanim)',
+  linkQuery:
+    'a:not([href^="#"]):not([target="_blank"]):not([data-lightbox]):not(.noanim)',
   anchorQuery: 'a[href^="#"]:not(.noanim)',
 
   onAnchor: (target, links) => {
-    links.app.scrollTo(target, links.opts.scrollDuration, links.opts.triggerEvents)
+    if (links.opts.scrollOffsetNav) {
+      const header = document.querySelector('header[data-nav]')
+      const headerHeight = header ? header.clientHeight : 0
+      target = { y: target, offsetY: headerHeight }
+    }
+    links.app.scrollTo(
+      target,
+      links.opts.scrollDuration,
+      links.opts.triggerEvents
+    )
   },
 
   onTransition: (href, app) => {
@@ -27,7 +38,7 @@ const DEFAULT_OPTIONS = {
       gsap.to(main, {
         duration: 0.8,
         y: 25,
-        ease: 'power3.out'
+        ease: 'power3.out',
       })
 
       if (header) {
@@ -43,13 +54,13 @@ const DEFAULT_OPTIONS = {
         opacity: 1,
         onComplete: () => {
           window.location = href
-        }
+        },
       })
     } else {
       gsap.to(main, {
         duration: 0.8,
         y: 25,
-        ease: 'power3.out'
+        ease: 'power3.out',
       })
 
       if (header) {
@@ -65,10 +76,10 @@ const DEFAULT_OPTIONS = {
         opacity: 0,
         onComplete: () => {
           window.location = href
-        }
+        },
       })
     }
-  }
+  },
 }
 
 export default class Links {
@@ -87,7 +98,7 @@ export default class Links {
   bindHeroLink() {
     const el = document.querySelector('[data-link-to-content]')
     if (el) {
-      el.addEventListener('click', e => {
+      el.addEventListener('click', (e) => {
         const dataTarget = document.querySelector('main')
         e.preventDefault()
         if (dataTarget) {
@@ -99,8 +110,8 @@ export default class Links {
 
   bindAnchors(anchors) {
     let wait = false
-    Array.from(anchors).forEach(anchor => {
-      anchor.addEventListener('click', e => {
+    Array.from(anchors).forEach((anchor) => {
+      anchor.addEventListener('click', (e) => {
         e.preventDefault()
         const href = anchor.getAttribute('href')
         if (href === '#') {
@@ -124,11 +135,22 @@ export default class Links {
               history.pushState({}, '', href)
             }
 
-            if (this.app.header && dataTarget.id !== 'top') {
-              setTimeout(() => {
-                this.app.header.unpin()
-              }, 800)
+            if (!this.app.header) {
+              return
             }
+            if (dataTarget.id === 'top') {
+              return
+            }
+            if (this.app.header.mainOpts.ignoreForcedScroll) {
+              return
+            }
+            if (this.app.header.mainOpts.pinOnForcedScrollEnd) {
+              return
+            }
+
+            setTimeout(() => {
+              this.app.header.unpin()
+            }, 800)
           }
         }
 
@@ -142,19 +164,38 @@ export default class Links {
   }
 
   bindLinks(links) {
-    Array.from(links).forEach(link => {
+    const loadingContainer = document.querySelector('.loading-container')
+
+    Array.from(links).forEach((link) => {
       const href = link.getAttribute('href')
-      if (!href) {
-        return
+      if (!href || href === '#' || href.startsWith('javascript:')) {
+        return // Skip empty, anchor, or JS-based links
       }
-      const internalLink = href.indexOf(document.location.hostname) > -1 || href.startsWith('/')
+
+      // Determine the normalized hostname of the current document.
+      const normalizedCurrentHost = this.normalizeHostname(
+        document.location.hostname
+      )
+
+      // For absolute URLs, use the URL constructor.
+      let linkHostname
+      try {
+        linkHostname = new URL(href, document.location.href).hostname
+      } catch (error) {
+        // If URL construction fails, assume it's not internal.
+        console.warn(`Failed to parse URL for href "${href}":`, error) // Log errors for debugging
+        linkHostname = ''
+      }
+      const normalizedLinkHost = this.normalizeHostname(linkHostname)
+
+      // Check if the link is internal by comparing the normalized hostnames.
+      const internalLink = normalizedLinkHost === normalizedCurrentHost
+
       if (this.opts.openExternalInWindow && !internalLink) {
         link.setAttribute('target', '_blank')
       }
 
-      link.addEventListener('click', e => {
-        const loadingContainer = document.querySelector('.loading-container')
-
+      link.addEventListener('click', (e) => {
         if (e.shiftKey || e.metaKey || e.ctrlKey) {
           return
         }
@@ -169,5 +210,9 @@ export default class Links {
         }
       })
     })
+  }
+
+  normalizeHostname(hostname) {
+    return hostname.replace(/^www\./, '')
   }
 }

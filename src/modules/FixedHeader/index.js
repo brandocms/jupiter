@@ -29,16 +29,16 @@ import * as Events from '../../events'
 import Dom from '../Dom'
 
 const DEFAULT_EVENTS = {
-  onPin: h => {
+  onPin: (h) => {
     gsap.to(h.el, {
       duration: 0.35,
       yPercent: '0',
       ease: 'sine.out',
-      autoRound: true
+      autoRound: true,
     })
   },
 
-  onUnpin: h => {
+  onUnpin: (h) => {
     h._hiding = true
     gsap.to(h.el, {
       duration: 0.25,
@@ -47,50 +47,50 @@ const DEFAULT_EVENTS = {
       autoRound: true,
       onComplete: () => {
         h._hiding = false
-      }
+      },
     })
   },
 
-  onAltBg: h => {
+  onAltBg: (h) => {
     if (h.opts.altBgColor) {
       gsap.to(h.el, {
         duration: 0.2,
-        backgroundColor: h.opts.altBgColor
+        backgroundColor: h.opts.altBgColor,
       })
     }
   },
 
-  onNotAltBg: h => {
+  onNotAltBg: (h) => {
     if (h.opts.regBgColor) {
       gsap.to(h.el, {
         duration: 0.4,
-        backgroundColor: h.opts.regBgColor
+        backgroundColor: h.opts.regBgColor,
       })
     }
   },
 
   // eslint-disable-next-line no-unused-vars
-  onSmall: h => {},
+  onSmall: (h) => {},
   // eslint-disable-next-line no-unused-vars
-  onNotSmall: h => {},
+  onNotSmall: (h) => {},
   // eslint-disable-next-line no-unused-vars
-  onTop: h => {},
+  onTop: (h) => {},
   // eslint-disable-next-line no-unused-vars
-  onNotTop: h => {},
+  onNotTop: (h) => {},
   // eslint-disable-next-line no-unused-vars
-  onBottom: h => {},
+  onBottom: (h) => {},
   // eslint-disable-next-line no-unused-vars
-  onNotBottom: h => {},
+  onNotBottom: (h) => {},
   // eslint-disable-next-line no-unused-vars
-  onMobileMenuOpen: h => {},
+  onMobileMenuOpen: (h) => {},
   // eslint-disable-next-line no-unused-vars
-  onMobileMenuClose: h => {},
+  onMobileMenuClose: (h) => {},
   // eslint-disable-next-line no-unused-vars
-  onIntersect: h => {},
-  onOutline: h => {
+  onIntersect: (h) => {},
+  onOutline: (h) => {
     h.preventUnpin = true
     h.pin()
-  }
+  },
 }
 
 const DEFAULT_OPTIONS = {
@@ -98,18 +98,19 @@ const DEFAULT_OPTIONS = {
   on: Events.APPLICATION_REVEALED,
   unpinOnForcedScrollStart: true,
   pinOnForcedScrollEnd: true,
+  ignoreForcedScroll: false,
   rafScroll: true,
 
   default: {
     unPinOnResize: true,
     canvas: window,
     intersects: null,
-    beforeEnter: h => {
+    beforeEnter: (h) => {
       const timeline = gsap.timeline()
       timeline.set(h.el, { yPercent: -100 }).set(h.lis, { opacity: 0 })
     },
 
-    enter: h => {
+    enter: (h) => {
       const timeline = gsap.timeline()
       timeline
         .to(h.el, {
@@ -117,7 +118,7 @@ const DEFAULT_OPTIONS = {
           yPercent: 0,
           delay: h.opts.enterDelay,
           ease: 'power3.out',
-          autoRound: true
+          autoRound: true,
         })
         .staggerTo(h.lis, 0.8, { opacity: 1, ease: 'sine.in' }, 0.1, '-=1')
     },
@@ -129,8 +130,8 @@ const DEFAULT_OPTIONS = {
     offsetBg: 200, // how far down before changing backgroundcolor
     regBgColor: null,
     altBgColor: null,
-    ...DEFAULT_EVENTS
-  }
+    ...DEFAULT_EVENTS,
+  },
 }
 
 export default class FixedHeader {
@@ -223,7 +224,11 @@ export default class FixedHeader {
     }
 
     if (this.mainOpts.pinOnForcedScrollEnd) {
-      window.addEventListener(Events.APPLICATION_FORCED_SCROLL_END, this.pin.bind(this), false)
+      window.addEventListener(
+        Events.APPLICATION_FORCED_SCROLL_END,
+        this.pin.bind(this),
+        false
+      )
     }
 
     this.app.registerCallback(Events.APPLICATION_REVEALED, () => {
@@ -234,11 +239,14 @@ export default class FixedHeader {
 
       window.addEventListener(SCROLL_EVENT, this.redraw.bind(this), {
         capture: false,
-        passive: true
+        passive: true,
       })
     })
 
-    this.app.registerCallback(Events.APPLICATION_READY, this.unpinIfScrolled.bind(this))
+    this.app.registerCallback(
+      Events.APPLICATION_READY,
+      this.unpinIfScrolled.bind(this)
+    )
 
     this.preflight()
 
@@ -248,7 +256,11 @@ export default class FixedHeader {
 
     // DON'T unpin on iOS since this will unpin when bottom menu bar appears on scrolling upwards!
     if (this.opts.unPinOnResize && !this.app.featureTests.results.ios) {
-      window.addEventListener(Events.APPLICATION_RESIZE, this.setResizeTimer.bind(this), false)
+      window.addEventListener(
+        Events.APPLICATION_RESIZE,
+        this.setResizeTimer.bind(this),
+        false
+      )
     }
 
     this.opts.beforeEnter(this)
@@ -367,7 +379,10 @@ export default class FixedHeader {
   }
 
   checkBot(force) {
-    if (this.currentScrollY + this.getViewportHeight() >= this.getScrollerHeight()) {
+    if (
+      this.currentScrollY + this.getViewportHeight() >=
+      this.getScrollerHeight()
+    ) {
       if (force) {
         this.bottom()
       } else if (!this._bottom) {
@@ -411,7 +426,10 @@ export default class FixedHeader {
 
     /* content-visibility: auto may CHANGE the scrollheight of the document
     as we roll down/up. Try to avoid false positives here */
-    if (this.currentScrollHeight !== this.lastKnownScrollHeight && !this._firstLoad) {
+    if (
+      this.currentScrollHeight !== this.lastKnownScrollHeight &&
+      !this._firstLoad
+    ) {
       this.lastKnownScrollY = this.currentScrollY
       this.lastKnownScrollHeight = this.currentScrollHeight
       return
@@ -421,7 +439,12 @@ export default class FixedHeader {
     this.checkBg(false)
     this.checkTop(false)
     this.checkBot(false)
-    this.checkPin(false, toleranceExceeded)
+
+    if (this.mainOpts.ignoreForcedScroll && this.app.state.forcedScroll) {
+      // ignore forced scroll
+    } else {
+      this.checkPin(false, toleranceExceeded)
+    }
 
     this.lastKnownScrollY = this.currentScrollY
     this.lastKnownScrollHeight = this.currentScrollHeight
@@ -526,7 +549,8 @@ export default class FixedHeader {
   isOutOfBounds() {
     const pastTop = this.currentScrollY < 0
     const pastBottom =
-      this.currentScrollY + this.getScrollerPhysicalHeight() > this.getScrollerHeight()
+      this.currentScrollY + this.getScrollerPhysicalHeight() >
+      this.getScrollerHeight()
 
     return pastTop || pastBottom
   }
@@ -559,7 +583,9 @@ export default class FixedHeader {
 
   getViewportHeight() {
     return (
-      window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight
+      window.innerHeight ||
+      document.documentElement.clientHeight ||
+      document.body.clientHeight
     )
   }
 
@@ -578,11 +604,18 @@ export default class FixedHeader {
     if (this.opts.canvas.scrollTop !== undefined) {
       return this.opts.canvas.scrollTop
     }
-    return (document.documentElement || document.body.parentNode || document.body).scrollTop
+    return (
+      document.documentElement ||
+      document.body.parentNode ||
+      document.body
+    ).scrollTop
   }
 
   toleranceExceeded() {
-    return Math.abs(this.currentScrollY - this.lastKnownScrollY) >= this.opts.tolerance
+    return (
+      Math.abs(this.currentScrollY - this.lastKnownScrollY) >=
+      this.opts.tolerance
+    )
   }
 
   _getOptionsForSection(section, opts) {
@@ -601,8 +634,14 @@ export default class FixedHeader {
   }
 
   _bindMobileMenuListeners() {
-    window.addEventListener('APPLICATION:MOBILE_MENU:OPEN', this._onMobileMenuOpen.bind(this))
-    window.addEventListener('APPLICATION:MOBILE_MENU:CLOSED', this._onMobileMenuClose.bind(this))
+    window.addEventListener(
+      'APPLICATION:MOBILE_MENU:OPEN',
+      this._onMobileMenuOpen.bind(this)
+    )
+    window.addEventListener(
+      'APPLICATION:MOBILE_MENU:CLOSED',
+      this._onMobileMenuClose.bind(this)
+    )
   }
 
   _onMobileMenuOpen() {
