@@ -1,3 +1,10 @@
+#### 3.54.2
+
+- FixedHeader: Allow ignoring forced scroll
+- Links: Respect header pin settings when scrolling anchors
+- Lazyload: add forceLoad
+
+
 #### 3.54.1
 
 - Moonwalk: Fix typo in clearing moonwalks for reduced motion targets
