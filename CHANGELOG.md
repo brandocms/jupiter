@@ -1,3 +1,8 @@
+#### 3.54.3
+
+- Dropdown: Add some callbacks.
+
+
 #### 3.54.2
 
 - FixedHeader: Allow ignoring forced scroll
