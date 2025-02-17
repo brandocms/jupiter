@@ -25,15 +25,20 @@ const DEFAULT_OPTIONS = {
   selectors: {
     trigger: '[data-dropdown-trigger]',
     menu: '[data-dropdown-menu]',
-    menuItems: '[data-dropdown-menu] > li'
+    menuItems: '[data-dropdown-menu] > li',
   },
   tweens: {
     items: {
       duration: 0.2,
       autoAlpha: 0,
-      stagger: 0.03
-    }
-  }
+      stagger: 0.03,
+    },
+  },
+
+  onBeforeOpen: async (dropdown) => {},
+  onAfterOpen: async (dropdown) => {},
+  onBeforeClose: async (dropdown) => {},
+  onAfterClose: async (dropdown) => {},
 }
 
 export default class Dropdown {
@@ -46,12 +51,17 @@ export default class Dropdown {
     this.timeline = gsap.timeline({ paused: true, reversed: true })
     this.elements.trigger = Dom.find(this.element, this.opts.selectors.trigger)
     if (this.elements.trigger.hasAttribute('data-dropdown-target')) {
-      const dropdownTarget = this.elements.trigger.getAttribute('data-dropdown-target')
+      const dropdownTarget = this.elements.trigger.getAttribute(
+        'data-dropdown-target'
+      )
       this.elements.menu = Dom.find(dropdownTarget)
     } else {
       this.elements.menu = Dom.find(this.element, this.opts.selectors.menu)
     }
-    this.elements.menuItems = Dom.all(this.elements.menu, this.opts.selectors.menuItems)
+    this.elements.menuItems = Dom.all(
+      this.elements.menu,
+      this.opts.selectors.menuItems
+    )
     this.initialize()
     this.checkForInitialOpen()
   }
@@ -64,7 +74,7 @@ export default class Dropdown {
         this.elements.menu,
         {
           className: `${this.elements.menu.className} zero-height`,
-          duration: 0.1
+          duration: 0.1,
         },
 
         'open'
@@ -73,7 +83,7 @@ export default class Dropdown {
         this.elements.menu,
         {
           height: 'auto',
-          duration: 0.1
+          duration: 0.1,
         },
         'open'
       )
@@ -85,7 +95,11 @@ export default class Dropdown {
         const subMenuY = subMenuBound.y
         const subMenuHeight = subMenuBound.height
 
-        Dom.setCSSVar('dropdown-menu-height', `${subMenuHeight}px`, this.elements.menu)
+        Dom.setCSSVar(
+          'dropdown-menu-height',
+          `${subMenuHeight}px`,
+          this.elements.menu
+        )
 
         if (subMenuHeight + subMenuY > windowHeight) {
           this.elements.menu.setAttribute('data-dropdown-placement', 'top')
@@ -95,7 +109,11 @@ export default class Dropdown {
       })
       .to(this.elements.menu, { opacity: 1 })
     if (this.elements.menuItems.length) {
-      this.timeline.from(this.elements.menuItems, this.opts.tweens.items, 'open+=.1')
+      this.timeline.from(
+        this.elements.menuItems,
+        this.opts.tweens.items,
+        'open+=.1'
+      )
     }
 
     if (!this.elements.trigger) {
@@ -104,18 +122,22 @@ export default class Dropdown {
     this.elements.trigger.addEventListener('click', this.onClick.bind(this))
   }
 
-  onClick(event) {
+  async onClick(event) {
     event.preventDefault()
     event.stopPropagation()
 
     if (this.open) {
-      this.closeMenu()
+      await this.opts.onBeforeClose(this)
+      await this.closeMenu()
+      this.opts.onAfterClose(this)
     } else {
-      this.openMenu()
+      await this.opts.onBeforeOpen(this)
+      await this.openMenu()
+      this.opts.onAfterOpen(this)
     }
   }
 
-  openMenu() {
+  async openMenu() {
     if (!this.opts.multipleActive) {
       if (this.app.currentMenu) {
         this.app.currentMenu.closeMenu()
@@ -126,21 +148,21 @@ export default class Dropdown {
     this.elements.trigger.dataset.dropdownActive = ''
 
     if (this.timeline.reversed()) {
-      this.timeline.play()
+      await this.timeline.play()
     } else {
-      this.timeline.reverse()
+      await this.timeline.reverse()
     }
   }
 
-  closeMenu() {
+  async closeMenu() {
     this.app.currentMenu = null
     this.open = false
     delete this.elements.trigger.dataset.dropdownActive
 
     if (this.timeline.reversed()) {
-      this.timeline.play()
+      await this.timeline.play()
     } else {
-      this.timeline.reverse()
+      await this.timeline.reverse()
     }
   }
 
