@@ -53,6 +53,11 @@ const DEFAULT_OPTIONS = {
   clearMoonwalkOnAnchors: true,
 
   /**
+   * If an element with moonwalk-run also has moonwalk-section, print a console warning
+   */
+  warnRunWithSection: true,
+
+  /**
    * Determines how early the IntersectionObserver triggers
    */
   rootMargin: '-10% 0%',
@@ -118,6 +123,17 @@ export default class Moonwalk {
       container
         .querySelectorAll('[data-moonwalk] [data-moonwalk]')
         .forEach((ms) => ms.removeAttribute('data-moonwalk'))
+    }
+
+    if (this.opts.warnRunWithSection) {
+      container
+        .querySelectorAll('[data-moonwalk-run][data-moonwalk-section]')
+        .forEach((ms) =>
+          console.warn(
+            'Element with moonwalk-run also has moonwalk-section. This may lead to rendering issues.',
+            ms
+          )
+        )
     }
 
     if (this.opts.clearMoonwalkOnAnchors) {
