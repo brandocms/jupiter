@@ -1,3 +1,10 @@
+#### 3.54.4
+
+- Dropdown: Click outside to close
+- Moonwalk: Warn if data-moonwalk-section and data-moonwalk-run
+  on the same element.
+
+
 #### 3.54.3
 
 - Dropdown: Add some callbacks.
