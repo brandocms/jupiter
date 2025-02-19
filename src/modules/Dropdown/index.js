@@ -49,6 +49,7 @@ export default class Dropdown {
     this.open = false
     this.element = opts.el
     this.timeline = gsap.timeline({ paused: true, reversed: true })
+
     this.elements.trigger = Dom.find(this.element, this.opts.selectors.trigger)
     if (this.elements.trigger.hasAttribute('data-dropdown-target')) {
       const dropdownTarget = this.elements.trigger.getAttribute(
@@ -58,10 +59,15 @@ export default class Dropdown {
     } else {
       this.elements.menu = Dom.find(this.element, this.opts.selectors.menu)
     }
+
     this.elements.menuItems = Dom.all(
       this.elements.menu,
       this.opts.selectors.menuItems
     )
+
+    // Bind the document click handler to this instance
+    this.handleDocumentClick = this.handleDocumentClick.bind(this)
+
     this.initialize()
     this.checkForInitialOpen()
   }
@@ -76,7 +82,6 @@ export default class Dropdown {
           className: `${this.elements.menu.className} zero-height`,
           duration: 0.1,
         },
-
         'open'
       )
       .to(
@@ -88,26 +93,41 @@ export default class Dropdown {
         'open'
       )
       .call(() => {
-        // check if we have space
-        const subMenuBound = this.elements.menu.getBoundingClientRect()
-        const windowHeight = window.innerHeight
+        // Get current bounds and viewport dimensions
+        const menuRect = this.elements.menu.getBoundingClientRect()
+        const viewportHeight = window.innerHeight
+        const viewportWidth = window.innerWidth
+        const menuHeight = menuRect.height
+        const menuTop = menuRect.top
 
-        const subMenuY = subMenuBound.y
-        const subMenuHeight = subMenuBound.height
-
+        // Update CSS variable for height (if used in your styles)
         Dom.setCSSVar(
           'dropdown-menu-height',
-          `${subMenuHeight}px`,
+          `${menuHeight}px`,
           this.elements.menu
         )
 
-        if (subMenuHeight + subMenuY > windowHeight) {
+        // Vertical placement: if the menu overflows the bottom, set placement to "top"
+        if (menuHeight + menuTop > viewportHeight) {
           this.elements.menu.setAttribute('data-dropdown-placement', 'top')
         } else {
           this.elements.menu.setAttribute('data-dropdown-placement', 'bottom')
         }
+
+        // Horizontal check: adjust left offset if the menu is offscreen
+        const computedStyle = window.getComputedStyle(this.elements.menu)
+        let currentLeft = parseFloat(computedStyle.left) || 0
+
+        if (menuRect.left < 0) {
+          // Shift right by the amount it’s off the left edge
+          this.elements.menu.style.left = `${currentLeft - menuRect.left}px`
+        } else if (menuRect.right > viewportWidth) {
+          // Shift left by the amount it’s off the right edge
+          this.elements.menu.style.left = `${currentLeft - (menuRect.right - viewportWidth)}px`
+        }
       })
       .to(this.elements.menu, { opacity: 1 })
+
     if (this.elements.menuItems.length) {
       this.timeline.from(
         this.elements.menuItems,
@@ -147,6 +167,9 @@ export default class Dropdown {
     this.open = true
     this.elements.trigger.dataset.dropdownActive = ''
 
+    // Add document click listener when menu is open.
+    document.addEventListener('click', this.handleDocumentClick)
+
     if (this.timeline.reversed()) {
       await this.timeline.play()
     } else {
@@ -159,10 +182,22 @@ export default class Dropdown {
     this.open = false
     delete this.elements.trigger.dataset.dropdownActive
 
+    // Remove the document click listener when menu closes.
+    document.removeEventListener('click', this.handleDocumentClick)
+
     if (this.timeline.reversed()) {
       await this.timeline.play()
     } else {
       await this.timeline.reverse()
+    }
+  }
+
+  // Handler that checks if a click was outside the dropdown element.
+  handleDocumentClick(event) {
+    // If the click target is not inside the dropdown, close the menu.
+    if (!this.element.contains(event.target)) {
+      // this.closeMenu()
+      this.onClick(event)
     }
   }
 
