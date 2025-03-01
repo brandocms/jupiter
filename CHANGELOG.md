@@ -1,3 +1,10 @@
+#### 3.55.0
+
+- Application: Set `respectReducedMotion: false` as default, since there
+  are more cases of where there are subtle bugs with this, and if we
+  explicitly set it to `true`, we are at least aware of the issue.
+
+
 #### 3.54.4
 
 - Dropdown: Click outside to close

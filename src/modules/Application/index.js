@@ -44,7 +44,7 @@ window.onpageshow = (event) => {
 }
 
 const DEFAULT_OPTIONS = {
-  respectReducedMotion: true,
+  respectReducedMotion: false,
   featureTests: {
     touch: true,
   },
