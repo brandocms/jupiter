@@ -1,3 +1,8 @@
+/**
+ * @file Main entry point for Jupiter - a frontend toolkit for animations and interactions
+ * @module jupiter
+ */
+
 import { CSSPlugin, Draggable, ScrollToPlugin, ScrollTrigger, gsap } from 'gsap/all'
 
 import Hammer from '@egjs/hammerjs'

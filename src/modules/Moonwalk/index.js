@@ -15,6 +15,50 @@ import Dom from '../Dom'
 
 gsap.registerPlugin(CSSPlugin)
 
+/**
+ * @typedef {Object} MoonwalkTransition
+ * @property {Object} from - Starting properties for the transition
+ * @property {Object} to - Ending properties for the transition
+ */
+
+/**
+ * @typedef {Object} MoonwalkWalk
+ * @property {number} [startDelay=0] - Delay before the animation starts
+ * @property {number} [interval=0.15] - Time between animations in a sequence
+ * @property {number} [duration=0.65] - Duration of the animation
+ * @property {boolean|Object} [alphaTween=false] - Whether to add a separate opacity tween
+ * @property {MoonwalkTransition} transition - The transition configuration
+ * @property {string} [sectionTargets] - CSS selector for targeting elements in named sections
+ */
+
+/**
+ * @typedef {Object} MoonwalkRun
+ * @property {number} [threshold=0] - IntersectionObserver threshold
+ * @property {Function} callback - Function called when element enters viewport
+ * @property {Function} [onExit] - Function called when element exits viewport
+ * @property {boolean} [repeated=false] - Whether the run should repeat
+ * @property {string} [rootMargin] - IntersectionObserver rootMargin
+ * @property {Function} [initialize] - Function called during initialization
+ */
+
+/**
+ * @typedef {Object} MoonwalkOptions
+ * @property {string|Function} [on=Events.APPLICATION_REVEALED] - Event to trigger animations
+ * @property {number} [initialDelay=0.1] - Delay before starting animations
+ * @property {boolean} [clearLazyload=false] - Clear data-ll-srcset attributes
+ * @property {boolean} [clearNestedSections=true] - Remove nested data-moonwalk-section attributes
+ * @property {boolean} [clearNestedWalks=true] - Remove nested data-moonwalk attributes
+ * @property {boolean} [clearMoonwalkOnAnchors=true] - Disable animations when page loaded via anchor
+ * @property {boolean} [warnRunWithSection=true] - Warn when run and section on same element
+ * @property {string} [rootMargin='-10% 0%'] - Default IntersectionObserver rootMargin
+ * @property {number} [threshold=0] - Default IntersectionObserver threshold
+ * @property {boolean} [uniqueIds=false] - Generate unique IDs for moonwalk elements
+ * @property {boolean} [addIndexes=false] - Add index attributes to elements
+ * @property {Object.<string, MoonwalkRun>} [runs={}] - Run configurations
+ * @property {Object.<string, MoonwalkWalk>} walks - Walk configurations
+ */
+
+/** @type {MoonwalkOptions} */
 const DEFAULT_OPTIONS = {
   /**
    * If your app needs to do some initialization before the
@@ -101,7 +145,15 @@ const DEFAULT_OPTIONS = {
   },
 }
 
+/**
+ * Moonwalk animation system for scroll-based reveal animations
+ */
 export default class Moonwalk {
+  /**
+   * @param {Object} app - The application instance
+   * @param {MoonwalkOptions} [opts={}] - Configuration options
+   * @param {HTMLElement} [container=document.body] - Container element
+   */
   constructor(app, opts = {}, container = document.body) {
     this.app = app
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)

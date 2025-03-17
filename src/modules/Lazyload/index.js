@@ -4,6 +4,25 @@ import imagesAreLoaded from '../../utils/imagesAreLoaded'
 import Dom from '../Dom'
 import * as Events from '../../events'
 
+/**
+ * @typedef {Object} IntersectionObserverConfig
+ * @property {string} [rootMargin] - Margin around the root
+ * @property {number} [threshold] - Threshold for intersection
+ */
+
+/**
+ * @typedef {Object} LazyloadOptions
+ * @property {IntersectionObserverConfig} [revealIntersectionObserverConfig] - Configuration for the reveal intersection observer
+ * @property {IntersectionObserverConfig} [loadIntersectionObserverConfig] - Configuration for the load intersection observer
+ * @property {IntersectionObserverConfig} [intersectionObserverConfig] - Configuration for general intersection observers
+ * @property {boolean} [useNativeLazyloadIfAvailable=true] - Whether to use native lazyloading if available
+ * @property {string} [mode='default'] - Lazyload mode
+ * @property {number} [minSize=40] - Minimum size for auto sizing
+ * @property {boolean} [updateSizes=true] - Whether to update sizes attribute
+ * @property {boolean} [registerCallback=true] - Whether to register a callback for APPLICATION_REVEALED event
+ */
+
+/** @type {LazyloadOptions} */
 const DEFAULT_OPTIONS = {
   revealIntersectionObserverConfig: {
     rootMargin: '0px 100px 0px 100px',
@@ -20,7 +39,15 @@ const DEFAULT_OPTIONS = {
   registerCallback: true,
 }
 
+/**
+ * Lazyload class for handling image lazy loading
+ */
 export default class Lazyload {
+  /**
+   * Create a new Lazyload instance
+   * @param {Object} app - Application instance
+   * @param {LazyloadOptions} [opts={}] - Lazyload options
+   */
   constructor(app, opts = {}) {
     this.app = app
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
