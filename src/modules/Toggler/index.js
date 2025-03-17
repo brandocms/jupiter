@@ -1,7 +1,16 @@
 import { gsap } from 'gsap/all'
 import Dom from '../Dom'
 
+/**
+ * Toggler component for show/hide functionality
+ * Uses [data-toggle-trigger] for the toggle button and [data-toggle-content] for toggleable content
+ */
 export default class Toggler {
+  /**
+   * Create a new Toggler instance
+   * @param {Object} app - Application instance
+   * @param {HTMLElement} el - Container element with [data-toggle] attribute
+   */
   constructor(app, el) {
     this.open = false
     this.app = app
@@ -12,6 +21,9 @@ export default class Toggler {
     this.trigger.addEventListener('click', this.onClick.bind(this))
   }
 
+  /**
+   * Handle click on trigger element
+   */
   onClick() {
     this.toggleState()
 
@@ -37,6 +49,9 @@ export default class Toggler {
     }
   }
 
+  /**
+   * Toggle open/closed state
+   */
   toggleState() {
     if (this.open) {
       this.open = false

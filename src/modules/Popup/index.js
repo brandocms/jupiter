@@ -1,6 +1,16 @@
 import { gsap } from 'gsap/all'
 import _defaultsDeep from 'lodash.defaultsdeep'
 
+/**
+ * @typedef {Object} PopupOptions
+ * @property {Function} [responsive] - Function that determines if popup should be shown on current breakpoint
+ * @property {Function} [onOpen] - Called when popup opens
+ * @property {Function} [onClose] - Called when popup closes
+ * @property {Function} [tweenIn] - Animation function for opening popup
+ * @property {Function} [tweenOut] - Animation function for closing popup
+ */
+
+/** @type {PopupOptions} */
 const DEFAULT_OPTIONS = {
   /**
    * responsive
@@ -61,7 +71,15 @@ const DEFAULT_OPTIONS = {
   },
 }
 
+/**
+ * Popup component for modal dialogs and popups
+ */
 export default class Popup {
+  /**
+   * Create a new Popup instance
+   * @param {Object} app - Application instance
+   * @param {PopupOptions} [opts={}] - Popup options
+   */
   constructor(app, opts = {}) {
     this.app = app
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
@@ -69,6 +87,9 @@ export default class Popup {
     this.bindTriggers()
   }
 
+  /**
+   * Bind click handlers to popup triggers and close buttons
+   */
   bindTriggers() {
     const triggers = document.querySelectorAll('[data-popup-trigger]')
     const closers = document.querySelectorAll('[data-popup-close]')
@@ -94,6 +115,9 @@ export default class Popup {
     })
   }
 
+  /**
+   * Create backdrop element for popup
+   */
   createBackdrop() {
     const backdrop = document.createElement('div')
     backdrop.setAttribute('data-popup-backdrop', '')
@@ -108,6 +132,11 @@ export default class Popup {
     this.backdrop = backdrop
   }
 
+  /**
+   * Open a popup
+   * @param {HTMLElement} trigger - Element that triggered the popup
+   * @param {HTMLElement|string} target - Popup element or selector
+   */
   open(trigger, target) {
     this.keyUpListener = this.onKeyup.bind(this)
     document.addEventListener('keyup', this.keyUpListener)
@@ -122,12 +151,19 @@ export default class Popup {
     this.opts.tweenIn(trigger, target, this)
   }
 
+  /**
+   * Close the popup
+   */
   close() {
     document.removeEventListener('keyup', this.keyUpListener)
     this.opts.onClose(this)
     this.opts.tweenOut(this)
   }
 
+  /**
+   * Handle keyup event for Escape key to close popup
+   * @param {KeyboardEvent} e - Keyboard event
+   */
   onKeyup(e) {
     const key = e.keyCode || e.which
 

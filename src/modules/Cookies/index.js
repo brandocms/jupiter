@@ -2,6 +2,17 @@ import { gsap } from 'gsap/all'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import * as Events from '../../events'
 
+/**
+ * @typedef {Object} CookiesOptions
+ * @property {Function} [onAccept] - Called when cookies are accepted
+ * @property {Function} [onRefuse] - Called when cookies are refused
+ * @property {Function} [alreadyConsented] - Called if user has already consented to cookies
+ * @property {Function} [alreadyRefused] - Called if user has already refused cookies
+ * @property {Function} [setCookies] - Custom function to set cookies
+ * @property {Function} [showCC] - Custom function to display cookie consent dialog
+ */
+
+/** @type {CookiesOptions} */
 const DEFAULT_OPTIONS = {
   onAccept: (c) => {
     const oneYearFromNow = new Date()
@@ -97,7 +108,15 @@ const DEFAULT_OPTIONS = {
   },
 }
 
+/**
+ * Cookies module for handling cookie consent
+ */
 export default class Cookies {
+  /**
+   * Create a new Cookies instance
+   * @param {Object} app - Application instance
+   * @param {CookiesOptions} [opts={}] - Cookies options
+   */
   constructor(app, opts = {}) {
     this.app = app
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
@@ -127,6 +146,11 @@ export default class Cookies {
     }
   }
 
+  /**
+   * Get a cookie value by key
+   * @param {string} sKey - Cookie key
+   * @returns {string|null} Cookie value or null if not found
+   */
   getCookie(sKey) {
     if (!sKey) {
       return null
@@ -146,6 +170,16 @@ export default class Cookies {
     )
   }
 
+  /**
+   * Set a cookie
+   * @param {string} sKey - Cookie key
+   * @param {string|number} sValue - Cookie value
+   * @param {Date|string|number} vEnd - Expiration date, string date, or max age in seconds
+   * @param {string} [sPath] - Cookie path
+   * @param {string} [sDomain] - Cookie domain
+   * @param {boolean} [bSecure] - Secure flag
+   * @returns {boolean} Whether cookie was set successfully
+   */
   setCookie(sKey, sValue, vEnd, sPath, sDomain, bSecure) {
     if (!sKey || /^(?:expires|max-age|path|domain|secure)$/i.test(sKey)) {
       return false
@@ -175,6 +209,13 @@ export default class Cookies {
     return true
   }
 
+  /**
+   * Remove a cookie
+   * @param {string} sKey - Cookie key
+   * @param {string} [sPath] - Cookie path
+   * @param {string} [sDomain] - Cookie domain
+   * @returns {boolean} Whether cookie was removed successfully
+   */
   removeCookie(sKey, sPath, sDomain) {
     if (!this.hasCookie(sKey)) {
       return false
@@ -185,6 +226,11 @@ export default class Cookies {
     return true
   }
 
+  /**
+   * Check if a cookie exists
+   * @param {string} sKey - Cookie key
+   * @returns {boolean} Whether cookie exists
+   */
   hasCookie(sKey) {
     if (!sKey || /^(?:expires|max-age|path|domain|secure)$/i.test(sKey)) {
       return false
@@ -194,6 +240,10 @@ export default class Cookies {
     ).test(document.cookie)
   }
 
+  /**
+   * Get all cookie keys
+   * @returns {string[]} Array of cookie keys
+   */
   keys() {
     const aKeys = document.cookie
       .replace(/((?:^|\s*;)[^=]+)(?=;|$)|^\s*|\s*(?:=[^;]*)?(?:\1|$)/g, '')

@@ -1,4 +1,20 @@
+/**
+ * @typedef {Object} TypographySettings
+ * @property {number} [minWords=4] - Minimum number of words required to apply fixes
+ * @property {string} [selector='[data-typo]'] - Selector for elements to process
+ * @property {string} [ignoreClass='no-typo-fix'] - Class to exclude elements from processing
+ * @property {boolean} [ignoreExistingSpaceChars=false] - Whether to ignore elements with existing non-breaking spaces
+ */
+
+/**
+ * Typography class for enhancing text presentation, including orphan prevention
+ */
 export default class Typography {
+  /**
+   * Create a new Typography instance
+   * @param {HTMLElement|undefined} parent - Parent element to search for typography elements, or undefined for document
+   * @param {TypographySettings} settings - Typography settings
+   */
   constructor(parent, settings = {}) {
     const self = this
 

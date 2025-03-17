@@ -4,6 +4,36 @@ import _defaultsDeep from 'lodash.defaultsdeep'
 import imageIsLoaded from '../../utils/imageIsLoaded'
 import Dom from '../Dom'
 
+/**
+ * @typedef {Object} LightboxElements
+ * @property {Function} [arrowRight] - Function to create right arrow element
+ * @property {Function} [arrowLeft] - Function to create left arrow element
+ * @property {Function} [close] - Function to create close button element
+ * @property {Function} [dot] - Function to create dot/indicator element
+ */
+
+/**
+ * @typedef {Object} LightboxOptions
+ * @property {boolean} [captions=false] - Enable captions
+ * @property {boolean} [numbers=false] - Enable index numbers
+ * @property {boolean} [swipe=true] - Enable swipe - this breaks native zoom
+ * @property {string|boolean} [trigger=false] - Selector for trigger element to open the lightbox
+ * @property {LightboxElements} [elements] - Custom elements configuration
+ * @property {Function} [onClick] - Click handler for lightbox
+ * @property {Function} [onPointerLeft] - Called when pointer moves left
+ * @property {Function} [onPointerRight] - Called when pointer moves right
+ * @property {Function} [onCaptionOut] - Called when caption fades out
+ * @property {Function} [onCaptionIn] - Called when caption fades in
+ * @property {Function} [onImageOut] - Called when image fades out
+ * @property {Function} [onImageIn] - Called when image fades in
+ * @property {Function} [onNumbers] - Called when numbers display updates
+ * @property {Function} [onBeforeOpen] - Called before opening lightbox
+ * @property {Function} [onOpen] - Called when lightbox opens
+ * @property {Function} [onAfterClose] - Called after lightbox closes
+ * @property {Function} [onClose] - Called when lightbox closes
+ */
+
+/** @type {LightboxOptions} */
 const DEFAULT_OPTIONS = {
   /* enable captions */
   captions: false,
@@ -140,7 +170,15 @@ const DEFAULT_OPTIONS = {
   },
 }
 
+/**
+ * Lightbox component for displaying images in a fullscreen overlay
+ */
 export default class Lightbox {
+  /**
+   * Create a new Lightbox instance
+   * @param {Object} app - Application instance
+   * @param {LightboxOptions} [opts={}] - Lightbox options
+   */
   constructor(app, opts = {}) {
     this.app = app
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)

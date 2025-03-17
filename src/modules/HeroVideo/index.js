@@ -1,11 +1,12 @@
 /**
- *
  * HERO VIDEO
+ *
+ * Module for handling hero video elements with cover images, play/pause controls,
+ * and responsive behavior.
  *
  * ## Example
  *
- *    const hs = HeroVideo(opts)
- *
+ *    const heroVideo = new HeroVideo(app, opts)
  */
 
 import { gsap, CSSPlugin } from 'gsap/all'
@@ -17,6 +18,26 @@ import Dom from '../Dom'
 
 gsap.registerPlugin(CSSPlugin)
 
+/**
+ * @typedef {Object} HeroVideoElementGenerators
+ * @property {Function} [pause] - Function that returns the pause button HTML
+ * @property {Function} [play] - Function that returns the play button HTML
+ */
+
+/**
+ * @typedef {Object} HeroVideoOptions
+ * @property {string|HTMLElement} [el='[data-hero-video]'] - Target element selector or element
+ * @property {Function} [onFadeIn] - Called when video fades in
+ * @property {Function} [onFadeInCover] - Called when cover fades in
+ * @property {Function} [onFadeOutCover] - Called when cover fades out
+ * @property {Function} [onPlayReady] - Called when video is ready to play
+ * @property {Function} [onClickPlay] - Called when play button is clicked
+ * @property {Function} [onClickPause] - Called when pause button is clicked
+ * @property {string} [pauseParent='.hero-content'] - Selector for parent element to append pause button to
+ * @property {HeroVideoElementGenerators} [elements] - Element generators for UI components
+ */
+
+/** @type {HeroVideoOptions} */
 const DEFAULT_OPTIONS = {
   el: '[data-hero-video]',
   onFadeIn: (hero) => {
@@ -60,7 +81,15 @@ const DEFAULT_OPTIONS = {
   },
 }
 
+/**
+ * HeroVideo component for handling responsive background videos with controls
+ */
 export default class HeroVideo {
+  /**
+   * Create a new HeroVideo instance
+   * @param {Object} app - Application instance
+   * @param {HeroVideoOptions} [opts={}] - HeroVideo options
+   */
   constructor(app, opts = {}) {
     this.app = app
     this.booting = true

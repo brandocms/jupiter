@@ -1,4 +1,10 @@
+/**
+ * DOM utility class for simplifying DOM operations
+ */
 class DOM {
+  /**
+   * Create a new DOM utility instance
+   */
   constructor() {
     this.body = document.body
     this.html = document.documentElement

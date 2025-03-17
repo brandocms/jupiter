@@ -28,6 +28,53 @@ import _defaultsDeep from 'lodash.defaultsdeep'
 import * as Events from '../../events'
 import Dom from '../Dom'
 
+/**
+ * @typedef {Object} FixedHeaderEvents
+ * @property {Function} [onPin] - Called when header is pinned
+ * @property {Function} [onUnpin] - Called when header is unpinned
+ * @property {Function} [onAltBg] - Called when alternate background is applied
+ * @property {Function} [onNotAltBg] - Called when regular background is applied
+ * @property {Function} [onSmall] - Called when header becomes small
+ * @property {Function} [onNotSmall] - Called when header becomes normal size
+ * @property {Function} [onTop] - Called when page is at the top
+ * @property {Function} [onNotTop] - Called when page is not at the top
+ * @property {Function} [onBottom] - Called when page is at the bottom
+ * @property {Function} [onNotBottom] - Called when page is not at the bottom
+ * @property {Function} [onMobileMenuOpen] - Called when mobile menu opens
+ * @property {Function} [onMobileMenuClose] - Called when mobile menu closes
+ * @property {Function} [onIntersect] - Called when header intersects with an element
+ * @property {Function} [onOutline] - Called when user tabs (outline mode)
+ */
+
+/**
+ * @typedef {Object} FixedHeaderSectionOptions
+ * @property {boolean} [unPinOnResize=true] - Whether to unpin header on window resize
+ * @property {Window|HTMLElement} [canvas=window] - Scrolling element
+ * @property {string|null} [intersects=null] - Selector for elements to check intersection with
+ * @property {Function} [beforeEnter] - Called before header enters
+ * @property {Function} [enter] - Called when header enters
+ * @property {number} [enterDelay=0] - Delay before enter animation
+ * @property {number} [tolerance=3] - Scroll tolerance before triggering hide/show
+ * @property {number|string|Function} [offset=0] - Offset from top before triggering hide
+ * @property {number|string|Function} [offsetSmall=50] - Offset from top before shrinking header
+ * @property {number|string|Function} [offsetBg=200] - Offset from top before changing background color
+ * @property {string|null} [regBgColor=null] - Regular background color
+ * @property {string|null} [altBgColor=null] - Alternate background color
+ */
+
+/**
+ * @typedef {Object} FixedHeaderOptions
+ * @property {string|HTMLElement} [el='header[data-nav]'] - Header element or selector
+ * @property {string} [on=Events.APPLICATION_REVEALED] - Event to initialize on
+ * @property {boolean} [unpinOnForcedScrollStart=true] - Whether to unpin on forced scroll start
+ * @property {boolean} [pinOnForcedScrollEnd=true] - Whether to pin on forced scroll end
+ * @property {boolean} [ignoreForcedScroll=false] - Whether to ignore forced scroll events
+ * @property {boolean} [rafScroll=true] - Whether to use requestAnimationFrame for scrolling
+ * @property {FixedHeaderSectionOptions} [default] - Default options for all sections
+ * @property {Object.<string, FixedHeaderSectionOptions>} [sections] - Section-specific options
+ */
+
+/** @type {FixedHeaderEvents} */
 const DEFAULT_EVENTS = {
   onPin: (h) => {
     gsap.to(h.el, {
@@ -93,6 +140,7 @@ const DEFAULT_EVENTS = {
   },
 }
 
+/** @type {FixedHeaderOptions} */
 const DEFAULT_OPTIONS = {
   el: 'header[data-nav]',
   on: Events.APPLICATION_REVEALED,
@@ -134,7 +182,15 @@ const DEFAULT_OPTIONS = {
   },
 }
 
+/**
+ * FixedHeader component for sticky navigation headers with scroll behaviors
+ */
 export default class FixedHeader {
+  /**
+   * Create a new FixedHeader instance
+   * @param {Object} app - Application instance
+   * @param {FixedHeaderOptions} [opts={}] - FixedHeader options
+   */
   constructor(app, opts = {}) {
     this.app = app
     this.mainOpts = _defaultsDeep(opts, DEFAULT_OPTIONS)

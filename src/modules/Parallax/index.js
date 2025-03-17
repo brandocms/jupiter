@@ -2,14 +2,29 @@ import _defaultsDeep from 'lodash.defaultsdeep'
 import { gsap } from 'gsap/all'
 import * as Events from '../../events'
 
-// Default Settings
+/**
+ * @typedef {Object} ParallaxOptions
+ * @property {string|HTMLElement} [el='[data-parallax]'] - Target element selector or element
+ * @property {number} [factor=1.3] - Parallax movement factor
+ * @property {boolean} [fadeContent=true] - Whether to fade content while scrolling
+ */
+
+/** @type {ParallaxOptions} */
 const DEFAULT_OPTIONS = {
   el: '[data-parallax]',
   factor: 1.3,
   fadeContent: true,
 }
 
+/**
+ * Parallax scrolling effect for background images
+ */
 export default class Parallax {
+  /**
+   * Create a new Parallax instance
+   * @param {Object} app - Application instance
+   * @param {ParallaxOptions} [opts={}] - Parallax options
+   */
   constructor(app, opts = {}) {
     this.app = app
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
@@ -32,6 +47,9 @@ export default class Parallax {
     window.addEventListener(Events.APPLICATION_SCROLL, this.onScroll.bind(this))
   }
 
+  /**
+   * Initialize GSAP timeline for parallax effect
+   */
   initializeTimeline() {
     this.timeline = gsap.timeline({
       useFrames: true,
@@ -75,6 +93,9 @@ export default class Parallax {
     )
   }
 
+  /**
+   * Handle scroll event to update parallax effect
+   */
   onScroll() {
     const elTop = this.elements.wrapper.getBoundingClientRect().top
     const progress = Math.max(0, Math.min(elTop / this.timeline.duration(), 1))

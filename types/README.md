@@ -23,6 +23,29 @@ const moonwalk = new Moonwalk(app, {
 });
 ```
 
+## Available Typed Modules
+
+The following modules have TypeScript definitions:
+
+### Core Modules
+- **Application** - Main application controller
+- **Breakpoints** - Responsive design and media query handling
+- **Dom** - DOM utility functions
+
+### Media Modules
+- **Lazyload** - Image lazy loading functionality
+- **Lightbox** - Image gallery overlay
+- **HeroVideo** - Background video with controls
+
+### Navigation and UI Modules
+- **Links** - Navigation and page transitions
+- **Popup** - Modal dialogs and popups
+- **Toggler** - Show/hide component for collapsible content
+
+### Animation Modules
+- **Parallax** - Parallax scrolling effect for background images
+- **Moonwalk** - Animation system for element reveals
+
 ## Adding Type Definitions for a New Module
 
 1. **Create JSDoc annotations** in your source file (src/modules/YourModule/index.js):
@@ -51,6 +74,14 @@ export default class YourModule {
   constructor(app, opts = {}) {
     // ...
   }
+  
+  /**
+   * @param {string} someParam - Parameter description
+   * @returns {boolean} Return value description
+   */
+  someMethod(someParam) {
+    // ...
+  }
 }
 ```
 
@@ -77,6 +108,12 @@ export interface YourModuleOptions {
  * Your module description
  */
 export default class YourModule {
+  /** Application instance */
+  app: Application;
+  
+  /** Module options */
+  opts: YourModuleOptions;
+  
   /**
    * Create a new YourModule instance
    * @param app - Application instance
@@ -84,7 +121,12 @@ export default class YourModule {
    */
   constructor(app: Application, opts?: Partial<YourModuleOptions>);
   
-  // Add method signatures here
+  /**
+   * Method description
+   * @param someParam - Parameter description
+   * @returns Return value description
+   */
+  someMethod(someParam: string): boolean;
 }
 ```
 
@@ -97,6 +139,21 @@ export {
 } from './modules/YourModule';
 ```
 
+Place this export in the appropriate section (Core, Media, Navigation/UI, or Animation).
+
+## Typing Guidelines
+
+- Use `Partial<Options>` for optional constructor parameters
+- Use descriptive JSDoc comments for all properties and methods
+- Group related interfaces together (e.g., options and element interfaces)
+- Always import `Application` from '../Application'
+- Use consistent naming patterns:
+  - `ModuleOptions` for options interfaces
+  - `ModuleElements` for element collections
+  - Use camelCase for methods and properties
+
 ## Running Type Checking
 
 Run `yarn types` to generate and check type definitions.
+
+If there are errors, don't worry about typechecking passing completely. The primary goal is to provide autocomplete and documentation for developers.

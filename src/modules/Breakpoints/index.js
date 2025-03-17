@@ -1,6 +1,14 @@
 import _defaultsDeep from 'lodash.defaultsdeep'
 import * as Events from '../../events'
 
+/**
+ * @typedef {Object} BreakpointsOptions
+ * @property {boolean} [runListenerOnInit=false] - Whether to run listener on initialization
+ * @property {string[]} [breakpoints=['xs', 'sm', 'md', 'lg']] - Breakpoint names
+ * @property {Object.<string, Function>} [listeners={}] - Listener functions for breakpoints
+ */
+
+/** @type {BreakpointsOptions} */
 const DEFAULT_OPTIONS = {
   runListenerOnInit: false,
   breakpoints: ['xs', 'sm', 'md', 'lg'],
@@ -16,7 +24,15 @@ const DEFAULT_OPTIONS = {
   }
 }
 
+/**
+ * Breakpoints module for responsive design
+ */
 export default class Breakpoints {
+  /**
+   * Create a new Breakpoints instance
+   * @param {Object} app - Application instance
+   * @param {BreakpointsOptions} [opts={}] - Breakpoints options
+   */
   constructor(app, opts = {}) {
     this.app = app
     this.mediaQueries = {}

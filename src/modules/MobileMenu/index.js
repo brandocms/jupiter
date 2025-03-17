@@ -2,6 +2,19 @@ import { gsap } from 'gsap/all'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import * as Events from '../../events'
 
+/**
+ * @typedef {Object} MobileMenuOptions
+ * @property {string} [logoColor='#000'] - Color for logo when menu is open
+ * @property {string} [logoPathSelector='svg path'] - Selector for logo SVG paths
+ * @property {string} [contentSelector='section'] - Selector for menu content
+ * @property {string} [liSelector='li'] - Selector for menu items
+ * @property {string} [hamburgerColor='#000'] - Color for hamburger icon
+ * @property {Function|null} [onResize=null] - Called when window is resized
+ * @property {Function} [openTween] - Animation for opening menu
+ * @property {Function} [closeTween] - Animation for closing menu
+ */
+
+/** @type {MobileMenuOptions} */
 const DEFAULT_OPTIONS = {
   logoColor: '#000',
   logoPathSelector: 'svg path',
@@ -143,7 +156,15 @@ const DEFAULT_OPTIONS = {
   },
 }
 
+/**
+ * MobileMenu component for mobile navigation menu
+ */
 export default class MobileMenu {
+  /**
+   * Create a new MobileMenu instance
+   * @param {Object} app - Application instance
+   * @param {MobileMenuOptions} [opts={}] - MobileMenu options
+   */
   constructor(app, opts = {}) {
     this.app = app
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)

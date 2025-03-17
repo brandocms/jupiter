@@ -1,5 +1,13 @@
+/**
+ * MobileMenu component for mobile navigation menu
+ */
 export default class MobileMenu {
-    constructor(app: any, opts?: {});
+    /**
+     * Create a new MobileMenu instance
+     * @param {Object} app - Application instance
+     * @param {MobileMenuOptions} [opts={}] - MobileMenu options
+     */
+    constructor(app: any, opts?: MobileMenuOptions);
     app: any;
     opts: any;
     open: boolean;
@@ -19,3 +27,37 @@ export default class MobileMenu {
     _emitMobileMenuOpenEvent(): void;
     _emitMobileMenuClosedEvent(): void;
 }
+export type MobileMenuOptions = {
+    /**
+     * - Color for logo when menu is open
+     */
+    logoColor?: string;
+    /**
+     * - Selector for logo SVG paths
+     */
+    logoPathSelector?: string;
+    /**
+     * - Selector for menu content
+     */
+    contentSelector?: string;
+    /**
+     * - Selector for menu items
+     */
+    liSelector?: string;
+    /**
+     * - Color for hamburger icon
+     */
+    hamburgerColor?: string;
+    /**
+     * - Called when window is resized
+     */
+    onResize?: Function | null;
+    /**
+     * - Animation for opening menu
+     */
+    openTween?: Function;
+    /**
+     * - Animation for closing menu
+     */
+    closeTween?: Function;
+};

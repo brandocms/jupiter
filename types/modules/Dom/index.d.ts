@@ -1,5 +1,8 @@
 declare const _default: DOM;
 export default _default;
+/**
+ * DOM utility class for simplifying DOM operations
+ */
 declare class DOM {
     body: HTMLElement;
     html: HTMLElement;

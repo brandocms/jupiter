@@ -3,6 +3,20 @@ import _defaultsDeep from 'lodash.defaultsdeep'
 
 gsap.registerPlugin(ScrollToPlugin)
 
+/**
+ * @typedef {Object} LinksOptions
+ * @property {boolean} [triggerEvents=true] - Whether to trigger events when scrolling
+ * @property {number} [scrollDuration=0.8] - Duration of scroll animation
+ * @property {boolean} [scrollOffsetNav=false] - Whether to offset scroll for nav header
+ * @property {number} [mobileMenuDelay=800] - Delay for mobile menu before scrolling
+ * @property {boolean} [openExternalInWindow=true] - Whether to open external links in new window
+ * @property {string} [linkQuery] - Query selector for regular links
+ * @property {string} [anchorQuery] - Query selector for anchor links
+ * @property {Function} [onAnchor] - Called when an anchor link is clicked
+ * @property {Function} [onTransition] - Called when transitioning between pages
+ */
+
+/** @type {LinksOptions} */
 const DEFAULT_OPTIONS = {
   triggerEvents: true,
   scrollDuration: 0.8,
@@ -81,7 +95,15 @@ const DEFAULT_OPTIONS = {
   },
 }
 
+/**
+ * Links handler for navigation and transitions
+ */
 export default class Links {
+  /**
+   * Create a new Links instance
+   * @param {Object} app - Application instance
+   * @param {LinksOptions} [opts={}] - Links options
+   */
   constructor(app, opts = {}) {
     this.app = app
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
