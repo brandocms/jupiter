@@ -1,4 +1,4 @@
-import { gsap } from 'gsap'
+import { gsap } from 'gsap/all'
 import Dom from '../Dom'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import * as Events from '../../events'
@@ -13,21 +13,23 @@ export default class EqualHeightElements {
     this.selector = selector
     this.initialize()
     window.addEventListener(Events.APPLICATION_RESIZE, () => {
-      gsap.set('[data-eq-height-elements-adjusted]', { clearProps: 'minHeight' })
+      gsap.set('[data-eq-height-elements-adjusted]', {
+        clearProps: 'minHeight',
+      })
       this.initialize()
     })
   }
 
   initialize() {
     const canvases = Dom.all(this.container, '[data-eq-height-elements]')
-    Array.from(canvases).forEach(canvas => {
+    Array.from(canvases).forEach((canvas) => {
       let lastTop = null
       const actionables = []
       let elements = []
       let height = 0
       const eqElements = Dom.all(canvas, this.selector)
 
-      eqElements.forEach(el => {
+      eqElements.forEach((el) => {
         const rect = el.getBoundingClientRect()
 
         if (lastTop === null) {
@@ -58,10 +60,10 @@ export default class EqualHeightElements {
       }
 
       if (actionables.length) {
-        actionables.forEach(a => {
+        actionables.forEach((a) => {
           gsap.set(a.elements, {
             minHeight: a.height,
-            attr: { 'data-eq-height-elements-adjusted': true }
+            attr: { 'data-eq-height-elements-adjusted': true },
           })
         })
       }

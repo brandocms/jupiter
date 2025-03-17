@@ -1,4 +1,4 @@
-import { gsap } from 'gsap'
+import { gsap } from 'gsap/all'
 import _defaultsDeep from 'lodash.defaultsdeep'
 
 const DEFAULT_OPTIONS = {
@@ -30,35 +30,35 @@ const DEFAULT_OPTIONS = {
             x: -5,
             xPercent: -50,
             opacity: 0,
-            display: 'block'
+            display: 'block',
           },
           {
             duration: 0.3,
             yPercent: -50,
             xPercent: -50,
             x: 0,
-            opacity: 1
+            opacity: 1,
           }
         )
-      }
+      },
     })
   },
 
-  tweenOut: popup => {
+  tweenOut: (popup) => {
     const popups = document.querySelectorAll('[data-popup]')
     gsap.to(popups, {
       duration: 0.3,
       opacity: 0,
-      display: 'none'
+      display: 'none',
     })
     gsap.to(popup.backdrop, {
       duration: 0.3,
       opacity: 0,
       onComplete: () => {
         gsap.set(popup.backdrop, { display: 'none' })
-      }
+      },
     })
-  }
+  },
 }
 
 export default class Popup {
@@ -73,9 +73,9 @@ export default class Popup {
     const triggers = document.querySelectorAll('[data-popup-trigger]')
     const closers = document.querySelectorAll('[data-popup-close]')
 
-    Array.from(triggers).forEach(trigger => {
+    Array.from(triggers).forEach((trigger) => {
       const triggerTarget = trigger.getAttribute('data-popup-trigger')
-      trigger.addEventListener('click', event => {
+      trigger.addEventListener('click', (event) => {
         if (this.opts.responsive(this.app)) {
           event.stopImmediatePropagation()
           event.preventDefault()
@@ -84,8 +84,8 @@ export default class Popup {
       })
     })
 
-    Array.from(closers).forEach(closer => {
-      closer.addEventListener('click', event => {
+    Array.from(closers).forEach((closer) => {
+      closer.addEventListener('click', (event) => {
         event.stopImmediatePropagation()
         event.preventDefault()
         this.opts.onClose(this)
@@ -99,7 +99,7 @@ export default class Popup {
     backdrop.setAttribute('data-popup-backdrop', '')
     gsap.set(backdrop, { opacity: 0, display: 'none', zIndex: 4999 })
 
-    backdrop.addEventListener('click', e => {
+    backdrop.addEventListener('click', (e) => {
       e.stopPropagation()
       this.close()
     })

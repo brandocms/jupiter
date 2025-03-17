@@ -1,5 +1,5 @@
 import { Manager, Swipe } from '@egjs/hammerjs'
-import { gsap } from 'gsap'
+import { gsap } from 'gsap/all'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import imageIsLoaded from '../../utils/imageIsLoaded'
 import Dom from '../Dom'
@@ -33,7 +33,7 @@ const DEFAULT_OPTIONS = {
     },
 
     close: () => document.createTextNode('×'),
-    dot: () => document.createTextNode('▪')
+    dot: () => document.createTextNode('▪'),
   },
 
   onClick: (lightbox, section, e) => {
@@ -56,7 +56,10 @@ const DEFAULT_OPTIONS = {
       return
     }
 
-    lightbox.timelines.caption.to(lightbox.elements.caption, { duration: 0.4, autoAlpha: 0 })
+    lightbox.timelines.caption.to(lightbox.elements.caption, {
+      duration: 0.4,
+      autoAlpha: 0,
+    })
   },
 
   onCaptionIn: (lightbox, captionHasChanged) => {
@@ -64,16 +67,26 @@ const DEFAULT_OPTIONS = {
       return
     }
 
-    lightbox.timelines.caption.to(lightbox.elements.caption, { duration: 0.4, autoAlpha: 1 })
+    lightbox.timelines.caption.to(lightbox.elements.caption, {
+      duration: 0.4,
+      autoAlpha: 1,
+    })
   },
 
-  onImageOut: lightbox => {
-    lightbox.timelines.image.to(lightbox.currentImage, { duration: 0.5, autoAlpha: 0 })
+  onImageOut: (lightbox) => {
+    lightbox.timelines.image.to(lightbox.currentImage, {
+      duration: 0.5,
+      autoAlpha: 0,
+    })
   },
 
-  onImageIn: lightbox => {
+  onImageIn: (lightbox) => {
     const delay = lightbox.firstTransition ? 0.6 : 0.4
-    lightbox.timelines.image.to(lightbox.nextImage, { duration: 0.5, autoAlpha: 1, delay })
+    lightbox.timelines.image.to(lightbox.nextImage, {
+      duration: 0.5,
+      autoAlpha: 1,
+      delay,
+    })
   },
 
   onNumbers: (lightbox, section) => {
@@ -82,22 +95,22 @@ const DEFAULT_OPTIONS = {
 
   onBeforeOpen: () => {},
 
-  onOpen: h => {
+  onOpen: (h) => {
     h.app.scrollLock()
 
     gsap.to(h.elements.wrapper, {
       duration: 0.5,
-      opacity: 1
+      opacity: 1,
     })
   },
 
   onAfterClose: () => {},
 
-  onClose: h => {
+  onClose: (h) => {
     if (h.opts.captions) {
       gsap.to(h.elements.caption, {
         duration: 0.45,
-        opacity: 0
+        opacity: 0,
       })
     }
 
@@ -107,7 +120,7 @@ const DEFAULT_OPTIONS = {
         h.elements.nextArrow,
         h.elements.prevArrow,
         h.elements.close,
-        h.elements.dots
+        h.elements.dots,
       ],
       {
         duration: 0.5,
@@ -119,12 +132,12 @@ const DEFAULT_OPTIONS = {
             onComplete: () => {
               h.app.scrollRelease()
               h.destroy()
-            }
+            },
           })
-        }
+        },
       }
     )
-  }
+  },
 }
 
 export default class Lightbox {
@@ -141,15 +154,16 @@ export default class Lightbox {
     this.previousCaption = null
     this.timelines = {
       caption: gsap.timeline({ paused: true }),
-      image: gsap.timeline({ paused: true })
+      image: gsap.timeline({ paused: true }),
     }
 
-    this.lightboxes.forEach(lightbox => {
+    this.lightboxes.forEach((lightbox) => {
       const href = lightbox.getAttribute('data-lightbox')
       const srcset = lightbox.getAttribute('data-srcset')
       const originalImage = lightbox.querySelector('img')
       const alt = originalImage.getAttribute('alt')
-      const section = lightbox.getAttribute('data-lightbox-section') || 'general'
+      const section =
+        lightbox.getAttribute('data-lightbox-section') || 'general'
       let trigger = lightbox
       if (this.opts.trigger) {
         trigger = Dom.find(lightbox, this.opts.trigger) || lightbox
@@ -162,12 +176,12 @@ export default class Lightbox {
       const image = {
         href,
         alt,
-        srcset
+        srcset,
       }
 
       const index = this.sections[section].push(image) - 1
 
-      trigger.addEventListener('click', e => {
+      trigger.addEventListener('click', (e) => {
         e.preventDefault()
         this.showBox(section, index)
       })
@@ -207,30 +221,30 @@ export default class Lightbox {
     this.elements.nextArrow.appendChild(this.opts.elements.arrowRight())
     this.elements.nextArrow.href = '#'
 
-    this.elements.nextArrow.addEventListener('click', e => {
+    this.elements.nextArrow.addEventListener('click', (e) => {
       e.stopPropagation()
       e.preventDefault()
       this.setImg(section, this.getNextIdx(section))
     })
 
-    this.elements.prevArrow.addEventListener('click', e => {
+    this.elements.prevArrow.addEventListener('click', (e) => {
       e.stopPropagation()
       e.preventDefault()
       this.setImg(section, this.getPrevIdx(section))
     })
 
-    this.keyUpCallback = event => {
+    this.keyUpCallback = (event) => {
       this.onKeyup(event, section)
     }
 
     document.removeEventListener('keyup', this.keyUpCallback)
     document.addEventListener('keyup', this.keyUpCallback)
 
-    this.elements.wrapper.addEventListener('mousemove', event => {
+    this.elements.wrapper.addEventListener('mousemove', (event) => {
       this.onMouseMove(event)
     })
 
-    this.elements.wrapper.addEventListener('click', event => {
+    this.elements.wrapper.addEventListener('click', (event) => {
       this.onClick(event, section)
     })
 
@@ -257,7 +271,7 @@ export default class Lightbox {
         activeLink = a
       }
 
-      a.addEventListener('click', e => {
+      a.addEventListener('click', (e) => {
         a.classList.add('active')
         activeLink.classList.remove('active')
         activeLink = a
@@ -296,7 +310,7 @@ export default class Lightbox {
 
     this.opts.onOpen(this)
 
-    this.elements.close.addEventListener('click', e => {
+    this.elements.close.addEventListener('click', (e) => {
       e.preventDefault()
       e.stopPropagation()
 
@@ -334,7 +348,8 @@ export default class Lightbox {
     activeDot.classList.add('active')
 
     if (this.elements.caption) {
-      captionHasChanged = this.previousCaption !== this.sections[section][index].alt
+      captionHasChanged =
+        this.previousCaption !== this.sections[section][index].alt
       this.previousCaption = this.sections[section][index].alt
       this.opts.onCaptionOut(this, captionHasChanged)
       this.timelines.caption.call(() => {
@@ -357,7 +372,10 @@ export default class Lightbox {
       if (this.imgs[index + x]) {
         this.imgs[index + x].src = this.sections[section][index + x].href
         if (this.sections[section][index + x].srcset) {
-          this.imgs[index + x].setAttribute('srcset', this.sections[section][index + x].srcset)
+          this.imgs[index + x].setAttribute(
+            'srcset',
+            this.sections[section][index + x].srcset
+          )
         }
       } else {
         break
@@ -367,7 +385,10 @@ export default class Lightbox {
     this.nextImage = this.imgs[index]
     this.nextImage.src = this.sections[section][index].href
     if (this.sections[section][index].srcset) {
-      this.nextImage.setAttribute('srcset', this.sections[section][index].srcset)
+      this.nextImage.setAttribute(
+        'srcset',
+        this.sections[section][index].srcset
+      )
     }
 
     this.opts.onImageIn(this)

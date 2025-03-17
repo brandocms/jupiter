@@ -23,7 +23,7 @@
  *
  */
 
-import { gsap } from 'gsap'
+import { gsap } from 'gsap/all'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import * as Events from '../../events'
 import Dom from '../Dom'

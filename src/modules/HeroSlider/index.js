@@ -9,8 +9,7 @@
  *
  */
 
-import { gsap } from 'gsap'
-import { CSSPlugin } from 'gsap/CSSPlugin'
+import { gsap, CSSPlugin } from 'gsap/all'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import prefersReducedMotion from '../../utils/prefersReducedMotion'
 import * as Events from '../../events'
@@ -30,7 +29,7 @@ const DEFAULT_OPTIONS = {
   zIndex: {
     visible: 5,
     next: 4,
-    regular: 3
+    regular: 3,
   },
   transition: {
     /* how long the actual transition from slide to slide takes */
@@ -38,10 +37,10 @@ const DEFAULT_OPTIONS = {
     /* the transition type. 'parallax' or 'fade' */
     type: 'parallax',
     /* how much to scale when 'idle' */
-    scale: 1.05
+    scale: 1.05,
   },
 
-  onTransition: hs => {
+  onTransition: (hs) => {
     hs.slide('parallax')
   },
 
@@ -54,15 +53,15 @@ const DEFAULT_OPTIONS = {
         opacity: 1,
         onComplete: () => {
           callback()
-        }
+        },
       })
     } else {
       gsap.to(hs.el, {
         duration: 0.25,
-        opacity: 1
+        opacity: 1,
       })
     }
-  }
+  },
 }
 
 export default class HeroSlider {
@@ -92,7 +91,7 @@ export default class HeroSlider {
       left: 0,
       width: '100%',
       height: '100%',
-      overflow: 'hidden'
+      overflow: 'hidden',
     })
 
     this.slides = this.el.querySelectorAll('[data-hero-slide]')
@@ -102,14 +101,14 @@ export default class HeroSlider {
     this._currentSlideIdx = this.opts.initialSlideNumber
 
     // style the slides
-    Array.from(this.slides).forEach(s => {
+    Array.from(this.slides).forEach((s) => {
       gsap.set(s, {
         zIndex: this.opts.zIndex.regular,
         position: 'absolute',
         top: 0,
         left: 0,
         width: '100%',
-        height: '100%'
+        height: '100%',
       })
 
       const img = s.querySelector('.hero-slide-img')
@@ -120,10 +119,12 @@ export default class HeroSlider {
           height: '100%',
           top: 0,
           left: 0,
-          position: 'absolute'
+          position: 'absolute',
         })
       } else {
-        console.error('==> JUPITER/HEROSLIDER: MISSING .hero-slide-img INSIDE [data-hero-slide]')
+        console.error(
+          '==> JUPITER/HEROSLIDER: MISSING .hero-slide-img INSIDE [data-hero-slide]'
+        )
       }
     })
 
@@ -188,24 +189,24 @@ export default class HeroSlider {
           .set(this._currentSlide, {
             opacity: 0,
             scale: 1,
-            zIndex: this.opts.zIndex.visible
+            zIndex: this.opts.zIndex.visible,
           })
           .set(this._nextSlide, {
-            opacity: 0
+            opacity: 0,
           })
           .to(this._previousSlide, {
             duration: this.opts.interval,
-            scale: this.opts.transition.scale
+            scale: this.opts.transition.scale,
           })
           .to(this._currentSlide, {
             duration: this.opts.transition.duration,
             opacity: 1,
             delay: this.opts.interval - this.opts.transition.duration,
             force3D: true,
-            ease: 'sine.inOut'
+            ease: 'sine.inOut',
           })
           .set(this._previousSlide, {
-            opacity: 0
+            opacity: 0,
           })
           .call(
             () => {
@@ -225,17 +226,17 @@ export default class HeroSlider {
           .set(this._currentSlide, {
             zIndex: this.opts.zIndex.next,
             scale: 1.0,
-            width: '100%'
+            width: '100%',
           })
           .fromTo(
             this._previousSlide,
             {
               duration: this.opts.interval,
-              overflow: 'hidden'
+              overflow: 'hidden',
             },
             {
               duration: this.opts.interval,
-              scale: this.opts.transition.scale
+              scale: this.opts.transition.scale,
             }
           )
           .to(this._previousSlide, {
@@ -243,19 +244,19 @@ export default class HeroSlider {
             width: 0,
             ease: 'power3.in',
             autoRound: true,
-            overwrite: 'preexisting'
+            overwrite: 'preexisting',
           })
           .set(this._nextSlide, {
-            zIndex: this.opts.zIndex.next
+            zIndex: this.opts.zIndex.next,
           })
           .set(this._currentSlide, {
             zIndex: this.opts.zIndex.visible,
-            width: '100%'
+            width: '100%',
           })
           .set(this._previousSlide, {
             zIndex: this.opts.zIndex.regular,
             scale: 1.0,
-            width: '100%'
+            width: '100%',
           })
           .call(() => {
             this.next()
@@ -264,7 +265,9 @@ export default class HeroSlider {
         break
 
       default:
-        console.error('==> JUPITER/HEROSLIDER: Unrecognized `opts.transition.type` option.')
+        console.error(
+          '==> JUPITER/HEROSLIDER: Unrecognized `opts.transition.type` option.'
+        )
     }
   }
 
@@ -272,13 +275,19 @@ export default class HeroSlider {
    * Add a window resize handler that resizes slide widths
    */
   _addResizeHandler() {
-    this.observer = new IntersectionObserver(entries => {
+    this.observer = new IntersectionObserver((entries) => {
       const [{ isIntersecting }] = entries
       if (isIntersecting) {
         this._resizeSlides()
-        window.addEventListener(Events.APPLICATION_RESIZE, this._resizeSlides.bind(this))
+        window.addEventListener(
+          Events.APPLICATION_RESIZE,
+          this._resizeSlides.bind(this)
+        )
       } else {
-        window.removeEventListener(Events.APPLICATION_RESIZE, this._resizeSlides.bind(this))
+        window.removeEventListener(
+          Events.APPLICATION_RESIZE,
+          this._resizeSlides.bind(this)
+        )
       }
     })
 
@@ -289,7 +298,7 @@ export default class HeroSlider {
     gsap.to(this.images, {
       duration: 0.15,
       width: document.body.clientWidth,
-      overwrite: 'all'
+      overwrite: 'all',
     })
   }
 }

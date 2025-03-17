@@ -1,4 +1,4 @@
-import { gsap } from 'gsap'
+import { gsap } from 'gsap/all'
 import Dom from '../Dom'
 
 export default class Toggler {
@@ -30,7 +30,7 @@ export default class Toggler {
         duration: 0.25,
         onComplete: () => {
           this.el.classList.toggle('open')
-        }
+        },
       })
 
       gsap.to(this.content, { height: 0, ease: 'power3.out' })

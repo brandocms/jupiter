@@ -1,9 +1,9 @@
-import { gsap } from 'gsap'
+import { gsap } from 'gsap/all'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import * as Events from '../../events'
 
 const DEFAULT_OPTIONS = {
-  onAccept: c => {
+  onAccept: (c) => {
     const oneYearFromNow = new Date()
     oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1)
 
@@ -17,7 +17,7 @@ const DEFAULT_OPTIONS = {
       .set(c.cc, { display: 'none' })
   },
 
-  onRefuse: c => {
+  onRefuse: (c) => {
     const oneYearFromNow = new Date()
     oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1)
 
@@ -30,17 +30,17 @@ const DEFAULT_OPTIONS = {
       .set(c.cc, { display: 'none' })
   },
 
-  alreadyConsented: c => {
+  alreadyConsented: (c) => {
     // user has already consented to cookies. Can be used to update/load gtm etc.
   },
 
-  alreadyRefused: c => {
+  alreadyRefused: (c) => {
     // user has already refused cookies.
   },
 
-  setCookies: c => {},
+  setCookies: (c) => {},
 
-  showCC: c => {
+  showCC: (c) => {
     if (c.hasCookie('COOKIES_CONSENT_STATUS')) {
       if (c.getCookie('COOKIES_CONSENT_STATUS') === '1') {
         c.opts.alreadyConsented(c)
@@ -58,13 +58,13 @@ const DEFAULT_OPTIONS = {
         {
           duration: 0.5,
           y: '120%',
-          display: 'block'
+          display: 'block',
         },
         {
           duration: 0.5,
           y: '0%',
           delay: '0.5',
-          ease: 'power3.out'
+          ease: 'power3.out',
         },
         '0.5'
       )
@@ -72,12 +72,12 @@ const DEFAULT_OPTIONS = {
         c.text,
         {
           duration: 0.7,
-          opacity: 0
+          opacity: 0,
         },
         {
           duration: 0.7,
           opacity: 1,
-          ease: 'power3.out'
+          ease: 'power3.out',
         },
         '-=0.35'
       )
@@ -85,16 +85,16 @@ const DEFAULT_OPTIONS = {
         c.btns,
         {
           duration: 0.7,
-          opacity: 0
+          opacity: 0,
         },
         {
           duration: 0.7,
           opacity: 1,
-          ease: 'power3.out'
+          ease: 'power3.out',
         },
         '-=0.35'
       )
-  }
+  },
 }
 
 export default class Cookies {
@@ -155,7 +155,9 @@ export default class Cookies {
       switch (vEnd.constructor) {
         case Number:
           sExpires =
-            vEnd === Infinity ? '; expires=Fri, 31 Dec 9999 23:59:59 GMT' : `; max-age=${vEnd}`
+            vEnd === Infinity
+              ? '; expires=Fri, 31 Dec 9999 23:59:59 GMT'
+              : `; max-age=${vEnd}`
           break
         case String:
           sExpires = `; expires=${vEnd}`

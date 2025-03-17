@@ -1,9 +1,9 @@
-import { gsap } from 'gsap'
+import { gsap } from 'gsap/all'
 import _defaultsDeep from 'lodash.defaultsdeep'
 
 const DEFAULT_OPTIONS = {
   shadow: false,
-  shadowColor: 'rgba(255, 255, 255, 1)'
+  shadowColor: 'rgba(255, 255, 255, 1)',
 }
 
 export default class FooterReveal {
@@ -17,7 +17,7 @@ export default class FooterReveal {
     gsap.set(footer, {
       'z-index': -100,
       position: 'fixed',
-      bottom: 0
+      bottom: 0,
     })
     const footerHeight = footer.offsetHeight
     // add height as margin

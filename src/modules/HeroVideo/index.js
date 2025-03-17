@@ -8,8 +8,7 @@
  *
  */
 
-import { gsap } from 'gsap'
-import { CSSPlugin } from 'gsap/CSSPlugin'
+import { gsap, CSSPlugin } from 'gsap/all'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import * as Events from '../../events'
 import prefersReducedMotion from '../../utils/prefersReducedMotion'
@@ -20,24 +19,24 @@ gsap.registerPlugin(CSSPlugin)
 
 const DEFAULT_OPTIONS = {
   el: '[data-hero-video]',
-  onFadeIn: hero => {
+  onFadeIn: (hero) => {
     gsap.to(hero.videoDiv, {
       duration: 1,
-      autoAlpha: 1
+      autoAlpha: 1,
     })
   },
 
-  onFadeInCover: hero => {
+  onFadeInCover: (hero) => {
     gsap.to(hero.cover, {
       duration: 0.35,
-      autoAlpha: 1
+      autoAlpha: 1,
     })
   },
 
-  onFadeOutCover: hero => {
+  onFadeOutCover: (hero) => {
     gsap.set(hero.cover, {
       duration: 0.35,
-      autoAlpha: 0
+      autoAlpha: 0,
     })
   },
 
@@ -57,8 +56,8 @@ const DEFAULT_OPTIONS = {
 
     play: () => `
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 350 350"><circle cx="175" cy="175" r="172.5" stroke="#000" stroke-width="10"/><path stroke="#000" stroke-width="10" d="M240 174l-112-72v148l112-76z"/></svg>
-    `
-  }
+    `,
+  },
 }
 
 export default class HeroVideo {
@@ -92,7 +91,7 @@ export default class HeroVideo {
       left: 0,
       width: '100%',
       height: '100%',
-      overflow: 'hidden'
+      overflow: 'hidden',
     })
 
     this.cover = Dom.find(this.el, '[data-cover]')
@@ -124,11 +123,13 @@ export default class HeroVideo {
       left: 0,
       width: '100%',
       height: '100%',
-      opacity: 0
+      opacity: 0,
     })
 
     if (!this.video) {
-      console.error('==> JUPITER/HEROVIDEO: MISSING <video> INSIDE [data-hero-video-content]')
+      console.error(
+        '==> JUPITER/HEROVIDEO: MISSING <video> INSIDE [data-hero-video-content]'
+      )
       return
     }
     this.video.muted = true
@@ -138,7 +139,7 @@ export default class HeroVideo {
       height: '100%',
       top: 0,
       left: 0,
-      position: 'absolute'
+      position: 'absolute',
     })
 
     if (this.cover) {
@@ -149,7 +150,11 @@ export default class HeroVideo {
 
     window.addEventListener(Events.APPLICATION_READY, () => {
       /* Wait for the video to load, then fade in container element */
-      if (!this.video.playing && !prefersReducedMotion() && this.video.readyState >= 3) {
+      if (
+        !this.video.playing &&
+        !prefersReducedMotion() &&
+        this.video.readyState >= 3
+      ) {
         this.play()
         this.fadeIn()
         this.booting = false
@@ -193,7 +198,7 @@ export default class HeroVideo {
       }
     })
     if (this.elements.pause) {
-      this.elements.pause.addEventListener('click', e => {
+      this.elements.pause.addEventListener('click', (e) => {
         e.preventDefault()
         e.stopPropagation()
         if (this.playing) {
@@ -233,7 +238,7 @@ export default class HeroVideo {
   }
 
   addObserver() {
-    const observer = new IntersectionObserver(entries => {
+    const observer = new IntersectionObserver((entries) => {
       const [{ isIntersecting }] = entries
       if (isIntersecting) {
         if (this.forcePaused) {
@@ -255,13 +260,19 @@ export default class HeroVideo {
    * Add a window resize handler that resizes video width
    */
   _addResizeHandler() {
-    this.observer = new IntersectionObserver(entries => {
+    this.observer = new IntersectionObserver((entries) => {
       const [{ isIntersecting }] = entries
       if (isIntersecting) {
         this._resize()
-        window.addEventListener(Events.APPLICATION_RESIZE, this._resize.bind(this))
+        window.addEventListener(
+          Events.APPLICATION_RESIZE,
+          this._resize.bind(this)
+        )
       } else {
-        window.removeEventListener(Events.APPLICATION_RESIZE, this._resize.bind(this))
+        window.removeEventListener(
+          Events.APPLICATION_RESIZE,
+          this._resize.bind(this)
+        )
       }
     })
 
@@ -272,7 +283,7 @@ export default class HeroVideo {
     gsap.to(this.video, {
       duration: 0.15,
       width: document.body.clientWidth,
-      overwrite: 'all'
+      overwrite: 'all',
     })
   }
 }

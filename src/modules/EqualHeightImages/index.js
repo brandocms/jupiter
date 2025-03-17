@@ -1,11 +1,11 @@
-import { gsap } from 'gsap'
+import { gsap } from 'gsap/all'
 import Dom from '../Dom'
 import * as Events from '../../events'
 import imagesAreLoaded from '../../utils/imagesAreLoaded'
 import _defaultsDeep from 'lodash.defaultsdeep'
 
 const DEFAULT_OPTIONS = {
-  listenForResize: true
+  listenForResize: true,
 }
 
 export default class EqualHeightImages {
@@ -23,7 +23,7 @@ export default class EqualHeightImages {
   }
 
   run() {
-    Array.from(this.canvases).forEach(canvas => {
+    Array.from(this.canvases).forEach((canvas) => {
       let lastTop = null
       const actionables = []
       let elements = []
@@ -31,7 +31,7 @@ export default class EqualHeightImages {
       const imgs = Dom.all(canvas, 'img')
 
       imagesAreLoaded(imgs, false).then(() => {
-        imgs.forEach(el => {
+        imgs.forEach((el) => {
           const rect = el.getBoundingClientRect()
           const size = this.getImgSizeInfo(el)
 
@@ -62,7 +62,7 @@ export default class EqualHeightImages {
         }
 
         if (actionables.length) {
-          actionables.forEach(a => {
+          actionables.forEach((a) => {
             gsap.set(a.elements, { minHeight: a.height })
           })
         }
@@ -94,7 +94,10 @@ export default class EqualHeightImages {
   }
 
   getImgSizeInfo(img) {
-    const pos = window.getComputedStyle(img).getPropertyValue('object-position').split(' ')
+    const pos = window
+      .getComputedStyle(img)
+      .getPropertyValue('object-position')
+      .split(' ')
 
     return this.getRenderedSize(
       true,

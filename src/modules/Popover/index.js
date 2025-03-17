@@ -1,4 +1,4 @@
-import { gsap } from 'gsap'
+import { gsap } from 'gsap/all'
 import Dom from '../Dom'
 import _defaultsDeep from 'lodash.defaultsdeep'
 
@@ -21,16 +21,25 @@ export default class Popover {
     this.popover.innerHTML = popoverTemplate.innerHTML
 
     Object.assign(this.popover.style, {
-      position: 'fixed'
+      position: 'fixed',
     })
 
     this.popover.classList.add(this.className)
 
     if (!app.featureTests.results.touch) {
-      this.trigger.addEventListener('mouseenter', this.handleMouseEnter.bind(this))
-      this.trigger.addEventListener('mouseleave', this.handleMouseLeave.bind(this))
+      this.trigger.addEventListener(
+        'mouseenter',
+        this.handleMouseEnter.bind(this)
+      )
+      this.trigger.addEventListener(
+        'mouseleave',
+        this.handleMouseLeave.bind(this)
+      )
     } else {
-      this.trigger.addEventListener('touchstart', this.handleTouchStart.bind(this))
+      this.trigger.addEventListener(
+        'touchstart',
+        this.handleTouchStart.bind(this)
+      )
     }
   }
 
@@ -53,9 +62,12 @@ export default class Popover {
   show() {
     document.body.appendChild(this.popover)
 
-    const { top: triggerTop, left: triggerLeft } = this.trigger.getBoundingClientRect()
-    const { offsetHeight: triggerHeight, offsetWidth: triggerWidth } = this.trigger
-    const { offsetHeight: popoverHeight, offsetWidth: popoverWidth } = this.popover
+    const { top: triggerTop, left: triggerLeft } =
+      this.trigger.getBoundingClientRect()
+    const { offsetHeight: triggerHeight, offsetWidth: triggerWidth } =
+      this.trigger
+    const { offsetHeight: popoverHeight, offsetWidth: popoverWidth } =
+      this.popover
 
     const positionIndex = this.orderedPositions.indexOf(this.position)
 
@@ -63,36 +75,36 @@ export default class Popover {
       top: {
         name: 'top',
         top: triggerTop - popoverHeight,
-        left: triggerLeft - (popoverWidth - triggerWidth) / 2
+        left: triggerLeft - (popoverWidth - triggerWidth) / 2,
       },
       right: {
         name: 'right',
         top: triggerTop - (popoverHeight - triggerHeight) / 2,
-        left: triggerLeft + triggerWidth
+        left: triggerLeft + triggerWidth,
       },
       bottom: {
         name: 'bottom',
         top: triggerTop + triggerHeight,
-        left: triggerLeft - (popoverWidth - triggerWidth) / 2
+        left: triggerLeft - (popoverWidth - triggerWidth) / 2,
       },
       left: {
         name: 'left',
         top: triggerTop - (popoverHeight - triggerHeight) / 2,
-        left: triggerLeft - popoverWidth
-      }
+        left: triggerLeft - popoverWidth,
+      },
     }
 
     const position = this.orderedPositions
       .slice(positionIndex)
       .concat(this.orderedPositions.slice(0, positionIndex))
-      .map(pos => positions[pos])
-      .find(pos => {
+      .map((pos) => positions[pos])
+      .find((pos) => {
         this.popover.style.top = `${pos.top}px`
         this.popover.style.left = `${pos.left}px`
         return Dom.inViewport(this.popover)
       })
 
-    this.orderedPositions.forEach(pos => {
+    this.orderedPositions.forEach((pos) => {
       this.popover.classList.remove(`${this.className}--${pos}`)
     })
 

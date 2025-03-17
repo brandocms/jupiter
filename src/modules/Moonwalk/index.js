@@ -1,8 +1,7 @@
 /**
  * Vendor imports
  */
-import { gsap } from 'gsap'
-import { CSSPlugin } from 'gsap/CSSPlugin'
+import { gsap, CSSPlugin } from 'gsap/all'
 import _defaultsDeep from 'lodash.defaultsdeep'
 
 /**

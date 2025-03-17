@@ -1,4 +1,4 @@
-import { gsap } from 'gsap'
+import { gsap } from 'gsap/all'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import * as Events from '../../events'
 
@@ -10,7 +10,7 @@ const DEFAULT_OPTIONS = {
   hamburgerColor: '#000',
 
   onResize: null,
-  openTween: m => {
+  openTween: (m) => {
     const timeline = gsap.timeline()
 
     m.hamburger.classList.toggle('is-active')
@@ -23,12 +23,12 @@ const DEFAULT_OPTIONS = {
           duration: 0.35,
           x: '0%',
           opacity: 0,
-          height: window.innerHeight
+          height: window.innerHeight,
         },
         {
           duration: 0.35,
           opacity: 1,
-          ease: 'sine.in'
+          ease: 'sine.in',
         }
       )
       .to(
@@ -36,7 +36,7 @@ const DEFAULT_OPTIONS = {
         {
           duration: 0.35,
           opacity: 0,
-          ease: 'power3.out'
+          ease: 'power3.out',
         },
         '-=0.35'
       )
@@ -45,7 +45,7 @@ const DEFAULT_OPTIONS = {
         {
           duration: 0.55,
           backgroundColor: 'transparent',
-          ease: 'power3.out'
+          ease: 'power3.out',
         },
         '-=0.35'
       )
@@ -61,13 +61,13 @@ const DEFAULT_OPTIONS = {
         {
           duration: 1,
           opacity: 0,
-          x: 20
+          x: 20,
         },
         {
           duration: 1,
           x: 0,
           opacity: 1,
-          ease: 'power3.out'
+          ease: 'power3.out',
         },
         0.05
       )
@@ -77,14 +77,14 @@ const DEFAULT_OPTIONS = {
           duration: 0.55,
           opacity: 1,
           xPercent: 0,
-          ease: 'power3.inOut'
+          ease: 'power3.inOut',
         },
         '-=1.2'
       )
       .call(m._emitMobileMenuOpenEvent)
   },
 
-  closeTween: m => {
+  closeTween: (m) => {
     document.body.classList.toggle('open-menu')
     const timeline = gsap.timeline()
 
@@ -97,13 +97,13 @@ const DEFAULT_OPTIONS = {
         {
           duration: 0.2,
           opacity: 1,
-          xPercent: 0
+          xPercent: 0,
         },
         {
           duration: 0.2,
           opacity: 0,
           xPercent: 5,
-          ease: 'power3.out'
+          ease: 'power3.out',
         }
       )
       .set(m.logoPath, { clearProps: 'fill' })
@@ -113,7 +113,7 @@ const DEFAULT_OPTIONS = {
           duration: 0.5,
           opacity: 0,
           x: 20,
-          ease: 'power3.out'
+          ease: 'power3.out',
         },
         0.04
       )
@@ -123,7 +123,7 @@ const DEFAULT_OPTIONS = {
         {
           duration: 0.25,
           x: '100%',
-          ease: 'sine.in'
+          ease: 'sine.in',
         },
         '-=0.3'
       )
@@ -138,9 +138,9 @@ const DEFAULT_OPTIONS = {
       .to(m.logo, {
         duration: 0.35,
         opacity: 1,
-        ease: 'power3.in'
+        ease: 'power3.in',
       })
-  }
+  },
 }
 
 export default class MobileMenu {
@@ -152,9 +152,13 @@ export default class MobileMenu {
     this.header = document.querySelector('header')
     this.bg = this.header.querySelector('.mobile-bg')
     this.logo = this.header.querySelector('figure.brand')
-    this.logoPath = this.logo ? this.logo.querySelectorAll(this.opts.logoPathSelector) : null
+    this.logoPath = this.logo
+      ? this.logo.querySelectorAll(this.opts.logoPathSelector)
+      : null
     this.menuButton = this.header.querySelector('figure.menu-button')
-    this.hamburger = this.menuButton ? this.menuButton.querySelector('.hamburger') : null
+    this.hamburger = this.menuButton
+      ? this.menuButton.querySelector('.hamburger')
+      : null
     this.hamburgerInner = this.menuButton
       ? this.menuButton.querySelector('.hamburger-inner')
       : null
@@ -163,7 +167,7 @@ export default class MobileMenu {
     this.nav = this.header.querySelector('nav')
 
     if (this.hamburger) {
-      this.hamburger.addEventListener('click', e => {
+      this.hamburger.addEventListener('click', (e) => {
         e.preventDefault()
         e.stopPropagation()
         this.toggleMenu()
@@ -198,12 +202,16 @@ export default class MobileMenu {
   }
 
   _emitMobileMenuOpenEvent() {
-    const mobileMenuOpenEvent = new window.CustomEvent(Events.APPLICATION_MOBILE_MENU_OPEN)
+    const mobileMenuOpenEvent = new window.CustomEvent(
+      Events.APPLICATION_MOBILE_MENU_OPEN
+    )
     window.dispatchEvent(mobileMenuOpenEvent)
   }
 
   _emitMobileMenuClosedEvent() {
-    const mobileMenuClosedEvent = new window.CustomEvent(Events.APPLICATION_MOBILE_MENU_CLOSED)
+    const mobileMenuClosedEvent = new window.CustomEvent(
+      Events.APPLICATION_MOBILE_MENU_CLOSED
+    )
     window.dispatchEvent(mobileMenuClosedEvent)
   }
 }

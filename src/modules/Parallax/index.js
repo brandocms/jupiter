@@ -1,12 +1,12 @@
 import _defaultsDeep from 'lodash.defaultsdeep'
-import { gsap } from 'gsap'
+import { gsap } from 'gsap/all'
 import * as Events from '../../events'
 
 // Default Settings
 const DEFAULT_OPTIONS = {
   el: '[data-parallax]',
   factor: 1.3,
-  fadeContent: true
+  fadeContent: true,
 }
 
 export default class Parallax {
@@ -21,8 +21,12 @@ export default class Parallax {
       this.elements.wrapper = this.opts.el
     }
 
-    this.elements.content = this.elements.wrapper.querySelector('[data-parallax-content]')
-    this.elements.figure = this.elements.wrapper.querySelector('[data-parallax-figure]')
+    this.elements.content = this.elements.wrapper.querySelector(
+      '[data-parallax-content]'
+    )
+    this.elements.figure = this.elements.wrapper.querySelector(
+      '[data-parallax-figure]'
+    )
 
     this.initializeTimeline()
     window.addEventListener(Events.APPLICATION_SCROLL, this.onScroll.bind(this))
@@ -31,7 +35,7 @@ export default class Parallax {
   initializeTimeline() {
     this.timeline = gsap.timeline({
       useFrames: true,
-      paused: true
+      paused: true,
     })
 
     if (this.opts.fadeContent) {
@@ -40,7 +44,7 @@ export default class Parallax {
         {
           duration: this.app.size.height * 0.4,
           opacity: 0,
-          ease: 'power0.none'
+          ease: 'power0.none',
         },
         0
       )
@@ -51,7 +55,7 @@ export default class Parallax {
       {
         duration: this.app.size.height * 0.5,
         y: this.app.size.height * 0.1,
-        ease: 'power0.none'
+        ease: 'power0.none',
       },
       0
     )
@@ -60,12 +64,12 @@ export default class Parallax {
       this.elements.figure,
       {
         duration: this.app.size.height,
-        yPercent: 0
+        yPercent: 0,
       },
       {
         duration: this.app.size.height,
         yPercent: (this.app.size.height * this.opts.factor) / 100,
-        ease: 'power0.none'
+        ease: 'power0.none',
       },
       0
     )

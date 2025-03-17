@@ -1,4 +1,4 @@
-import { gsap } from 'gsap'
+import { gsap } from 'gsap/all'
 import _defaultsDeep from 'lodash.defaultsdeep'
 
 const DEFAULT_OPTIONS = {}
@@ -13,14 +13,14 @@ export default class StackedBoxes {
   initialize() {
     const boxes = document.querySelectorAll('[data-boxes-stacked]')
 
-    const observer = new IntersectionObserver(entries => {
+    const observer = new IntersectionObserver((entries) => {
       const [{ isIntersecting, target }] = entries
       if (isIntersecting) {
         this.adjustBox(target)
       }
     })
 
-    Array.from(boxes).forEach(box => {
+    Array.from(boxes).forEach((box) => {
       observer.observe(box)
     })
   }
@@ -53,7 +53,9 @@ export default class StackedBoxes {
           break
 
         default:
-          console.error('==> JUPITER/STACKEDBOXES: `data-boxes-stacked-pull` has wrong value')
+          console.error(
+            '==> JUPITER/STACKEDBOXES: `data-boxes-stacked-pull` has wrong value'
+          )
       }
       this.pull(pull, pullPx)
     }

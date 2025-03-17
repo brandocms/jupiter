@@ -1,4 +1,4 @@
-import { gsap } from 'gsap'
+import { gsap } from 'gsap/all'
 import _defaultsDeep from 'lodash.defaultsdeep'
 
 const DEFAULT_OPTIONS = {}
@@ -13,7 +13,7 @@ export default class CoverOverlay {
   initialize() {
     const coveredModules = document.querySelectorAll('[data-cover-overlay]')
 
-    Array.from(coveredModules).forEach(v => {
+    Array.from(coveredModules).forEach((v) => {
       let player
       const overlay = v.querySelector('.picture-wrapper')
       const btn = v.querySelector('[data-cover-overlay-button]')

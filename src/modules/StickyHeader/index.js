@@ -23,36 +23,36 @@
  *
  */
 
-import { gsap } from 'gsap'
+import { gsap } from 'gsap/all'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import * as Events from '../../events'
 
 const DEFAULT_EVENTS = {
-  onMainVisible: h => {
+  onMainVisible: (h) => {
     gsap.to(h.el, {
       duration: 3,
       opacity: 1,
-      delay: 0.5
+      delay: 0.5,
     })
   },
 
-  onMainInvisible: h => {
+  onMainInvisible: (h) => {
     gsap.to(h.el, {
       duration: 1,
-      opacity: 0
+      opacity: 0,
     })
   },
 
-  onPin: h => {
+  onPin: (h) => {
     gsap.to(h.auxEl, {
       duration: 0.35,
       yPercent: '0',
       ease: 'sine.out',
-      autoRound: true
+      autoRound: true,
     })
   },
 
-  onUnpin: h => {
+  onUnpin: (h) => {
     h._hiding = true
     gsap.to(h.auxEl, {
       duration: 0.25,
@@ -61,10 +61,10 @@ const DEFAULT_EVENTS = {
       autoRound: true,
       onComplete: () => {
         h._hiding = false
-      }
+      },
     })
   },
-  onSmall: () => {}
+  onSmall: () => {},
 }
 
 const DEFAULT_OPTIONS = {
@@ -75,12 +75,12 @@ const DEFAULT_OPTIONS = {
   unPinOnResize: false,
 
   default: {
-    onClone: h => h.el.cloneNode(true),
+    onClone: (h) => h.el.cloneNode(true),
     canvas: window,
-    beforeEnter: h => {
+    beforeEnter: (h) => {
       gsap.set(h.el, { opacity: 0 })
     },
-    enter: h => {
+    enter: (h) => {
       const timeline = gsap.timeline()
       timeline
         .set(h.auxEl, { yPercent: -100 })
@@ -89,7 +89,7 @@ const DEFAULT_OPTIONS = {
           yPercent: 0,
           delay: h.opts.enterDelay,
           ease: 'power3.out',
-          autoRound: true
+          autoRound: true,
         })
         .staggerTo(h.lis, 0.8, { opacity: 1, ease: 'sine.in' }, 0.1, '-=1')
     },
@@ -98,8 +98,8 @@ const DEFAULT_OPTIONS = {
     offset: 0, // how far from the top before we trigger hide
     offsetSmall: 50, // how far from the top before we trigger the shrinked padding,
     offsetBg: 200, // how far down before changing backgroundcolor
-    ...DEFAULT_EVENTS
-  }
+    ...DEFAULT_EVENTS,
+  },
 }
 
 export default class StickyHeader {
@@ -174,14 +174,18 @@ export default class StickyHeader {
     this._bindMobileMenuListeners()
 
     if (this.opts.unPinOnResize) {
-      window.addEventListener(Events.APPLICATION_RESIZE, this.setResizeTimer.bind(this), false)
+      window.addEventListener(
+        Events.APPLICATION_RESIZE,
+        this.setResizeTimer.bind(this),
+        false
+      )
     }
 
     this.opts.beforeEnter(this)
   }
 
   setupObserver() {
-    this.observer = new IntersectionObserver(entries => {
+    this.observer = new IntersectionObserver((entries) => {
       const [{ isIntersecting }] = entries
 
       if (isIntersecting) {
@@ -200,7 +204,11 @@ export default class StickyHeader {
       }
     })
 
-    window.addEventListener(Events.APPLICATION_SCROLL, this.update.bind(this), false)
+    window.addEventListener(
+      Events.APPLICATION_SCROLL,
+      this.update.bind(this),
+      false
+    )
 
     if (this.mainOpts.pinOnForcedScroll) {
       window.addEventListener(Events.APPLICATION_FORCED_SCROLL_START, () => {
@@ -292,7 +300,10 @@ export default class StickyHeader {
   }
 
   checkBot(force) {
-    if (this.currentScrollY + this.getViewportHeight() >= this.getScrollerHeight()) {
+    if (
+      this.currentScrollY + this.getViewportHeight() >=
+      this.getScrollerHeight()
+    ) {
       if (force) {
         this.bottom()
       } else if (!this._bottom) {
@@ -420,7 +431,8 @@ export default class StickyHeader {
   isOutOfBounds() {
     const pastTop = this.currentScrollY < 0
     const pastBottom =
-      this.currentScrollY + this.getScrollerPhysicalHeight() > this.getScrollerHeight()
+      this.currentScrollY + this.getScrollerPhysicalHeight() >
+      this.getScrollerHeight()
 
     return pastTop || pastBottom
   }
@@ -453,7 +465,9 @@ export default class StickyHeader {
 
   getViewportHeight() {
     return (
-      window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight
+      window.innerHeight ||
+      document.documentElement.clientHeight ||
+      document.body.clientHeight
     )
   }
 
@@ -472,11 +486,18 @@ export default class StickyHeader {
     if (this.opts.canvas.scrollTop !== undefined) {
       return this.opts.canvas.scrollTop
     }
-    return (document.documentElement || document.body.parentNode || document.body).scrollTop
+    return (
+      document.documentElement ||
+      document.body.parentNode ||
+      document.body
+    ).scrollTop
   }
 
   toleranceExceeded() {
-    return Math.abs(this.currentScrollY - this.lastKnownScrollY) >= this.opts.tolerance
+    return (
+      Math.abs(this.currentScrollY - this.lastKnownScrollY) >=
+      this.opts.tolerance
+    )
   }
 
   _getOptionsForSection(section, opts) {
