@@ -120,12 +120,12 @@ test.describe('Jupiter Moonwalk Module', () => {
 
   test('should execute custom callbacks with moonwalk-run', async ({ page }) => {
     // Test the run section
-    const runSection = page.locator('section:has(h2:text("Moonwalk Run"))')
+    const runSection = page.locator('[data-testid="run-section"]')
     await runSection.scrollIntoViewIfNeeded()
     
     // Counter run
-    const counterTarget = page.locator('[data-moonwalk-run="counter"]')
-    const counter = page.locator('#run-counter')
+    const counterTarget = page.locator('[data-testid="counter-target"]')
+    const counter = page.locator('[data-testid="run-counter"]')
     
     // Before scroll
     await expect(counter).toHaveText('0')
@@ -138,7 +138,7 @@ test.describe('Jupiter Moonwalk Module', () => {
     await expect(counterTarget).toHaveClass(/triggered/)
     
     // Color Change run with exit
-    const colorIndicator = page.locator('#color-indicator')
+    const colorIndicator = page.locator('[data-testid="color-indicator"]')
     
     // Scroll to color indicator
     await colorIndicator.scrollIntoViewIfNeeded()
@@ -162,7 +162,7 @@ test.describe('Jupiter Moonwalk Module', () => {
 
   test('should respect ordering with data-moonwalk-order', async ({ page }) => {
     // Test ordered section
-    const orderedSection = page.locator('section[data-moonwalk-section="ordered"]')
+    const orderedSection = page.locator('[data-testid="ordered-section"]')
     
     // Scroll to ordered section
     await orderedSection.scrollIntoViewIfNeeded()
@@ -172,8 +172,8 @@ test.describe('Jupiter Moonwalk Module', () => {
     
     // Check if boxes get ordered attributes
     // We can't really test the actual animation order visually, but we can check that the attributes are set
-    const box1 = page.locator('[data-moonwalk-order="1"]')
-    const box2 = page.locator('[data-moonwalk-order="2"]')
+    const box1 = page.locator('[data-testid="order-box-1"]')
+    const box2 = page.locator('[data-testid="order-box-2"]')
     
     await expect(box1).toBeVisible()
     await expect(box2).toBeVisible()

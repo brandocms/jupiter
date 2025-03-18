@@ -234,37 +234,38 @@
 
     <!-- Moonwalk Run -->
     <section class="spacer">Spacer</section>
-    <section data-moonwalk-section>
+    <section data-moonwalk-section data-testid="run-section">
       <h2 data-moonwalk>Moonwalk Run</h2>
       <p data-moonwalk>
         Using data-moonwalk-run for custom callbacks when elements enter the
         viewport.
       </p>
     </section>
-    <section>
-      <div id="run-counter" class="counter">0</div>
-      <div data-moonwalk-run="counter" class="run-target">Counter Run</div>
+    <section data-testid="run-targets-section">
+      <div id="run-counter" class="counter" data-testid="run-counter">0</div>
+      <div data-moonwalk-run="counter" class="run-target" data-testid="counter-target">Counter Run</div>
 
       <div
         data-moonwalk-run="colorChange"
         id="color-indicator"
         class="run-target"
+        data-testid="color-indicator"
       >
         Color Change Run (on exit too)
       </div>
     </section>
 
     <!-- Ordered Items -->
-    <section data-moonwalk-section="ordered">
+    <section data-moonwalk-section="ordered" data-testid="ordered-section">
       <h2>Ordered Animation</h2>
       <p>Using data-moonwalk-order to control animation sequence.</p>
 
       <div class="boxes">
-        <div class="box" data-moonwalk-order="3">Box (Order 3)</div>
-        <div class="box" data-moonwalk-order="1">Box (Order 1)</div>
-        <div class="box" data-moonwalk-order="2">Box (Order 2)</div>
-        <div class="box" data-moonwalk-order="5">Box (Order 5)</div>
-        <div class="box" data-moonwalk-order="4">Box (Order 4)</div>
+        <div class="box" data-moonwalk-order="3" data-testid="order-box-3">Box (Order 3)</div>
+        <div class="box" data-moonwalk-order="1" data-testid="order-box-1">Box (Order 1)</div>
+        <div class="box" data-moonwalk-order="2" data-testid="order-box-2">Box (Order 2)</div>
+        <div class="box" data-moonwalk-order="5" data-testid="order-box-5">Box (Order 5)</div>
+        <div class="box" data-moonwalk-order="4" data-testid="order-box-4">Box (Order 4)</div>
       </div>
     </section>
 
