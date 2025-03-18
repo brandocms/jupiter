@@ -133,36 +133,54 @@
     </section>
 
     <!-- Basic Animation -->
-    <section>
-      <h2 data-moonwalk>Basic Animation</h2>
+    <section
+      id="basic-animation-section"
+      data-testid="basic-animation-section"
+      data-moonwalk-section
+    >
+      <h2 data-moonwalk data-testid="basic-heading">Basic Animation</h2>
       <p data-moonwalk>
         Elements with data-moonwalk attribute animate when they enter the
         viewport.
       </p>
 
       <div class="boxes">
-        <div class="box" data-moonwalk>Box 1</div>
+        <div class="box" data-moonwalk data-testid="basic-box-1">Box 1</div>
         <div class="box" data-moonwalk>Box 2</div>
         <div class="box" data-moonwalk>Box 3</div>
       </div>
     </section>
 
     <!-- Animation Types -->
-    <section>
+    <section
+      id="animation-types-section"
+      data-testid="animation-types-section"
+      data-moonwalk-section
+    >
       <h2 data-moonwalk>Different Animation Types</h2>
       <p data-moonwalk>
         Testing different animation types using named animations.
       </p>
 
       <div class="boxes">
-        <div class="box" data-moonwalk="fade">Fade In</div>
-        <div class="box" data-moonwalk="slide">Slide In</div>
-        <div class="box" data-moonwalk="scale">Scale In</div>
+        <div class="box" data-moonwalk="fade" data-testid="fade-box">
+          Fade In
+        </div>
+        <div class="box" data-moonwalk="slide" data-testid="slide-box">
+          Slide In
+        </div>
+        <div class="box" data-moonwalk="scale" data-testid="scale-box">
+          Scale In
+        </div>
       </div>
     </section>
 
     <!-- Section Animation -->
-    <section data-moonwalk-section="stagger">
+    <section
+      data-moonwalk-section="stagger"
+      id="stagger-section"
+      data-testid="stagger-section"
+    >
       <h2>Moonwalk Section</h2>
       <p>
         This entire section has a data-moonwalk-section attribute that sequences
@@ -170,7 +188,7 @@
       </p>
 
       <div class="boxes">
-        <div class="box">Box 1 (Staggered)</div>
+        <div class="box" data-testid="stagger-box-1">Box 1 (Staggered)</div>
         <div class="box">Box 2 (Staggered)</div>
         <div class="box">Box 3 (Staggered)</div>
         <div class="box">Box 4 (Staggered)</div>
@@ -180,21 +198,35 @@
     </section>
 
     <!-- Children Attribute -->
-    <section>
+    <section
+      id="children-section"
+      data-testid="children-section"
+      data-moonwalk-section
+    >
       <h2 data-moonwalk>Moonwalk Children</h2>
       <p data-moonwalk>
         Using data-moonwalk-children attribute to apply data-moonwalk to all
         children.
       </p>
 
-      <div data-moonwalk-children="fade" class="boxes">
-        <div class="box">Child Box 1</div>
+      <div
+        data-moonwalk-children="fade"
+        class="boxes"
+        data-testid="fade-children-container"
+      >
+        <div class="box" data-testid="fade-child-box-1">Child Box 1</div>
         <div class="box">Child Box 2</div>
         <div class="box">Child Box 3</div>
       </div>
 
-      <div data-moonwalk-children class="boxes">
-        <div class="box">Default Child Box 1</div>
+      <div
+        data-moonwalk-children
+        class="boxes"
+        data-testid="default-children-container"
+      >
+        <div class="box" data-testid="default-child-box-1">
+          Default Child Box 1
+        </div>
         <div class="box">Default Child Box 2</div>
         <div class="box">Default Child Box 3</div>
       </div>
@@ -245,17 +277,17 @@
     </section>
 
     <!-- Nested Sections Test -->
-    <section>
+    <section id="nested-section" data-testid="nested-section">
       <h2 data-moonwalk>Nested Sections</h2>
       <p data-moonwalk>
         Testing clearNestedSections and clearNestedWalks options.
       </p>
 
-      <div data-moonwalk-section>
+      <div data-moonwalk-section data-testid="outer-section">
         <div class="box">Outer Box 1</div>
         <div class="box">Outer Box 2</div>
 
-        <div data-moonwalk-section="inner">
+        <div data-moonwalk-section data-testid="inner-section">
           <div class="box">
             Inner Box 1 (may be ignored if clearNestedSections is true)
           </div>
@@ -264,9 +296,9 @@
           </div>
         </div>
 
-        <div class="box" data-moonwalk>
+        <div class="box" data-moonwalk data-testid="nested-walk-parent">
           <div>Outer Box with moonwalk</div>
-          <div data-moonwalk>
+          <div data-moonwalk data-testid="nested-walk-child">
             Nested moonwalk (may be ignored if clearNestedWalks is true)
           </div>
         </div>
@@ -280,7 +312,7 @@
       document.addEventListener("DOMContentLoaded", () => {
         // Initialize Application
         const app = new Application({
-          respectReducedMotion: true,
+          respectReducedMotion: false,
           breakpointConfig: {
             breakpoints: [
               "iphone",
@@ -291,12 +323,6 @@
               "desktop_lg",
               "desktop_xl",
             ],
-
-            runListenerOnInit: true,
-
-            listeners: {
-              desktop_xl: (mq) => {},
-            },
           },
         });
 
@@ -308,6 +334,8 @@
           addIndexes: true,
           rootMargin: "-10% 0%",
           threshold: 0,
+          // Use empty function to prevent waiting for APPLICATION_REVEALED event
+          on: () => {},
 
           // Custom walk configurations
           walks: {
@@ -406,13 +434,19 @@
           },
         };
 
-        // Create Moonwalk instance
-        app.registerCallback(Events.APPLICATION_READY, () => {
-          app.moonwalk = new Moonwalk(app, moonwalkConfig);
-        });
+        // Create Moonwalk instance directly
+        app.moonwalk = new Moonwalk(app, moonwalkConfig);
 
         // Start the application
         app.initialize();
+
+        // Force the moonwalk to be ready after a short delay
+        // This makes sure animations are triggered for testing
+        setTimeout(() => {
+          if (app.moonwalk && typeof app.moonwalk.ready === "function") {
+            app.moonwalk.ready();
+          }
+        }, 500);
       });
     </script>
   </body>

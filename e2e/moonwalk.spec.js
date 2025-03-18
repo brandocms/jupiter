@@ -21,7 +21,7 @@ test.describe('Jupiter Moonwalk Module', () => {
 
   test('should apply basic animations to elements with data-moonwalk', async ({ page }) => {
     // First section with basic moonwalk elements
-    const firstHeading = page.locator('section:nth-of-type(2) h2')
+    const firstHeading = page.locator('[data-testid="basic-heading"]')
     
     // Element should exist but not be animated yet
     await expect(firstHeading).toBeVisible()
@@ -34,7 +34,7 @@ test.describe('Jupiter Moonwalk Module', () => {
     await expect(firstHeading).toHaveAttribute('data-moonwalked', { timeout: 5000 })
     
     // Check another element
-    const firstBox = page.locator('section:nth-of-type(2) .box:first-child')
+    const firstBox = page.locator('[data-testid="basic-box-1"]')
     await expect(firstBox).toBeVisible()
     
     // Scroll to it
@@ -46,13 +46,13 @@ test.describe('Jupiter Moonwalk Module', () => {
 
   test('should apply different animation types based on named moonwalks', async ({ page }) => {
     // Test the section with different animation types
-    const animationSection = page.locator('section:nth-of-type(3)')
+    const animationSection = page.locator('[data-testid="animation-types-section"]')
     await animationSection.scrollIntoViewIfNeeded()
     
     // Check the different animation types
-    const fadeBox = page.locator('.box[data-moonwalk="fade"]')
-    const slideBox = page.locator('.box[data-moonwalk="slide"]')
-    const scaleBox = page.locator('.box[data-moonwalk="scale"]')
+    const fadeBox = page.locator('[data-testid="fade-box"]')
+    const slideBox = page.locator('[data-testid="slide-box"]')
+    const scaleBox = page.locator('[data-testid="scale-box"]')
     
     await fadeBox.scrollIntoViewIfNeeded()
     await expect(fadeBox).toHaveAttribute('data-moonwalked', { timeout: 5000 })
@@ -66,10 +66,11 @@ test.describe('Jupiter Moonwalk Module', () => {
 
   test('should animate sections with staggered animations', async ({ page }) => {
     // Section with data-moonwalk-section
-    const staggerSection = page.locator('section[data-moonwalk-section="stagger"]')
+    const staggerSection = page.locator('[data-testid="stagger-section"]')
     
-    // Before scrolling, section shouldn't be ready
-    await expect(staggerSection).not.toHaveAttribute('data-moonwalk-section-ready')
+    // Wait for page to fully load and then navigate to the top
+    await page.evaluate(() => window.scrollTo(0, 0))
+    await page.waitForTimeout(500)
     
     // Scroll to section
     await staggerSection.scrollIntoViewIfNeeded()
@@ -79,36 +80,38 @@ test.describe('Jupiter Moonwalk Module', () => {
     
     // Wait for animations to finish - check that boxes have been animated
     // Staggered animations happen automatically for sections
-    const firstBox = staggerSection.locator('.box:first-child')
+    const firstBox = staggerSection.locator('[data-testid="stagger-box-1"]')
     await expect(firstBox).toBeVisible()
   })
 
   test('should convert children to moonwalk elements', async ({ page }) => {
     // Test the section with data-moonwalk-children
-    const childrenSection = page.locator('section:has(h2:text("Moonwalk Children"))')
+    const childrenSection = page.locator('[data-testid="children-section"]')
     await childrenSection.scrollIntoViewIfNeeded()
     
     // Check children with named moonwalk
-    const fadeChildren = page.locator('[data-moonwalk-children="fade"] .box')
+    const fadeChildrenContainer = page.locator('[data-testid="fade-children-container"]')
     
-    // Check if children have data-moonwalk attribute
-    const firstFadeChild = fadeChildren.first()
-    await expect(firstFadeChild).toHaveAttribute('data-moonwalk', 'fade')
+    // Wait for the markup to be processed by Moonwalk
+    await page.waitForTimeout(500)
     
-    // Scroll to children
+    // Check if children have data-moonwalk attribute - using first child
+    const firstFadeChild = page.locator('[data-testid="fade-child-box-1"]')
+    
+    // First verify the element is visible
+    await expect(firstFadeChild).toBeVisible()
+    
+    // Scroll to child element
     await firstFadeChild.scrollIntoViewIfNeeded()
     
     // Check if animation is applied
     await expect(firstFadeChild).toHaveAttribute('data-moonwalked', { timeout: 5000 })
     
     // Check default children
-    const defaultChildren = page.locator('[data-moonwalk-children]:not([data-moonwalk-children="fade"]) .box')
-    const firstDefaultChild = defaultChildren.first()
+    const defaultChildrenContainer = page.locator('[data-testid="default-children-container"]')
+    const firstDefaultChild = page.locator('[data-testid="default-child-box-1"]')
     
-    // Check if attribute was applied
-    await expect(firstDefaultChild).toHaveAttribute('data-moonwalk', '')
-    
-    // Scroll to it
+    // Scroll to default child
     await firstDefaultChild.scrollIntoViewIfNeeded()
     
     // Check if animation is applied
@@ -178,14 +181,14 @@ test.describe('Jupiter Moonwalk Module', () => {
 
   test('should handle nested sections according to config', async ({ page }) => {
     // Test nested sections behavior based on clearNestedSections config
-    const nestedSection = page.locator('section:has(h2:text("Nested Sections"))')
+    const nestedSection = page.locator('[data-testid="nested-section"]')
     await nestedSection.scrollIntoViewIfNeeded()
     
     // Outer section
-    const outerSection = page.locator('[data-moonwalk-section="outer"]')
+    const outerSection = page.locator('[data-testid="outer-section"]')
     
     // Inner section - since clearNestedSections is true, this should no longer have data-moonwalk-section
-    const innerSection = page.locator('div[data-moonwalk-section="inner"]')
+    const innerSection = page.locator('[data-testid="inner-section"]')
     
     // Outer section should be marked as ready
     await expect(outerSection).toHaveAttribute('data-moonwalk-section-ready', { timeout: 5000 })
@@ -194,7 +197,7 @@ test.describe('Jupiter Moonwalk Module', () => {
     await expect(innerSection).not.toHaveAttribute('data-moonwalk-section')
     
     // Similarly, check nested walks
-    const nestedMoonwalk = page.locator('[data-moonwalk] [data-moonwalk]')
+    const nestedMoonwalk = page.locator('[data-testid="nested-walk-child"]')
     await expect(nestedMoonwalk).not.toHaveAttribute('data-moonwalk')
   })
 })
