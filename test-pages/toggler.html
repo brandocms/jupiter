@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jupiter Toggler Test</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      line-height: 1.5;
+      padding: 2rem;
+      margin: 0 auto;
+      max-width: 800px;
+    }
+    
+    header {
+      margin-bottom: 2rem;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 1rem;
+    }
+    
+    .toggle-section {
+      margin-bottom: 2rem;
+      padding: 1rem;
+      background-color: #f5f5f5;
+      border-radius: 4px;
+    }
+    
+    button {
+      background-color: #4a90e2;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+    
+    button:hover {
+      background-color: #3579c6;
+    }
+    
+    .toggle-target {
+      margin-top: 1rem;
+      padding: 1rem;
+      background-color: white;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      display: none;
+    }
+    
+    .toggle-target.is-active {
+      display: block;
+    }
+    
+    .accordion-item {
+      border: 1px solid #ddd;
+      margin-bottom: 0.5rem;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    
+    .accordion-header {
+      background-color: #f0f0f0;
+      padding: 1rem;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    
+    .accordion-content {
+      padding: 1rem;
+      display: none;
+    }
+    
+    .accordion-content.is-active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Jupiter Toggler Test</h1>
+    <p>Testing the Toggler module with various configurations</p>
+  </header>
+  
+  <!-- Basic Toggle -->
+  <section class="toggle-section">
+    <h2>Basic Toggle</h2>
+    <p>Simple show/hide toggle functionality</p>
+    
+    <button data-toggler="toggle-example">Toggle Content</button>
+    <div class="toggle-target" data-toggler-target="toggle-example">
+      <p>This content can be toggled with the button above.</p>
+      <p>The toggler uses data attributes to control which elements to toggle.</p>
+    </div>
+  </section>
+  
+  <!-- Multiple Targets -->
+  <section class="toggle-section">
+    <h2>Multiple Targets</h2>
+    <p>Toggling multiple elements with a single button</p>
+    
+    <button data-toggler="multi-toggle">Toggle Multiple Elements</button>
+    
+    <div class="toggle-target" data-toggler-target="multi-toggle">
+      <p>This is the first target element.</p>
+    </div>
+    
+    <div class="toggle-target" data-toggler-target="multi-toggle">
+      <p>This is the second target element.</p>
+    </div>
+    
+    <div class="toggle-target" data-toggler-target="multi-toggle">
+      <p>This is the third target element.</p>
+    </div>
+  </section>
+  
+  <!-- Accordion Pattern -->
+  <section class="toggle-section">
+    <h2>Accordion Pattern</h2>
+    <p>Using togglers to create an accordion interface</p>
+    
+    <div class="accordion-item">
+      <div class="accordion-header" data-toggler="accordion-1">Section 1</div>
+      <div class="accordion-content" data-toggler-target="accordion-1">
+        <p>Content for section 1 of the accordion.</p>
+        <p>This content expands and collapses when the header is clicked.</p>
+      </div>
+    </div>
+    
+    <div class="accordion-item">
+      <div class="accordion-header" data-toggler="accordion-2">Section 2</div>
+      <div class="accordion-content" data-toggler-target="accordion-2">
+        <p>Content for section 2 of the accordion.</p>
+        <p>Each section operates independently.</p>
+      </div>
+    </div>
+    
+    <div class="accordion-item">
+      <div class="accordion-header" data-toggler="accordion-3">Section 3</div>
+      <div class="accordion-content" data-toggler-target="accordion-3">
+        <p>Content for section 3 of the accordion.</p>
+        <p>Click any header to toggle its content.</p>
+      </div>
+    </div>
+  </section>
+  
+  <script type="module">
+    import { Application, Toggler, Events } from '../src/index.js';
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      // Initialize Application
+      const app = new Application();
+      
+      // Initialize Togglers
+      const toggleButtons = document.querySelectorAll('[data-toggler]');
+      Array.from(toggleButtons).forEach(button => {
+        new Toggler(app, button);
+      });
+      
+      // Start the application
+      app.initialize();
+      
+      // Register a callback to monitor toggle states (for testing)
+      window.toggleStates = {};
+      document.addEventListener('click', (e) => {
+        if (e.target.hasAttribute('data-toggler')) {
+          const toggleId = e.target.getAttribute('data-toggler');
+          window.toggleStates[toggleId] = !window.toggleStates[toggleId];
+          console.log(`Toggle state for ${toggleId}:`, window.toggleStates[toggleId]);
+        }
+      });
+    });
+  </script>
+</body>
+</html>

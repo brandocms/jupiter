@@ -66,6 +66,14 @@ const DEFAULT_OPTIONS = {
   faderOpts: {
     fadeIn: (callback = () => {}) => {
       const fader = document.querySelector('#fader')
+      if (!fader) {
+        if (window.bfTO) {
+          clearTimeout(window.bfTO)
+        }
+        document.body.classList.remove('unloaded')
+        callback()
+        return
+      }
       gsap.to(fader, {
         opacity: 0,
         ease: 'power1.inOut',
@@ -115,7 +123,6 @@ export default class Application {
 
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
     this.focusableSelectors = this.opts.focusableSelectors
-
     this.featureTests = new FeatureTests(this, this.opts.featureTests)
 
     if (typeof this.opts.breakpointConfig === 'object') {

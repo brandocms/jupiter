@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jupiter Lazyload Test</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      line-height: 1.5;
+      padding: 2rem;
+    }
+    
+    .spacer {
+      height: 100vh;
+      margin-bottom: 2rem;
+    }
+    
+    .image-container {
+      background-color: #f5f5f5;
+      padding: 1rem;
+      margin-bottom: 2rem;
+    }
+    
+    figure {
+      margin: 0 0 2rem 0;
+    }
+    
+    img {
+      display: block;
+      max-width: 100%;
+      height: auto;
+    }
+    
+    [data-ll-blurred] {
+      opacity: 0.5;
+      filter: blur(5px);
+      transition: opacity 0.3s, filter 0.3s;
+    }
+    
+    [data-ll-loaded] {
+      opacity: 1;
+      filter: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>Jupiter Lazyload Test</h1>
+  
+  <!-- First image (should load immediately) -->
+  <figure data-orientation="landscape" data-placeholder="dominant_color">
+    <picture data-ll-srcset data-orientation="landscape" style="background-color: #f0f0f0">
+      <source data-srcset="https://picsum.photos/400/300?random=1 400w, https://picsum.photos/700/525?random=1 700w, https://picsum.photos/1100/825?random=1 1100w, https://picsum.photos/1400/1050?random=1 1400w" type="image/webp">
+      <source data-srcset="https://picsum.photos/400/300?random=1 400w, https://picsum.photos/700/525?random=1 700w, https://picsum.photos/1100/825?random=1 1100w, https://picsum.photos/1400/1050?random=1 1400w" type="image/jpeg">
+      <img 
+        alt="Random landscape image" 
+        data-ll-placeholder 
+        data-ll-srcset-image 
+        data-sizes="auto" 
+        data-src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%271400%27%20height%3D%271050%27%20style%3D%27background%3Argba%280%2C0%2C0%2C0%29%27%2F%3E" 
+        data-srcset="https://picsum.photos/400/300?random=1 400w, https://picsum.photos/700/525?random=1 700w, https://picsum.photos/1100/825?random=1 1100w, https://picsum.photos/1400/1050?random=1 1400w" 
+        height="1050" 
+        src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%271400%27%20height%3D%271050%27%20style%3D%27background%3Argba%280%2C0%2C0%2C0%29%27%2F%3E" 
+        style="object-position: 50% 50%;" 
+        width="1400">
+      <noscript><img src="https://picsum.photos/400/300?random=1"></noscript>
+    </picture>
+  </figure>
+  
+  <div class="spacer">
+    <p>Scroll down to see more lazy loaded images</p>
+  </div>
+  
+  <!-- Second image (portrait) -->
+  <figure data-orientation="portrait" data-placeholder="dominant_color">
+    <picture data-ll-srcset data-orientation="portrait" style="background-color: #f0f0f0">
+      <source data-srcset="https://picsum.photos/400/600?random=2 400w, https://picsum.photos/700/1050?random=2 700w, https://picsum.photos/1100/1650?random=2 1100w, https://picsum.photos/1400/2100?random=2 1400w" type="image/webp">
+      <source data-srcset="https://picsum.photos/400/600?random=2 400w, https://picsum.photos/700/1050?random=2 700w, https://picsum.photos/1100/1650?random=2 1100w, https://picsum.photos/1400/2100?random=2 1400w" type="image/jpeg">
+      <img 
+        alt="Random portrait image" 
+        data-ll-placeholder 
+        data-ll-srcset-image 
+        data-sizes="auto" 
+        data-src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%271400%27%20height%3D%272100%27%20style%3D%27background%3Argba%280%2C0%2C0%2C0%29%27%2F%3E" 
+        data-srcset="https://picsum.photos/400/600?random=2 400w, https://picsum.photos/700/1050?random=2 700w, https://picsum.photos/1100/1650?random=2 1100w, https://picsum.photos/1400/2100?random=2 1400w" 
+        height="2100" 
+        src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%271400%27%20height%3D%272100%27%20style%3D%27background%3Argba%280%2C0%2C0%2C0%29%27%2F%3E" 
+        style="object-position: 50% 50%;" 
+        width="1400">
+      <noscript><img src="https://picsum.photos/400/600?random=2"></noscript>
+    </picture>
+  </figure>
+  
+  <!-- Third image -->
+  <figure data-orientation="landscape" data-placeholder="dominant_color">
+    <picture data-ll-srcset data-orientation="landscape" style="background-color: #f0f0f0">
+      <source data-srcset="https://picsum.photos/400/300?random=3 400w, https://picsum.photos/700/525?random=3 700w, https://picsum.photos/1100/825?random=3 1100w, https://picsum.photos/1400/1050?random=3 1400w" type="image/webp">
+      <source data-srcset="https://picsum.photos/400/300?random=3 400w, https://picsum.photos/700/525?random=3 700w, https://picsum.photos/1100/825?random=3 1100w, https://picsum.photos/1400/1050?random=3 1400w" type="image/jpeg">
+      <img 
+        alt="Another random landscape image" 
+        data-ll-placeholder 
+        data-ll-srcset-image 
+        data-sizes="auto" 
+        data-src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%271400%27%20height%3D%271050%27%20style%3D%27background%3Argba%280%2C0%2C0%2C0%29%27%2F%3E" 
+        data-srcset="https://picsum.photos/400/300?random=3 400w, https://picsum.photos/700/525?random=3 700w, https://picsum.photos/1100/825?random=3 1100w, https://picsum.photos/1400/1050?random=3 1400w" 
+        height="1050" 
+        src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%271400%27%20height%3D%271050%27%20style%3D%27background%3Argba%280%2C0%2C0%2C0%29%27%2F%3E" 
+        style="object-position: 50% 50%;" 
+        width="1400">
+      <noscript><img src="https://picsum.photos/400/300?random=3"></noscript>
+    </picture>
+  </figure>
+  
+  <!-- Lazyload section example -->
+  <div class="spacer">
+    <p>Scroll down to see a lazyload section</p>
+  </div>
+  
+  <div data-lazyload-section class="image-container">
+    <h2>Lazyload Section</h2>
+    <p>All images in this section will load when the section enters the viewport</p>
+    
+    <figure data-orientation="landscape">
+      <picture data-ll-srcset data-orientation="landscape">
+        <source data-srcset="https://picsum.photos/400/300?random=4 400w, https://picsum.photos/700/525?random=4 700w" type="image/webp">
+        <source data-srcset="https://picsum.photos/400/300?random=4 400w, https://picsum.photos/700/525?random=4 700w" type="image/jpeg">
+        <img 
+          alt="Section image" 
+          data-ll-placeholder 
+          data-ll-srcset-image 
+          data-sizes="auto" 
+          data-src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27700%27%20height%3D%27525%27%20style%3D%27background%3Argba%280%2C0%2C0%2C0%29%27%2F%3E" 
+          data-srcset="https://picsum.photos/400/300?random=4 400w, https://picsum.photos/700/525?random=4 700w" 
+          height="525" 
+          src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27700%27%20height%3D%27525%27%20style%3D%27background%3Argba%280%2C0%2C0%2C0%29%27%2F%3E" 
+          width="700">
+      </picture>
+    </figure>
+  </div>
+  
+  <script type="module">
+    import { Application, Lazyload, Events } from '../../src/index.js'
+    
+    // Initialize Application
+    const app = new Application()
+    
+    // Register the Lazyload module
+    app.registerCallback(Events.APPLICATION_READY, () => {
+      app.lazyload = new Lazyload(app, {
+        useNativeLazyloadIfAvailable: false // Force IntersectionObserver for testing
+      })
+    })
+    
+    // Start the application
+    app.initialize()
+  </script>
+</body>
+</html>
