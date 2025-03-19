@@ -5,106 +5,116 @@ test.describe('Jupiter Toggler Module', () => {
   test.beforeEach(async ({ page }) => {
     // Load the toggler test page from Vite server
     await page.goto('/toggler.html')
-    
+
     // Wait for the page to load completely
     await page.waitForLoadState('networkidle')
-    
+
     // Wait additional time for Jupiter to initialize
     await page.waitForTimeout(1000)
   })
 
   test('should toggle visibility of target element', async ({ page }) => {
     // Get the toggle button and target
-    const toggleButton = page.locator('button[data-toggler="toggle-example"]')
-    const toggleTarget = page.locator('.toggle-target[data-toggler-target="toggle-example"]')
-    
+    const toggleButton = page.locator('[data-testid="basic-toggle-button"]')
+    const toggleTarget = page.locator('[data-testid="basic-toggle-target"]')
+
     // Target should initially be hidden
     await expect(toggleTarget).not.toBeVisible()
-    
+
     // Click the toggle button
     await toggleButton.click()
-    
+
     // Target should now be visible and have active class
-    await expect(toggleTarget).toBeVisible()
-    await expect(toggleTarget).toHaveClass(/is-active/)
-    
+    await expect(toggleTarget).toHaveAttribute('data-toggle-visible')
+
     // Click toggle button again
     await toggleButton.click()
-    
+
     // Target should be hidden again
-    await expect(toggleTarget).not.toBeVisible()
-    await expect(toggleTarget).not.toHaveClass(/is-active/)
+    await expect(toggleTarget).toHaveAttribute('data-toggle-hidden')
   })
 
-  test('should toggle multiple targets with a single button', async ({ page }) => {
+  test('should toggle multiple targets with a single button', async ({
+    page,
+  }) => {
     // Get the toggle button and targets
-    const multiToggleButton = page.locator('button[data-toggler="multi-toggle"]')
-    const multiToggleTargets = page.locator('.toggle-target[data-toggler-target="multi-toggle"]')
-    
-    // Should have 3 targets and all should be hidden initially
-    await expect(multiToggleTargets).toHaveCount(3)
-    
-    for (let i = 0; i < 3; i++) {
-      await expect(multiToggleTargets.nth(i)).not.toBeVisible()
-    }
-    
+    const multiToggleButton = page.locator(
+      '[data-testid="multi-toggle-button"]'
+    )
+    const multiToggleTarget1 = page.locator(
+      '[data-testid="multi-toggle-target-1"]'
+    )
+    const multiToggleTarget2 = page.locator(
+      '[data-testid="multi-toggle-target-2"]'
+    )
+    const multiToggleTarget3 = page.locator(
+      '[data-testid="multi-toggle-target-3"]'
+    )
+
+    // All targets should be hidden initially
+    await expect(multiToggleTarget1).not.toBeVisible()
+    await expect(multiToggleTarget2).not.toBeVisible()
+    await expect(multiToggleTarget3).not.toBeVisible()
+
     // Click the toggle button
     await multiToggleButton.click()
-    
+
     // All targets should now be visible
-    for (let i = 0; i < 3; i++) {
-      await expect(multiToggleTargets.nth(i)).toBeVisible()
-      await expect(multiToggleTargets.nth(i)).toHaveClass(/is-active/)
-    }
-    
+    await expect(multiToggleTarget1).toHaveAttribute('data-toggle-visible')
+    await expect(multiToggleTarget2).toHaveAttribute('data-toggle-visible')
+    await expect(multiToggleTarget3).toHaveAttribute('data-toggle-visible')
+
     // Click toggle button again
     await multiToggleButton.click()
-    
+
     // All targets should be hidden again
-    for (let i = 0; i < 3; i++) {
-      await expect(multiToggleTargets.nth(i)).not.toBeVisible()
-      await expect(multiToggleTargets.nth(i)).not.toHaveClass(/is-active/)
-    }
+    await expect(multiToggleTarget1).toHaveAttribute('data-toggle-hidden')
+    await expect(multiToggleTarget2).toHaveAttribute('data-toggle-hidden')
+    await expect(multiToggleTarget3).toHaveAttribute('data-toggle-hidden')
   })
 
   test('should function as an accordion', async ({ page }) => {
     // Get the accordion headers and contents
-    const accordionHeaders = page.locator('.accordion-header')
-    const accordionContents = page.locator('.accordion-content')
-    
-    // Should have 3 sections
-    await expect(accordionHeaders).toHaveCount(3)
-    await expect(accordionContents).toHaveCount(3)
-    
+    const accordionHeader1 = page.locator('[data-testid="accordion-header-1"]')
+    const accordionHeader2 = page.locator('[data-testid="accordion-header-2"]')
+    const accordionHeader3 = page.locator('[data-testid="accordion-header-3"]')
+
+    const accordionContent1 = page.locator(
+      '[data-testid="accordion-content-1"]'
+    )
+    const accordionContent2 = page.locator(
+      '[data-testid="accordion-content-2"]'
+    )
+    const accordionContent3 = page.locator(
+      '[data-testid="accordion-content-3"]'
+    )
+
     // All contents should be hidden initially
-    for (let i = 0; i < 3; i++) {
-      await expect(accordionContents.nth(i)).not.toBeVisible()
-    }
-    
+    await expect(accordionContent1).not.toBeVisible()
+    await expect(accordionContent2).not.toBeVisible()
+    await expect(accordionContent3).not.toBeVisible()
+
     // Click the first accordion header
-    await accordionHeaders.nth(0).click()
-    
+    await accordionHeader1.click()
+
     // First content should be visible, others still hidden
-    await expect(accordionContents.nth(0)).toBeVisible()
-    await expect(accordionContents.nth(0)).toHaveClass(/is-active/)
-    await expect(accordionContents.nth(1)).not.toBeVisible()
-    await expect(accordionContents.nth(2)).not.toBeVisible()
-    
+    await expect(accordionContent1).toHaveAttribute('data-toggle-visible')
+    await expect(accordionContent2).not.toBeVisible()
+    await expect(accordionContent3).not.toBeVisible()
+
     // Click the second accordion header
-    await accordionHeaders.nth(1).click()
-    
+    await accordionHeader2.click()
+
     // First and second content should be visible, third still hidden
-    await expect(accordionContents.nth(0)).toBeVisible()
-    await expect(accordionContents.nth(1)).toBeVisible()
-    await expect(accordionContents.nth(1)).toHaveClass(/is-active/)
-    await expect(accordionContents.nth(2)).not.toBeVisible()
-    
+    await expect(accordionContent1).toHaveAttribute('data-toggle-visible')
+    await expect(accordionContent2).toHaveAttribute('data-toggle-visible')
+    await expect(accordionContent3).not.toBeVisible()
+
     // Click the first header again to close it
-    await accordionHeaders.nth(0).click()
-    
+    await accordionHeader1.click()
+
     // First should now be hidden, second still visible
-    await expect(accordionContents.nth(0)).not.toBeVisible()
-    await expect(accordionContents.nth(0)).not.toHaveClass(/is-active/)
-    await expect(accordionContents.nth(1)).toBeVisible()
+    await expect(accordionContent1).toHaveAttribute('data-toggle-hidden')
+    await expect(accordionContent2).toHaveAttribute('data-toggle-visible')
   })
 })
