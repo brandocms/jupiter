@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jupiter Breakpoints Test</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        line-height: 1.5;
+        padding: 2rem;
+        margin: 0;
+      }
+
+      h1 {
+        margin-bottom: 1rem;
+      }
+
+      section {
+        margin-bottom: 2rem;
+        padding: 1rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+
+      #current-breakpoint {
+        font-size: 2rem;
+        font-weight: bold;
+        padding: 1rem;
+        margin: 1rem 0;
+        background-color: #f0f0f0;
+        border-radius: 4px;
+        text-align: center;
+      }
+
+      .breakpoint-indicator {
+        display: none;
+        padding: 1rem;
+        margin: 0.5rem 0;
+        border-radius: 4px;
+        text-align: center;
+        font-weight: bold;
+      }
+
+      .breakpoint-indicator.active {
+        display: block;
+      }
+
+      #xs-indicator {
+        background-color: #ffcdd2;
+      }
+      #sm-indicator {
+        background-color: #c8e6c9;
+      }
+      #md-indicator {
+        background-color: #bbdefb;
+      }
+      #lg-indicator {
+        background-color: #d1c4e9;
+      }
+      #xl-indicator {
+        background-color: #ffecb3;
+      }
+
+      .listener-log {
+        background-color: #f5f5f5;
+        padding: 1rem;
+        border-radius: 4px;
+        height: 200px;
+        overflow-y: auto;
+        margin-top: 1rem;
+        font-family: monospace;
+      }
+
+      .counter {
+        font-size: 2rem;
+        text-align: center;
+        margin: 1rem 0;
+      }
+      :root {
+        --breakpoint-xs: 0;
+        --breakpoint-sm: 576px;
+        --breakpoint-md: 768px;
+        --breakpoint-lg: 992px;
+        --breakpoint-xl: 1200px;
+      }
+
+      @media (min-width: 0px) {
+        html {
+          font-size: 14px;
+        }
+      }
+
+      @media (min-width: 576px) {
+        html {
+          font-size: 15px;
+        }
+      }
+
+      @media (min-width: 768px) {
+        html {
+          font-size: 16px;
+        }
+      }
+
+      @media (min-width: 992px) {
+        html {
+          font-size: 17px;
+        }
+      }
+
+      @media (min-width: 1200px) {
+        html {
+          font-size: 18px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Jupiter Breakpoints Test</h1>
+
+    <section data-testid="breakpoint-display-section">
+      <h2>Current Breakpoint</h2>
+      <div id="current-breakpoint" data-testid="current-breakpoint">
+        Loading...
+      </div>
+
+      <div
+        id="xs-indicator"
+        class="breakpoint-indicator"
+        data-testid="xs-indicator"
+      >
+        XS Breakpoint Active
+      </div>
+      <div
+        id="sm-indicator"
+        class="breakpoint-indicator"
+        data-testid="sm-indicator"
+      >
+        SM Breakpoint Active
+      </div>
+      <div
+        id="md-indicator"
+        class="breakpoint-indicator"
+        data-testid="md-indicator"
+      >
+        MD Breakpoint Active
+      </div>
+      <div
+        id="lg-indicator"
+        class="breakpoint-indicator"
+        data-testid="lg-indicator"
+      >
+        LG Breakpoint Active
+      </div>
+      <div
+        id="xl-indicator"
+        class="breakpoint-indicator"
+        data-testid="xl-indicator"
+      >
+        XL Breakpoint Active
+      </div>
+    </section>
+
+    <section data-testid="breakpoint-listeners-section">
+      <h2>Breakpoint Listeners</h2>
+      <p>
+        This section tests custom breakpoint listeners and event dispatching.
+      </p>
+
+      <div>
+        <div class="counter" data-testid="breakpoint-change-counter">0</div>
+        <p>Number of breakpoint changes detected</p>
+      </div>
+
+      <div class="listener-log" data-testid="breakpoint-log">
+        <!-- Log entries will be added here -->
+      </div>
+    </section>
+
+    <section data-testid="font-size-section">
+      <h2>Font Size Test</h2>
+      <p>This text will change size based on the current breakpoint.</p>
+      <div data-testid="font-size-display">
+        Current font-size: calculating...
+      </div>
+    </section>
+
+    <script type="module">
+      import { Application, Breakpoints, Events } from "../src/index.js";
+
+      document.addEventListener("DOMContentLoaded", () => {
+        // Initialize Application
+        const changeCounter = document.querySelector(
+          '[data-testid="breakpoint-change-counter"]',
+        );
+        const logElement = document.querySelector(
+          '[data-testid="breakpoint-log"]',
+        );
+        const fontSizeDisplay = document.querySelector(
+          '[data-testid="font-size-display"]',
+        );
+
+        // Log function
+        function logEvent(message) {
+          const entry = document.createElement("div");
+          entry.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+          logElement.appendChild(entry);
+          logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        // Update font size display
+        function updateFontSizeDisplay() {
+          const fontSize = window.getComputedStyle(
+            document.documentElement,
+          ).fontSize;
+          fontSizeDisplay.textContent = `Current font-size: ${fontSize}`;
+        }
+
+        const listeners = {
+          xs: (mq) => {
+            if (mq.matches) {
+              logEvent("XS breakpoint activated");
+              document.getElementById("xs-indicator").classList.add("active");
+            } else {
+              document
+                .getElementById("xs-indicator")
+                .classList.remove("active");
+            }
+          },
+          sm: (mq) => {
+            if (mq.matches) {
+              logEvent("SM breakpoint activated");
+              document.getElementById("sm-indicator").classList.add("active");
+            } else {
+              document
+                .getElementById("sm-indicator")
+                .classList.remove("active");
+            }
+          },
+          md: (mq) => {
+            if (mq.matches) {
+              logEvent("MD breakpoint activated");
+              document.getElementById("md-indicator").classList.add("active");
+            } else {
+              document
+                .getElementById("md-indicator")
+                .classList.remove("active");
+            }
+          },
+          lg: (mq) => {
+            if (mq.matches) {
+              logEvent("LG breakpoint activated");
+              document.getElementById("lg-indicator").classList.add("active");
+            } else {
+              document
+                .getElementById("lg-indicator")
+                .classList.remove("active");
+            }
+          },
+          xl: (mq) => {
+            if (mq.matches) {
+              logEvent("XL breakpoint activated");
+              document.getElementById("xl-indicator").classList.add("active");
+            } else {
+              document
+                .getElementById("xl-indicator")
+                .classList.remove("active");
+            }
+          },
+        };
+
+        const app = new Application({
+          respectReducedMotion: false,
+          breakpointConfig: {
+            runListenerOnInit: true,
+            breakpoints: ["xs", "sm", "md", "lg", "xl"],
+            listeners: listeners,
+          },
+        });
+
+        app.registerCallback(Events.APPLICATION_READY, () => {
+          // Update display when breakpoint changes
+          window.addEventListener(Events.BREAKPOINT_CHANGE, () => {
+            const currentValue = parseInt(changeCounter.textContent, 10);
+            changeCounter.textContent = currentValue + 1;
+
+            document.getElementById("current-breakpoint").textContent =
+              app.breakpoint;
+            logEvent(`Breakpoint changed to: ${app.breakpoint}`);
+            updateFontSizeDisplay();
+          });
+
+          // Initial display update
+          setTimeout(() => {
+            document.getElementById("current-breakpoint").textContent =
+              app.breakpoint;
+            updateFontSizeDisplay();
+          }, 500);
+        });
+
+        // Start the application
+        app.initialize();
+      });
+    </script>
+  </body>
+</html>

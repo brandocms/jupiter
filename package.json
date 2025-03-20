@@ -31,6 +31,7 @@
     "playwright:moonwalk": "playwright test e2e/moonwalk.spec.js --project=chromium",
     "playwright:lazyload": "playwright test e2e/lazyload.spec.js --project=chromium",
     "playwright:toggler": "playwright test e2e/toggler.spec.js --project=chromium",
+    "playwright:breakpoints": "playwright test e2e/breakpoints.spec.js --project=chromium",
     "vite": "vite",
     "vite:build": "vite build",
     "vite:preview": "vite preview"
