@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Popover Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      section {
+        margin-bottom: 60px;
+      }
+      h2 {
+        margin-bottom: 20px;
+      }
+      .trigger-container {
+        display: flex;
+        gap: 30px;
+        margin: 30px 0;
+      }
+      .popover-trigger {
+        padding: 10px 15px;
+        background-color: #f0f0f0;
+        border: 1px solid #ddd;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+      .popover-trigger:hover {
+        background-color: #e0e0e0;
+      }
+      .popover-template {
+        display: none;
+      }
+      .popover {
+        background-color: white;
+        border: 1px solid #ddd;
+        padding: 15px;
+        border-radius: 4px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        max-width: 300px;
+      }
+      .popover--top:after {
+        content: "";
+        position: absolute;
+        bottom: -10px;
+        left: 50%;
+        margin-left: -10px;
+        border-width: 10px 10px 0;
+        border-style: solid;
+        border-color: white transparent transparent;
+      }
+      .popover--bottom:after {
+        content: "";
+        position: absolute;
+        top: -10px;
+        left: 50%;
+        margin-left: -10px;
+        border-width: 0 10px 10px;
+        border-style: solid;
+        border-color: transparent transparent white;
+      }
+      .popover--left:after {
+        content: "";
+        position: absolute;
+        right: -10px;
+        top: 50%;
+        margin-top: -10px;
+        border-width: 10px 0 10px 10px;
+        border-style: solid;
+        border-color: transparent transparent transparent white;
+      }
+      .popover--right:after {
+        content: "";
+        position: absolute;
+        left: -10px;
+        top: 50%;
+        margin-top: -10px;
+        border-width: 10px 10px 10px 0;
+        border-style: solid;
+        border-color: transparent white transparent transparent;
+      }
+      .position-section {
+        min-height: 400px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Popover Module Test</h1>
+
+    <section id="basic-popovers">
+      <h2>Basic Popovers</h2>
+      <div class="trigger-container">
+        <div
+          class="popover-trigger"
+          data-popover-target="basic-info"
+          data-popover-position="top"
+          data-testid="basic-trigger"
+        >
+          Hover for Info
+        </div>
+      </div>
+
+      <template class="popover-template" data-popover-template="basic-info">
+        <div data-testid="basic-popover-content">
+          <h3>Basic Popover</h3>
+          <p>This is a basic popover that appears on hover or touch.</p>
+        </div>
+      </template>
+    </section>
+
+    <section id="popover-positions" class="position-section">
+      <h2>Popover Positions</h2>
+      <div class="trigger-container">
+        <div
+          class="popover-trigger"
+          data-popover-target="top-info"
+          data-popover-position="top"
+          data-testid="top-trigger"
+        >
+          Top Popover
+        </div>
+
+        <div
+          class="popover-trigger"
+          data-popover-target="right-info"
+          data-popover-position="right"
+          data-testid="right-trigger"
+        >
+          Right Popover
+        </div>
+
+        <div
+          class="popover-trigger"
+          data-popover-target="bottom-info"
+          data-popover-position="bottom"
+          data-testid="bottom-trigger"
+        >
+          Bottom Popover
+        </div>
+
+        <div
+          class="popover-trigger"
+          data-popover-target="left-info"
+          data-popover-position="left"
+          data-testid="left-trigger"
+        >
+          Left Popover
+        </div>
+      </div>
+
+      <template class="popover-template" data-popover-template="top-info">
+        <div data-testid="top-popover-content">
+          <h3>Top Popover</h3>
+          <p>This popover appears above the trigger element.</p>
+        </div>
+      </template>
+
+      <template class="popover-template" data-popover-template="right-info">
+        <div data-testid="right-popover-content">
+          <h3>Right Popover</h3>
+          <p>This popover appears to the right of the trigger element.</p>
+        </div>
+      </template>
+
+      <template class="popover-template" data-popover-template="bottom-info">
+        <div data-testid="bottom-popover-content">
+          <h3>Bottom Popover</h3>
+          <p>This popover appears below the trigger element.</p>
+        </div>
+      </template>
+
+      <template class="popover-template" data-popover-template="left-info">
+        <div data-testid="left-popover-content">
+          <h3>Left Popover</h3>
+          <p>This popover appears to the left of the trigger element.</p>
+        </div>
+      </template>
+    </section>
+
+    <section id="viewport-adjustment">
+      <h2>Viewport Adjustment</h2>
+      <div class="trigger-container" style="margin-left: 0">
+        <div
+          class="popover-trigger"
+          data-popover-target="edge-info"
+          data-popover-position="left"
+          data-testid="edge-trigger"
+          style="margin-left: 0"
+        >
+          Edge-Positioned Popover
+        </div>
+      </div>
+
+      <template class="popover-template" data-popover-template="edge-info">
+        <div data-testid="edge-popover-content">
+          <h3>Edge Popover</h3>
+          <p>
+            This popover is near the edge of the viewport. It should adjust its
+            position to stay visible.
+          </p>
+          <p>
+            The popover will try to find the best position if its default
+            position would make it go off-screen.
+          </p>
+        </div>
+      </template>
+    </section>
+
+    <script type="module">
+      import { Application, Popover } from "../src/index.js";
+
+      // Initialize Application
+      const app = new Application({
+        respectReducedMotion: false,
+        breakpointConfig: {
+          breakpoints: [
+            "iphone",
+            "mobile",
+            "ipad_portrait",
+            "ipad_landscape",
+            "desktop_md",
+            "desktop_lg",
+            "desktop_xl",
+          ],
+        },
+      });
+
+      window.app = app;
+
+      // Wait for DOMContentLoaded
+      document.addEventListener("DOMContentLoaded", () => {
+        app.popovers = [];
+        // Get all popover triggers
+        const popoverTriggers = document.querySelectorAll(
+          "[data-popover-target]",
+        );
+
+        // Initialize a Popover for each trigger
+        popoverTriggers.forEach((trigger) => {
+          app.popovers.push(new Popover(app, trigger));
+        });
+      });
+    </script>
+  </body>
+</html>

@@ -32,6 +32,9 @@
     "playwright:lazyload": "playwright test e2e/lazyload.spec.js --project=chromium",
     "playwright:toggler": "playwright test e2e/toggler.spec.js --project=chromium",
     "playwright:breakpoints": "playwright test e2e/breakpoints.spec.js --project=chromium",
+    "playwright:typography": "playwright test e2e/typography.spec.js --project=chromium",
+    "playwright:popover": "playwright test e2e/popover.spec.js --project=chromium",
+    "playwright:popup": "playwright test e2e/popup.spec.js --project=chromium",
     "vite": "vite",
     "vite:build": "vite build",
     "vite:preview": "vite preview"

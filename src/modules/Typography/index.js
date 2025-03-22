@@ -16,10 +16,8 @@ export default class Typography {
    * @param {TypographySettings} settings - Typography settings
    */
   constructor(parent, settings = {}) {
-    const self = this
-
     // Set some settings, by merging defaults and passed settings
-    self.settings = {
+    this.settings = {
       minWords: 4,
       selector: '[data-typo]',
       ignoreClass: 'no-typo-fix',
@@ -27,19 +25,19 @@ export default class Typography {
       ...settings
     }
 
-    self.elems = []
+    this.elems = []
 
     // Either load from root or the passed parent element
     if (typeof parent === 'undefined') {
-      self.elems = [...self.elems, ...document.querySelectorAll(self.settings.selector)]
+      this.elems = [...this.elems, ...document.querySelectorAll(this.settings.selector)]
     } else {
-      self.elems = [...self.elems, ...parent.querySelectorAll(self.settings.selector)]
+      this.elems = [...this.elems, ...parent.querySelectorAll(this.settings.selector)]
     }
 
     // load children
     const typoParents = document.querySelectorAll('[data-typo-children]')
     typoParents.forEach(typoParent => {
-      self.elems = [...self.elems, ...typoParent.children]
+      this.elems = [...this.elems, ...typoParent.children]
     })
 
     this.apply()
@@ -50,11 +48,9 @@ export default class Typography {
    * @return void
    */
   apply() {
-    const self = this
-
-    self.elems.map(elem => {
+    this.elems.map(elem => {
       // Run the ignore checker nd bail if required
-      if (self.shouldElementBeIgnored(elem)) {
+      if (this.shouldElementBeIgnored(elem)) {
         return false
       }
 
@@ -68,12 +64,12 @@ export default class Typography {
         .split(/ (?=[^>]*(?:<|$))/)
 
       // Check if the text warrants this module
-      if (textItems.length < self.settings.minWords) {
+      if (textItems.length < this.settings.minWords) {
         return false
       }
 
       // Run orphans filter
-      textItems = self.preventOrphans(textItems)
+      textItems = this.preventOrphans(textItems)
 
       // Join the words back together
       result = textItems.join(' ')
@@ -107,11 +103,9 @@ export default class Typography {
    * @return void
    */
   reset() {
-    const self = this
-
-    self.elems.map(elem => {
+    this.elems.map(elem => {
       // Run the ignore checker nd bail if required
-      if (self.shouldElementBeIgnored(elem)) {
+      if (this.shouldElementBeIgnored(elem)) {
         return false
       }
 
@@ -127,11 +121,14 @@ export default class Typography {
    * @returns boolean
    */
   shouldElementBeIgnored(elem) {
-    const self = this
-
     // Check if the element already contains 1 or more &nbsp; characters and the
     // ignore setting is true. If so: bail.
-    if (elem.innerHTML.indexOf('&nbsp;') > -1 && self.settings.ignoreExistingSpaceChars) {
+    if (elem.innerHTML.indexOf('&nbsp;') > -1 && this.settings.ignoreExistingSpaceChars) {
+      return true
+    }
+
+    // Check if the element has the ignore class
+    if (elem.classList.contains(this.settings.ignoreClass)) {
       return true
     }
 

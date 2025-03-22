@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Typography Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      section {
+        margin-bottom: 40px;
+      }
+      h2 {
+        margin-bottom: 10px;
+      }
+      .text-container {
+        border: 1px solid #ddd;
+        padding: 15px;
+        margin-bottom: 10px;
+      }
+      .controls {
+        margin-top: 20px;
+      }
+      button {
+        padding: 8px 12px;
+        margin-right: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Typography Module Test</h1>
+
+    <section id="basic-typography">
+      <h2>Basic Typography</h2>
+      <div class="text-container">
+        <p data-typo data-testid="basic-paragraph">
+          This is a basic paragraph that should have typography fixes applied to
+          prevent orphans from occurring at the end of this line.
+        </p>
+      </div>
+    </section>
+
+    <section id="min-words">
+      <h2>Minimum Words Setting</h2>
+      <div class="text-container">
+        <p data-typo data-testid="short-text">Short text.</p>
+        <p data-typo data-testid="medium-text">This has five words exactly.</p>
+        <p data-typo data-testid="long-text">
+          This paragraph has enough words to test the minimum word count setting
+          and should be processed correctly.
+        </p>
+      </div>
+    </section>
+
+    <section id="typo-children">
+      <h2>Typography Children</h2>
+      <div
+        class="text-container"
+        data-typo-children
+        data-testid="typo-children-container"
+      >
+        <p data-testid="child-paragraph-1">
+          This paragraph is a child element that should have typography fixes
+          applied automatically.
+        </p>
+        <p data-testid="child-paragraph-2">
+          This is another child paragraph that should be processed by the
+          Typography module.
+        </p>
+        <div data-testid="child-div">
+          Even a div element inside the container should get typography fixes
+          applied to it.
+        </div>
+      </div>
+    </section>
+
+    <section id="ignore-class">
+      <h2>Ignored Elements</h2>
+      <div class="text-container">
+        <p data-typo class="no-typo-fix" data-testid="ignored-paragraph">
+          This paragraph has the ignore class and should not have any typography
+          fixes applied to it.
+        </p>
+        <p data-typo data-testid="processed-paragraph">
+          This paragraph should have typography fixes applied since it doesn't
+          have the ignore class.
+        </p>
+      </div>
+    </section>
+
+    <section id="reset-feature">
+      <h2>Reset Feature</h2>
+      <div class="text-container">
+        <p data-typo data-testid="reset-paragraph">
+          This paragraph should have typography fixes that can be reset with the
+          button below.
+        </p>
+        <div class="controls">
+          <button id="reset-button" data-testid="reset-button">
+            Reset Typography
+          </button>
+          <button id="apply-button" data-testid="apply-button">
+            Apply Typography
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <script type="module">
+      import { Typography } from "../src/index.js";
+
+      // Initialize Typography
+      let typography = new Typography(undefined, {
+        minWords: 3,
+      });
+
+      // Reset button
+      document
+        .getElementById("reset-button")
+        .addEventListener("click", function () {
+          typography.reset();
+        });
+
+      // Apply button
+      document
+        .getElementById("apply-button")
+        .addEventListener("click", function () {
+          typography = new Typography(undefined, { minWords: 3 });
+        });
+    </script>
+  </body>
+</html>
