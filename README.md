@@ -532,36 +532,161 @@ Paragraph one and two will then get a `data-moonwalk="slide"` attribute.
 
 ## Popup
 
+The Popup module allows you to create modal dialogs that appear when triggered by a button click.
+
 ### Options
 
-- `tweenIn: (el, popup) => {}`
-  - Function that gets called to tween popup + background in.
-  - `el` is the popup element itself, while `popup` is the `Popup()` class.
+- `selector` - default `[data-popup]`
+  - CSS selector to find popup elements
+
+- `responsive: (app) => boolean` - default `() => true`
+  - Function to determine if popup should be shown on current breakpoint
+
+- `onOpen: (trigger, target, popup) => {}`
+  - Function called when popup opens
+  - `trigger` is the element that triggered the popup
+  - `target` is the popup element
+  - `popup` is the Popup instance
+
+- `onClose: (popup) => {}`
+  - Function called when popup closes
+  - `popup` is the Popup instance
+
+- `tweenIn: (trigger, target, popup) => {}`
+  - Function for animating the popup opening
+  - `trigger` is the element that triggered the popup
+  - `target` is the popup element
+  - `popup` is the Popup instance
   - Backdrop can be accessed as `popup.backdrop`
 
 - `tweenOut: (popup) => {}`
-  - Function that gets called to tween popup + background out
+  - Function for animating the popup closing
+  - `popup` is the Popup instance
+  - Popup element can be accessed as `popup.currentPopup`
   - Backdrop can be accessed as `popup.backdrop`
 
-- `onClose: (popup) => {}`
-  - Function that gets called right before `popup.close`
+### Basic Usage
 
-### Example
-
-Example HTML
+HTML:
 
 ```html
-<div class="newsletter-popup" data-popup>
-  ...
-  <button data-popup-close>
+<div id="my-popup" data-popup>
+  <div class="popup-header">
+    <h3>My Popup</h3>
+    <button class="close-button" data-popup-close>×</button>
+  </div>
+  <div class="popup-content">
+    <p>This is a popup that appears when the trigger button is clicked.</p>
+  </div>
 </div>
 
-<button data-popup-trigger=".newsletter-popup">
-  Open popup
+<button data-popup-trigger="#my-popup">Open Popup</button>
+```
+
+JavaScript:
+
+```js
+import { Application, Popup } from '@brandocms/jupiter'
+
+const app = new Application()
+const popup = new Popup(app)
+```
+
+### Advanced Usage with Multiple Popups
+
+You can create multiple independent popups by using the key-based system. This ensures that each popup operates independently, with its own backdrop and close behavior.
+
+HTML:
+
+```html
+<!-- First popup with key "newsletter" -->
+<div id="newsletter-popup" data-popup data-popup-key="newsletter">
+  <div class="popup-header">
+    <h3>Newsletter Signup</h3>
+    <button class="close-button" data-popup-close>×</button>
+  </div>
+  <div class="popup-content">
+    <p>Sign up for our newsletter!</p>
+  </div>
+</div>
+
+<!-- Second popup with key "login" -->
+<div id="login-popup" data-popup data-popup-key="login">
+  <div class="popup-header">
+    <h3>Login</h3>
+    <button class="close-button" data-popup-close>×</button>
+  </div>
+  <div class="popup-content">
+    <p>Enter your credentials to log in.</p>
+  </div>
+</div>
+
+<!-- Triggers for each popup with corresponding keys -->
+<button data-popup-trigger="#newsletter-popup" data-popup-key="newsletter">
+  Subscribe to Newsletter
+</button>
+
+<button data-popup-trigger="#login-popup" data-popup-key="login">
+  Login
 </button>
 ```
 
-Example CSS (PCSS)
+JavaScript:
+
+```js
+import { Application, Popup } from '@brandocms/jupiter'
+
+const app = new Application()
+
+// Create separate instances for different types of popups
+const newsletterPopup = new Popup(app, '[data-popup][data-popup-key="newsletter"]', {
+  onOpen: (trigger, target, popup) => {
+    console.log('Newsletter popup opened')
+  }
+})
+
+const loginPopup = new Popup(app, '[data-popup][data-popup-key="login"]', {
+  onOpen: (trigger, target, popup) => {
+    console.log('Login popup opened')
+  }
+})
+```
+
+### Custom Animations
+
+You can customize the animation for specific popups:
+
+```js
+const customPopup = new Popup(app, '[data-popup][data-popup-key="custom"]', {
+  tweenIn: (trigger, target, popup) => {
+    // Set backdrop visible
+    gsap.set(popup.backdrop, { display: 'block' })
+    gsap.to(popup.backdrop, {
+      duration: 0.3,
+      opacity: 1,
+      onComplete: () => {
+        // Bounce in animation for popup
+        gsap.fromTo(
+          target,
+          {
+            scale: 0.5,
+            opacity: 0,
+            display: 'block'
+          },
+          {
+            duration: 0.5,
+            scale: 1,
+            opacity: 1,
+            ease: 'back.out(1.7)'
+          }
+        )
+      }
+    })
+  }
+})
+```
+
+### CSS Styling
 
 ```scss
 [data-popup] {
@@ -576,9 +701,12 @@ Example CSS (PCSS)
   text-align: center;
   display: none;
   opacity: 0;
-
+  transform: translate(-50%, -50%);
+  border-radius: 6px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  
   @responsive mobile {
-    width: 80%;
+    width: 90%;
   }
 }
 
@@ -586,12 +714,22 @@ Example CSS (PCSS)
   z-index: 4999;
   display: none;
   opacity: 0;
-  background-color: theme(colors.blue.100);
+  background-color: rgba(0, 0, 0, 0.5);
   position: fixed;
   top: 0;
   left: 0;
+  right: 0;
+  bottom: 0;
   height: 100%;
   width: 100%;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #333;
 }
 ```
 

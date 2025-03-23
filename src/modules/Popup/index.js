@@ -3,6 +3,7 @@ import _defaultsDeep from 'lodash.defaultsdeep'
 
 /**
  * @typedef {Object} PopupOptions
+ * @property {string} [selector] - CSS selector to find popup elements
  * @property {Function} [responsive] - Function that determines if popup should be shown on current breakpoint
  * @property {Function} [onOpen] - Called when popup opens
  * @property {Function} [onClose] - Called when popup closes
@@ -12,6 +13,14 @@ import _defaultsDeep from 'lodash.defaultsdeep'
 
 /** @type {PopupOptions} */
 const DEFAULT_OPTIONS = {
+  /**
+   * selector
+   *
+   * CSS selector to find popup elements
+   * Default: '[data-popup]'
+   */
+  selector: '[data-popup]',
+
   /**
    * responsive
    *
@@ -55,17 +64,21 @@ const DEFAULT_OPTIONS = {
   },
 
   tweenOut: (popup) => {
-    const popups = document.querySelectorAll('[data-popup]')
-    gsap.to(popups, {
-      duration: 0.3,
-      opacity: 0,
-      display: 'none',
-    })
+    console.log('default tweenOut')
+    const popupElement = popup.currentPopup
+    if (popupElement) {
+      gsap.to(popupElement, {
+        duration: 0.3,
+        opacity: 0,
+        display: 'none',
+      })
+    }
     gsap.to(popup.backdrop, {
       duration: 0.3,
       opacity: 0,
       onComplete: () => {
-        gsap.set(popup.backdrop, { display: 'none' })
+        // Remove the backdrop completely instead of just hiding it
+        popup.backdrop.remove()
       },
     })
   },
@@ -78,12 +91,16 @@ export default class Popup {
   /**
    * Create a new Popup instance
    * @param {Object} app - Application instance
+   * @param {string} [selector] - CSS selector to find popup elements
    * @param {PopupOptions} [opts={}] - Popup options
    */
-  constructor(app, opts = {}) {
+  constructor(app, selector = '[data-popup]', opts = {}) {
     this.app = app
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
-    this.createBackdrop()
+    this.opts.selector = selector
+    this.backdrop = null
+    this.currentPopup = null
+    this.popupKey = null
     this.bindTriggers()
   }
 
@@ -91,36 +108,87 @@ export default class Popup {
    * Bind click handlers to popup triggers and close buttons
    */
   bindTriggers() {
-    const triggers = document.querySelectorAll('[data-popup-trigger]')
-    const closers = document.querySelectorAll('[data-popup-close]')
+    // Find all triggers that match this popup's selector
+    const allTriggers = document.querySelectorAll('[data-popup-trigger]')
+    const matchingTriggers = Array.from(allTriggers).filter(trigger => {
+      const target = trigger.getAttribute('data-popup-trigger')
+      if (typeof target === 'string') {
+        const element = document.querySelector(target)
+        return element && element.matches(this.opts.selector)
+      }
+      return false
+    })
 
-    Array.from(triggers).forEach((trigger) => {
+    // Get all popups that match this instance's selector
+    const popups = document.querySelectorAll(this.opts.selector)
+    
+    // Find all close buttons inside matching popups
+    const closers = []
+    popups.forEach(popup => {
+      const popupClosers = popup.querySelectorAll('[data-popup-close]')
+      closers.push(...popupClosers)
+    })
+
+    // Bind click handlers to matching triggers
+    matchingTriggers.forEach((trigger) => {
       const triggerTarget = trigger.getAttribute('data-popup-trigger')
+      // Get the popup key if present
+      const popupKey = trigger.getAttribute('data-popup-key') || this.getKeyFromTarget(triggerTarget)
+      
       trigger.addEventListener('click', (event) => {
         if (this.opts.responsive(this.app)) {
           event.stopImmediatePropagation()
           event.preventDefault()
-          this.open(trigger, triggerTarget)
+          this.open(trigger, triggerTarget, popupKey)
         }
       })
     })
 
-    Array.from(closers).forEach((closer) => {
+    // Bind click handlers to close buttons
+    closers.forEach((closer) => {
+      // Get the popup key from the closest parent popup element
+      const popupElement = closer.closest(this.opts.selector)
+      const popupKey = popupElement ? popupElement.getAttribute('data-popup-key') : null
+      
       closer.addEventListener('click', (event) => {
         event.stopImmediatePropagation()
         event.preventDefault()
-        this.opts.onClose(this)
-        this.close()
+        
+        // Only close if keys match or no key is set
+        if (!this.popupKey || !popupKey || this.popupKey === popupKey) {
+          this.opts.onClose(this)
+          this.close()
+        }
       })
     })
   }
 
   /**
-   * Create backdrop element for popup
+   * Extract key from target selector or element
+   * @param {HTMLElement|string} target - Target element or selector
+   * @returns {string|null} - The popup key or null
    */
-  createBackdrop() {
+  getKeyFromTarget(target) {
+    if (typeof target === 'string') {
+      const element = document.querySelector(target)
+      return element ? element.getAttribute('data-popup-key') : null
+    } else if (target instanceof HTMLElement) {
+      return target.getAttribute('data-popup-key')
+    }
+    return null
+  }
+
+  /**
+   * Create backdrop element for popup
+   * @param {string|null} key - Optional popup key to associate with backdrop
+   * @returns {HTMLElement} The created backdrop element
+   */
+  createBackdrop(key) {
     const backdrop = document.createElement('div')
     backdrop.setAttribute('data-popup-backdrop', '')
+    if (key) {
+      backdrop.setAttribute('data-popup-key', key)
+    }
     gsap.set(backdrop, { opacity: 0, display: 'none', zIndex: 4999 })
 
     backdrop.addEventListener('click', (e) => {
@@ -129,24 +197,42 @@ export default class Popup {
     })
 
     document.body.append(backdrop)
-    this.backdrop = backdrop
+    return backdrop
   }
 
   /**
    * Open a popup
    * @param {HTMLElement} trigger - Element that triggered the popup
    * @param {HTMLElement|string} target - Popup element or selector
+   * @param {string|null} key - Optional popup key
    */
-  open(trigger, target) {
+  open(trigger, target, key = null) {
     this.keyUpListener = this.onKeyup.bind(this)
     document.addEventListener('keyup', this.keyUpListener)
+
+    // Store the popup key
+    this.popupKey = key || this.getKeyFromTarget(target)
+
+    // Create a new backdrop for this popup
+    this.backdrop = this.createBackdrop(this.popupKey)
+
     if (typeof target === 'string') {
       target = document.querySelector(target)
     }
 
     if (!target) {
       console.error(`JUPITER/POPUP >>> Element ${target} not found`)
+      return
     }
+
+    // Store the current popup element for reference
+    this.currentPopup = target
+    
+    // If key isn't already set on the popup element, set it now
+    if (this.popupKey && !target.hasAttribute('data-popup-key')) {
+      target.setAttribute('data-popup-key', this.popupKey)
+    }
+
     this.opts.onOpen(trigger, target, this)
     this.opts.tweenIn(trigger, target, this)
   }
@@ -158,6 +244,10 @@ export default class Popup {
     document.removeEventListener('keyup', this.keyUpListener)
     this.opts.onClose(this)
     this.opts.tweenOut(this)
+    
+    // Reset popup state
+    this.popupKey = null
+    this.currentPopup = null
   }
 
   /**

@@ -1,3 +1,15 @@
+#### 4.0.0
+
+- **BREAKING** Popup: Refactor to accept a specific CSS selector in constructor
+  - Popups now require a custom selector to target specific popups
+  - This allows multiple independent popups to be managed separately
+  - New syntax: `new Popup(app, '[data-popup][data-popup-custom]', opts)`
+  - Updated tests to demonstrate isolated popup functionality
+- **FEATURE** Popup: Add key-based popup management through `data-popup-key`
+  - Triggers, popups, and close buttons can now be properly associated
+  - Each popup gets its own backdrop element
+  - Improved trigger/closer targeting based on selectors
+
 #### 3.55.0
 
 - Application: Set `respectReducedMotion: false` as default, since there

@@ -89,12 +89,22 @@
     <section id="basic-popup">
       <h2>Basic Popup</h2>
       <div class="button-container">
-        <button data-popup-trigger="#basic-modal" data-testid="basic-trigger">
+        <button
+          data-popup-trigger="#basic-modal"
+          data-popup-key="basic"
+          data-testid="basic-trigger"
+        >
           Open Basic Popup
         </button>
       </div>
 
-      <div id="basic-modal" data-popup data-testid="basic-popup">
+      <div
+        id="basic-modal"
+        data-popup
+        data-popup-basic
+        data-popup-key="basic"
+        data-testid="basic-popup"
+      >
         <div class="popup-header">
           <h3>Basic Popup</h3>
           <button
@@ -118,12 +128,22 @@
     <section id="custom-animation">
       <h2>Custom Animation</h2>
       <div class="button-container">
-        <button data-popup-trigger="#custom-modal" data-testid="custom-trigger">
+        <button
+          data-popup-trigger="#custom-modal"
+          data-popup-key="custom"
+          data-testid="custom-trigger"
+        >
           Custom Animation Popup
         </button>
       </div>
 
-      <div id="custom-modal" data-popup data-testid="custom-popup">
+      <div
+        id="custom-modal"
+        data-popup
+        data-popup-custom
+        data-popup-key="custom"
+        data-testid="custom-popup"
+      >
         <div class="popup-header">
           <h3>Custom Animation</h3>
           <button
@@ -147,13 +167,20 @@
       <div class="button-container">
         <button
           data-popup-trigger="#callback-modal"
+          data-popup-key="callback"
           data-testid="callback-trigger"
         >
           Popup with Callbacks
         </button>
       </div>
 
-      <div id="callback-modal" data-popup data-testid="callback-popup">
+      <div
+        id="callback-modal"
+        data-popup
+        data-popup-callback
+        data-popup-key="callback"
+        data-testid="callback-popup"
+      >
         <div class="popup-header">
           <h3>Popup Callbacks</h3>
           <button
@@ -177,12 +204,22 @@
     <section id="esc-key-close">
       <h2>ESC Key Close</h2>
       <div class="button-container">
-        <button data-popup-trigger="#esc-modal" data-testid="esc-trigger">
+        <button
+          data-popup-trigger="#esc-modal"
+          data-popup-key="esc"
+          data-testid="esc-trigger"
+        >
           Popup with ESC Close
         </button>
       </div>
 
-      <div id="esc-modal" data-popup data-testid="esc-popup">
+      <div
+        id="esc-modal"
+        data-popup
+        data-popup-esc
+        data-popup-key="esc"
+        data-testid="esc-popup"
+      >
         <div class="popup-header">
           <h3>ESC Key Close</h3>
           <button class="close-button" data-popup-close data-testid="esc-close">
@@ -197,7 +234,7 @@
     </section>
 
     <script type="module">
-      import { Application, Popup } from "../src/index.js";
+      import { Application, Popup, gsap } from "../src/index.js";
 
       // Initialize Application
       const app = new Application({
@@ -215,12 +252,18 @@
         },
       });
 
+      app.popups = [];
+      window.app = app;
+      window.Popup = Popup;
+
       // Initialize basic popup
-      const basicPopup = new Popup(app);
+      const basicPopup = new Popup(app, "[data-popup][data-popup-basic]");
+      app.popups.push(basicPopup);
 
       // Initialize custom animation popup
-      const customPopup = new Popup(app, {
+      const customPopup = new Popup(app, "[data-popup][data-popup-custom]", {
         tweenIn: (trigger, target, popup) => {
+          console.log("custom tweenIn");
           // Set a different animation for the custom popup
           gsap.set(popup.backdrop, { display: "block" });
           gsap.to(popup.backdrop, {
@@ -247,24 +290,32 @@
         },
       });
 
+      app.popups.push(customPopup);
+
       // Initialize callback popup
-      const callbackPopup = new Popup(app, {
-        onOpen: (trigger, target, popup) => {
-          console.log("Popup opened!");
-          document.querySelector(
-            '[data-testid="callback-status"]',
-          ).textContent = "Status: Opened";
+      const callbackPopup = new Popup(
+        app,
+        "[data-popup][data-popup-callback]",
+        {
+          onOpen: (trigger, target, popup) => {
+            console.log("Popup opened!");
+            document.querySelector(
+              '[data-testid="callback-status"]',
+            ).textContent = "Status: Opened";
+          },
+          onClose: (popup) => {
+            console.log("Popup closed!");
+            document.querySelector(
+              '[data-testid="callback-status"]',
+            ).textContent = "Status: Closed";
+          },
         },
-        onClose: (popup) => {
-          console.log("Popup closed!");
-          document.querySelector(
-            '[data-testid="callback-status"]',
-          ).textContent = "Status: Closed";
-        },
-      });
+      );
+      app.popups.push(callbackPopup);
 
       // Initialize ESC key popup
-      const escPopup = new Popup(app);
+      const escPopup = new Popup(app, "[data-popup][data-popup-esc]");
+      app.popups.push(escPopup);
     </script>
   </body>
 </html>
