@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jupiter Dataloader Test</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        line-height: 1.5;
+        padding: 2rem;
+        margin: 0;
+        max-width: 800px;
+      }
+
+      h1,
+      h2 {
+        margin-bottom: 1rem;
+      }
+
+      .filter-container {
+        margin-bottom: 1.5rem;
+      }
+
+      input[type="text"] {
+        padding: 0.5rem;
+        width: 100%;
+        max-width: 300px;
+        font-size: 1rem;
+      }
+
+      .category-filter {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .category-filter a {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        background-color: #f0f0f0;
+        color: #333;
+        text-decoration: none;
+        border-radius: 4px;
+      }
+
+      .category-filter a[data-loader-param-selected] {
+        background-color: #0066cc;
+        color: white;
+      }
+
+      .article-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 2rem;
+      }
+
+      .article-card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .article-card img {
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+      }
+
+      .article-card-content {
+        padding: 1rem;
+      }
+
+      .article-card h3 {
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+      }
+
+      .load-more {
+        margin-top: 2rem;
+        text-align: center;
+      }
+
+      button {
+        padding: 0.75rem 1.5rem;
+        background-color: #0066cc;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 1rem;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background-color: #0052a3;
+      }
+
+      button[data-loader-starved] {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+
+      [data-loader-loading] .article-grid {
+        opacity: 0.6;
+      }
+
+      /* Loading indicator */
+      [data-loader-loading]::after {
+        content: "Loading...";
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: #333;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Jupiter Dataloader Test</h1>
+
+    <div class="filter-container">
+      <h2>Search</h2>
+      <input
+        type="text"
+        data-loader-filter-for="articles"
+        placeholder="Filter articles..."
+        data-testid="search-input"
+      />
+    </div>
+
+    <div
+      data-loader="/api/articles"
+      data-loader-id="articles"
+      data-testid="dataloader"
+    >
+      <h2>Categories</h2>
+      <div class="category-filter">
+        <a
+          href="#"
+          data-loader-param="all"
+          data-loader-param-selected
+          data-testid="category-all"
+        >
+          All
+        </a>
+        <a
+          href="#"
+          data-loader-param="technology"
+          data-testid="category-technology"
+        >
+          Technology
+        </a>
+        <a href="#" data-loader-param="science" data-testid="category-science">
+          Science
+        </a>
+        <a href="#" data-loader-param="health" data-testid="category-health">
+          Health
+        </a>
+      </div>
+
+      <h2>Tags (Multi-select)</h2>
+      <div class="category-filter">
+        <a
+          href="#"
+          data-loader-param="web"
+          data-loader-param-key="tags"
+          data-loader-param-multi
+          data-testid="tag-web"
+        >
+          Web
+        </a>
+        <a
+          href="#"
+          data-loader-param="mobile"
+          data-loader-param-key="tags"
+          data-loader-param-multi
+          data-testid="tag-mobile"
+        >
+          Mobile
+        </a>
+        <a
+          href="#"
+          data-loader-param="ai"
+          data-loader-param-key="tags"
+          data-loader-param-multi
+          data-testid="tag-ai"
+        >
+          AI
+        </a>
+      </div>
+
+      <div class="article-grid" data-loader-canvas data-testid="article-grid">
+        <!-- Initial content -->
+        <div class="article-card" data-article-id="1" data-testid="article-1">
+          <img
+            src="https://picsum.photos/seed/1/300/150"
+            alt="Latest Tech Trends"
+          />
+          <div class="article-card-content">
+            <h3>Latest Tech Trends</h3>
+            <p>Category: technology</p>
+            <p>Tags: web</p>
+          </div>
+        </div>
+        <div class="article-card" data-article-id="2" data-testid="article-2">
+          <img
+            src="https://picsum.photos/seed/2/300/150"
+            alt="Mobile Development in 2023"
+          />
+          <div class="article-card-content">
+            <h3>Mobile Development in 2023</h3>
+            <p>Category: technology</p>
+            <p>Tags: mobile</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="load-more">
+        <button data-loader-more data-testid="load-more">Load more</button>
+      </div>
+    </div>
+
+    <script type="module">
+      import { Application, Dataloader } from "../src/index.js";
+
+      // Mock API responses
+      const techArticles = [
+        {
+          id: 1,
+          title: "Latest Tech Trends",
+          category: "technology",
+          tags: ["web"],
+        },
+        {
+          id: 2,
+          title: "Mobile Development in 2023",
+          category: "technology",
+          tags: ["mobile"],
+        },
+        {
+          id: 3,
+          title: "AI Innovations",
+          category: "technology",
+          tags: ["ai"],
+        },
+      ];
+
+      const scienceArticles = [
+        {
+          id: 4,
+          title: "New Space Discoveries",
+          category: "science",
+          tags: [],
+        },
+        {
+          id: 5,
+          title: "Climate Research Update",
+          category: "science",
+          tags: [],
+        },
+      ];
+
+      const healthArticles = [
+        { id: 6, title: "Nutrition Guidelines", category: "health", tags: [] },
+        { id: 7, title: "Mental Health Tips", category: "health", tags: [] },
+      ];
+
+      const allArticles = [
+        ...techArticles,
+        ...scienceArticles,
+        ...healthArticles,
+      ];
+
+      // Mock fetch API for testing
+      window.fetch = async (url) => {
+        console.log("Fetching:", url);
+
+        // Delay to simulate network
+        await new Promise((resolve) => setTimeout(resolve, 250));
+
+        let filteredArticles = [...allArticles];
+        let starved = false;
+
+        // Parse the URL to get params - handle path more robustly
+        const urlObj = new URL(url, window.location.origin);
+        const pathParts = urlObj.pathname.split("/").filter((p) => p);
+
+        // For debugging
+        console.log("Path parts:", pathParts);
+
+        // Extract category and page from path
+        let category = "all";
+        let page = 0;
+
+        // Try to extract from URL path segments
+        if (pathParts.includes("articles")) {
+          const articleIndex = pathParts.indexOf("articles");
+          if (articleIndex >= 0 && pathParts.length > articleIndex + 1) {
+            category = pathParts[articleIndex + 1] || "all";
+            if (pathParts.length > articleIndex + 2) {
+              page = parseInt(pathParts[articleIndex + 2] || "0");
+            }
+          }
+        }
+
+        console.log("Parsed category:", category, "page:", page);
+        const filter = urlObj.searchParams.get("filter") || "";
+        const tagsParam = urlObj.searchParams.get("tags") || "";
+        const tags = tagsParam ? tagsParam.split(",") : [];
+
+        // Filter by category
+        if (category && category !== "all") {
+          filteredArticles = filteredArticles.filter(
+            (article) => article.category === category,
+          );
+        }
+
+        console.log(filteredArticles);
+
+        // Filter by search term
+        if (filter) {
+          filteredArticles = filteredArticles.filter((article) =>
+            article.title.toLowerCase().includes(filter.toLowerCase()),
+          );
+        }
+
+        // Filter by tags
+        if (tags.length > 0) {
+          filteredArticles = filteredArticles.filter((article) =>
+            tags.some((tag) => article.tags.includes(tag)),
+          );
+        }
+
+        // Pagination logic (2 per page)
+        const itemsPerPage = 2;
+        const start = page * itemsPerPage;
+        const paginatedArticles = filteredArticles.slice(
+          start,
+          start + itemsPerPage,
+        );
+
+        // Check if there are more results
+        if (start + itemsPerPage >= filteredArticles.length) {
+          starved = true;
+        }
+
+        // Generate HTML for the articles
+        const html = paginatedArticles
+          .map(
+            (article) => `
+          <div class="article-card" data-article-id="${article.id}" data-testid="article-${article.id}">
+            <img src="https://picsum.photos/seed/${article.id}/300/150" alt="${article.title}">
+            <div class="article-card-content">
+              <h3>${article.title}</h3>
+              <p>Category: ${article.category}</p>
+              ${article.tags.length ? `<p>Tags: ${article.tags.join(", ")}</p>` : ""}
+            </div>
+          </div>
+        `,
+          )
+          .join("");
+
+        return {
+          text: () => Promise.resolve(html),
+          headers: {
+            get: (name) => {
+              if (name === "jpt-dataloader") {
+                return starved ? "starved" : "available";
+              }
+              return null;
+            },
+          },
+        };
+      };
+
+      document.addEventListener("DOMContentLoaded", () => {
+        // Initialize Application
+        const app = new Application({
+          respectReducedMotion: false,
+          breakpointConfig: {
+            breakpoints: [
+              "iphone",
+              "mobile",
+              "ipad_portrait",
+              "ipad_landscape",
+              "desktop_md",
+              "desktop_lg",
+              "desktop_xl",
+            ],
+          },
+        });
+
+        // Initialize Dataloader
+        app.registerCallback("APPLICATION:READY", () => {
+          const loaderEl = document.querySelector("[data-loader]");
+          app.dataloader = new Dataloader(app, loaderEl, {
+            onFetch: (dataloader) => {
+              console.log("Data loaded:", dataloader);
+            },
+          });
+        });
+
+        // Start the application
+        app.initialize();
+      });
+    </script>
+  </body>
+</html>

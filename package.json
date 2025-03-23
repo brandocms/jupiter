@@ -35,6 +35,7 @@
     "playwright:typography": "playwright test e2e/typography.spec.js --project=chromium",
     "playwright:popover": "playwright test e2e/popover.spec.js --project=chromium",
     "playwright:popup": "playwright test e2e/popup.spec.js --project=chromium",
+    "playwright:dataloader": "playwright test e2e/dataloader.spec.js --project=chromium --reporter=line",
     "vite": "vite",
     "vite:build": "vite build",
     "vite:preview": "vite preview"
