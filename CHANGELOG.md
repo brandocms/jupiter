@@ -5,10 +5,23 @@
   - This allows multiple independent popups to be managed separately
   - New syntax: `new Popup(app, '[data-popup][data-popup-custom]', opts)`
   - Updated tests to demonstrate isolated popup functionality
+- **BREAKING** Parallax: Complete rewrite.
+  - Significant improvements in parallax performance and appearance
+  - New `scale` option (default: 1.2) to prevent gaps during parallax movement
+  - New `orientation` option ('up', 'down', 'left', 'right') for movement direction
+  - Support for multi-element parallax with `data-parallax-parent`
+  - Individual elements can use `data-parallax-factor` to set custom movement factor
+  - Optional `data-parallax-fade` attribute enables fade effect for individual elements
+  - Optional `data-parallax-orientation` to override movement direction per element
+  - Added `destroy()` method for proper cleanup
+  - Simplified implementation with better performance
+  - Updated tests and documentation for the new features
+- **FEATURE** Added type definitions for auto-complete
 - **FEATURE** Popup: Add key-based popup management through `data-popup-key`
   - Triggers, popups, and close buttons can now be properly associated
   - Each popup gets its own backdrop element
   - Improved trigger/closer targeting based on selectors
+
 
 #### 3.55.0
 
