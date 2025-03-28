@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jupiter CoverOverlay Test</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        line-height: 1.5;
+        padding: 0;
+        margin: 0;
+      }
+
+      header {
+        background-color: #333;
+        color: white;
+        padding: 1rem;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+
+      section {
+        padding: 2rem;
+        margin-bottom: 1rem;
+      }
+
+      .video-container {
+        position: relative;
+        width: 100%;
+        max-width: 800px;
+        margin: 0 auto;
+        background-color: #000;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      .picture-wrapper {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 2;
+        background-color: rgba(0, 0, 0, 0.7);
+        background-size: cover;
+        background-position: center;
+      }
+
+      .cover-overlay-button {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: rgba(255, 255, 255, 0.9);
+        color: #333;
+        border: none;
+        border-radius: 50%;
+        width: 80px;
+        height: 80px;
+        font-size: 24px;
+        cursor: pointer;
+        z-index: 3;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .cover-overlay-button:before {
+        content: "";
+        display: inline-block;
+        width: 0;
+        height: 0;
+        border-top: 15px solid transparent;
+        border-left: 25px solid #333;
+        border-bottom: 15px solid transparent;
+        margin-left: 7px;
+      }
+
+      iframe {
+        width: 100%;
+        height: 450px;
+        border: none;
+        opacity: 0;
+      }
+
+      .controls {
+        margin-top: 1rem;
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+      }
+
+      button {
+        padding: 0.5rem 1rem;
+        background-color: #4a90e2;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+    </style>
+
+    <script src="https://player.vimeo.com/api/player.js"></script>
+  </head>
+  <body>
+    <header>
+      <h1>Jupiter CoverOverlay Test</h1>
+    </header>
+
+    <section data-testid="coveroverlay-section">
+      <h2>Video with Cover Overlay</h2>
+      <p>
+        This test demonstrates the CoverOverlay module functionality with a
+        video player.
+      </p>
+
+      <div
+        class="video-container"
+        data-cover-overlay
+        data-testid="video-container"
+      >
+        <div
+          class="picture-wrapper"
+          data-testid="overlay"
+          style="
+            background-image: url(&quot;https://picsum.photos/800/450&quot;);
+          "
+        ></div>
+        <button
+          class="cover-overlay-button"
+          data-cover-overlay-button
+          data-testid="play-button"
+        ></button>
+        <iframe
+          src="https://www.youtube.com/embed/dQw4w9WgXcQ?enablejsapi=1"
+          allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen
+          data-testid="video-iframe"
+        >
+        </iframe>
+      </div>
+
+      <div class="controls">
+        <button id="reset-overlay" data-testid="reset-button">
+          Reset Overlay
+        </button>
+      </div>
+    </section>
+
+    <section data-testid="vimeo-section">
+      <h2>Vimeo Integration Test</h2>
+      <p>
+        This test demonstrates the CoverOverlay module with Vimeo integration.
+      </p>
+
+      <div
+        class="video-container"
+        data-cover-overlay
+        data-cover-overlay-vimeo-play
+        data-testid="vimeo-container"
+      >
+        <div
+          class="picture-wrapper"
+          data-testid="vimeo-overlay"
+          style="
+            background-image: url(&quot;https://picsum.photos/800/451&quot;);
+          "
+        ></div>
+        <button
+          class="cover-overlay-button"
+          data-cover-overlay-button
+          data-testid="vimeo-play-button"
+        ></button>
+        <iframe
+          src="https://player.vimeo.com/video/76979871?h=8272103f6e"
+          allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen
+          data-testid="vimeo-iframe"
+        >
+        </iframe>
+      </div>
+
+      <div class="controls">
+        <button id="reset-vimeo-overlay" data-testid="vimeo-reset-button">
+          Reset Vimeo Overlay
+        </button>
+      </div>
+    </section>
+
+    <script type="module">
+      // Import Jupiter modules
+      import { Application, CoverOverlay } from "../src/index.js";
+
+      document.addEventListener("DOMContentLoaded", () => {
+        // Initialize Application
+        const app = new Application({
+          respectReducedMotion: false,
+          breakpointConfig: {
+            breakpoints: [
+              "iphone",
+              "mobile",
+              "ipad_portrait",
+              "ipad_landscape",
+              "desktop_md",
+              "desktop_lg",
+              "desktop_xl",
+            ],
+          },
+        });
+
+        // Initialize CoverOverlay
+        const coverOverlay = new CoverOverlay(app);
+
+        // Reset buttons functionality
+        const resetButton = document.getElementById("reset-overlay");
+        resetButton.addEventListener("click", () => {
+          const container = document.querySelector(
+            '[data-testid="video-container"]',
+          );
+          const overlay = container.querySelector('[data-testid="overlay"]');
+          const button = container.querySelector('[data-testid="play-button"]');
+          const iframe = container.querySelector(
+            '[data-testid="video-iframe"]',
+          );
+
+          // Reset the styles
+          overlay.style.display = "block";
+          overlay.style.opacity = "1";
+          button.style.opacity = "1";
+          iframe.style.opacity = "0";
+        });
+
+        const resetVimeoButton = document.getElementById("reset-vimeo-overlay");
+        resetVimeoButton.addEventListener("click", () => {
+          const container = document.querySelector(
+            '[data-testid="vimeo-container"]',
+          );
+          const overlay = container.querySelector(
+            '[data-testid="vimeo-overlay"]',
+          );
+          const button = container.querySelector(
+            '[data-testid="vimeo-play-button"]',
+          );
+          const iframe = container.querySelector(
+            '[data-testid="vimeo-iframe"]',
+          );
+
+          // Reset the styles
+          overlay.style.display = "block";
+          overlay.style.opacity = "1";
+          button.style.opacity = "1";
+          iframe.style.opacity = "0";
+        });
+
+        // Start the application
+        app.initialize();
+
+        // Mock Vimeo API if it doesn't exist
+        if (!window.Vimeo) {
+          window.Vimeo = {
+            Player: class MockVimeoPlayer {
+              constructor(iframe) {
+                this.iframe = iframe;
+              }
+
+              play() {
+                console.log("Vimeo player: play");
+              }
+            },
+          };
+        }
+      });
+    </script>
+  </body>
+</html>

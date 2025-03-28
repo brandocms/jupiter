@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jupiter Cookies Test</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        line-height: 1.5;
+        padding: 0;
+        margin: 0;
+      }
+
+      header {
+        background-color: #333;
+        color: white;
+        padding: 1rem;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+
+      section {
+        padding: 2rem;
+        margin-bottom: 1rem;
+      }
+
+      .cookie-container {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background-color: #222;
+        color: white;
+        padding: 0;
+        z-index: 9999;
+        display: none;
+      }
+
+      .cookie-container-inner {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1.5rem;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .cookie-law-text {
+        flex: 2;
+        min-width: 300px;
+        padding-right: 2rem;
+      }
+
+      .cookie-law-buttons {
+        flex: 1;
+        min-width: 200px;
+        display: flex;
+        gap: 1rem;
+      }
+
+      button {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: bold;
+      }
+
+      .dismiss-cookielaw {
+        background-color: #4caf50;
+        color: white;
+      }
+
+      .refuse-cookielaw {
+        background-color: #f44336;
+        color: white;
+      }
+
+      .cookie-status {
+        padding: 1rem;
+        margin: 1rem 0;
+        border-radius: 4px;
+        background-color: #f0f0f0;
+      }
+
+      .cookie-controls {
+        margin: 2rem 0;
+        display: flex;
+        gap: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Jupiter Cookies Test</h1>
+    </header>
+
+    <section data-testid="cookies-section">
+      <h2>Cookies Management</h2>
+      <p>
+        This page tests the Jupiter Cookies module for handling cookie consent.
+      </p>
+
+      <div class="cookie-status" data-testid="cookie-status">
+        Consent Status: <span data-testid="consent-status">Not set</span>
+      </div>
+
+      <div class="cookie-controls">
+        <button id="show-cookie-dialog" data-testid="show-cookie-dialog">
+          Show Cookie Dialog
+        </button>
+        <button id="clear-cookies" data-testid="clear-cookies">
+          Clear Cookies
+        </button>
+        <button id="check-cookie-status" data-testid="check-cookie-status">
+          Check Status
+        </button>
+      </div>
+
+      <h3>Cookie Operations Test</h3>
+      <div class="cookie-controls">
+        <input
+          type="text"
+          id="cookie-key"
+          data-testid="cookie-key"
+          placeholder="Cookie key"
+          value="test_cookie"
+        />
+        <input
+          type="text"
+          id="cookie-value"
+          data-testid="cookie-value"
+          placeholder="Cookie value"
+          value="test_value"
+        />
+        <button id="set-cookie" data-testid="set-cookie">Set Cookie</button>
+        <button id="get-cookie" data-testid="get-cookie">Get Cookie</button>
+        <button id="remove-cookie" data-testid="remove-cookie">
+          Remove Cookie
+        </button>
+      </div>
+      <div class="cookie-status" data-testid="operation-result">Result:</div>
+    </section>
+
+    <!-- Cookie Consent Banner -->
+    <div class="cookie-container" data-testid="cookie-container">
+      <div class="cookie-container-inner">
+        <div class="cookie-law-text">
+          <h3>Cookie Policy</h3>
+          <p>
+            This website uses cookies to ensure you get the best experience on
+            our website. By continuing to use this site, you consent to our use
+            of cookies.
+          </p>
+        </div>
+        <div class="cookie-law-buttons">
+          <button class="dismiss-cookielaw" data-testid="accept-cookies">
+            Accept
+          </button>
+          <button class="refuse-cookielaw" data-testid="refuse-cookies">
+            Decline
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      // Import Jupiter modules
+      import { Application, Cookies, gsap } from "../src/index.js";
+
+      document.addEventListener("DOMContentLoaded", () => {
+        // Initialize Application
+        const app = new Application({
+          respectReducedMotion: false,
+          breakpointConfig: {
+            breakpoints: [
+              "iphone",
+              "mobile",
+              "ipad_portrait",
+              "ipad_landscape",
+              "desktop_md",
+              "desktop_lg",
+              "desktop_xl",
+            ],
+          },
+        });
+
+        // Status elements
+        const consentStatus = document.querySelector(
+          '[data-testid="consent-status"]',
+        );
+        const operationResult = document.querySelector(
+          '[data-testid="operation-result"]',
+        );
+
+        // Action buttons
+        const showDialogBtn = document.querySelector("#show-cookie-dialog");
+        const clearCookiesBtn = document.querySelector("#clear-cookies");
+        const checkStatusBtn = document.querySelector("#check-cookie-status");
+        const setCookieBtn = document.querySelector("#set-cookie");
+        const getCookieBtn = document.querySelector("#get-cookie");
+        const removeCookieBtn = document.querySelector("#remove-cookie");
+
+        // Input fields
+        const cookieKeyInput = document.querySelector("#cookie-key");
+        const cookieValueInput = document.querySelector("#cookie-value");
+
+        // Initialize Cookies with custom callbacks
+        const cookies = new Cookies(app, {
+          onAccept: (c) => {
+            const oneYearFromNow = new Date();
+            oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+
+            c.setCookie("COOKIES_CONSENT_STATUS", 1, oneYearFromNow, "/");
+            consentStatus.textContent = "Accepted";
+            consentStatus.style.color = "green";
+
+            gsap.to(c.cc, {
+              duration: 1,
+              opacity: 0,
+              onComplete: () => {
+                c.cc.style.display = "none";
+              },
+            });
+          },
+
+          onRefuse: (c) => {
+            const oneYearFromNow = new Date();
+            oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+
+            c.setCookie("COOKIES_CONSENT_STATUS", 0, oneYearFromNow, "/");
+            consentStatus.textContent = "Declined";
+            consentStatus.style.color = "red";
+
+            gsap.to(c.cc, {
+              duration: 1,
+              opacity: 0,
+              onComplete: () => {
+                c.cc.style.display = "none";
+              },
+            });
+          },
+
+          alreadyConsented: (c) => {
+            consentStatus.textContent = "Previously Accepted";
+            consentStatus.style.color = "green";
+          },
+
+          alreadyRefused: (c) => {
+            consentStatus.textContent = "Previously Declined";
+            consentStatus.style.color = "red";
+          },
+        });
+
+        // For initial status
+        updateStatus();
+
+        // Add event handlers
+        showDialogBtn.addEventListener("click", () => {
+          cookies.opts.showCC(cookies);
+        });
+
+        clearCookiesBtn.addEventListener("click", () => {
+          cookies.removeCookie("COOKIES_CONSENT_STATUS", "/");
+          updateStatus();
+        });
+
+        checkStatusBtn.addEventListener("click", () => {
+          updateStatus();
+        });
+
+        setCookieBtn.addEventListener("click", () => {
+          const key = cookieKeyInput.value;
+          const value = cookieValueInput.value;
+
+          if (key && value) {
+            const oneYearFromNow = new Date();
+            oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+
+            const result = cookies.setCookie(key, value, oneYearFromNow, "/");
+            operationResult.textContent = `Result: Cookie "${key}" set to "${value}" - ${result ? "Success" : "Failed"}`;
+          }
+        });
+
+        getCookieBtn.addEventListener("click", () => {
+          const key = cookieKeyInput.value;
+
+          if (key) {
+            const value = cookies.getCookie(key);
+            operationResult.textContent = `Result: Cookie "${key}" = "${value}"`;
+          }
+        });
+
+        removeCookieBtn.addEventListener("click", () => {
+          const key = cookieKeyInput.value;
+
+          if (key) {
+            const result = cookies.removeCookie(key, "/");
+            operationResult.textContent = `Result: Cookie "${key}" removed - ${result ? "Success" : "Failed"}`;
+          }
+        });
+
+        function updateStatus() {
+          if (cookies.hasCookie("COOKIES_CONSENT_STATUS")) {
+            const status = cookies.getCookie("COOKIES_CONSENT_STATUS");
+
+            if (status === "1") {
+              consentStatus.textContent = "Accepted";
+              consentStatus.style.color = "green";
+            } else {
+              consentStatus.textContent = "Declined";
+              consentStatus.style.color = "red";
+            }
+          } else {
+            consentStatus.textContent = "Not set";
+            consentStatus.style.color = "black";
+          }
+        }
+
+        // Start the application
+        app.initialize();
+      });
+    </script>
+  </body>
+</html>

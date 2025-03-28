@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jupiter Parallax Test</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        line-height: 1.5;
+        padding: 0;
+        margin: 0;
+      }
+
+      header {
+        background-color: #333;
+        color: white;
+        padding: 1rem;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+
+      section {
+        padding: 2rem;
+        margin-bottom: 1rem;
+      }
+
+      .spacer {
+        height: 50vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f0f0f0;
+      }
+
+      .parallax-container {
+        height: 80vh;
+        position: relative;
+        overflow: hidden;
+      }
+
+      [data-parallax], [data-parallax-parent] {
+        height: 100%;
+        width: 100%;
+        position: relative;
+        overflow: hidden;
+      }
+
+      [data-parallax-figure] {
+        position: absolute;
+        top: -20%;
+        left: 0;
+        width: 100%;
+        height: 140%;
+        background-size: cover;
+        background-position: center;
+      }
+
+      [data-parallax-content] {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        color: white;
+        text-align: center;
+        z-index: 1;
+        background-color: rgba(0, 0, 0, 0.4);
+        padding: 2rem;
+        box-sizing: border-box;
+      }
+
+      [data-parallax-content] h2 {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      }
+
+      [data-parallax-content] p {
+        font-size: 1.5rem;
+        max-width: 600px;
+        margin: 0 auto;
+        text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+      }
+
+      .multi-parallax-element {
+        position: absolute;
+        width: 200px;
+        height: 200px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+        text-align: center;
+        padding: 1rem;
+        box-sizing: border-box;
+        transform: translateY(0);
+        will-change: transform, opacity;
+      }
+
+      .multi-parallax-element:nth-child(1) {
+        background-color: #e74c3c;
+        left: 20%;
+        top: 30%;
+      }
+
+      .multi-parallax-element:nth-child(2) {
+        background-color: #3498db;
+        left: 50%;
+        top: 40%;
+      }
+
+      .multi-parallax-element:nth-child(3) {
+        background-color: #2ecc71;
+        left: 70%;
+        top: 50%;
+      }
+
+      button {
+        padding: 0.5rem 1rem;
+        background-color: #4a90e2;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      .fade-indicator {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        padding: 5px 10px;
+        border-radius: 4px;
+        color: white;
+        font-weight: bold;
+        z-index: 10;
+      }
+
+      .fade-on {
+        background-color: green;
+      }
+
+      .fade-off {
+        background-color: red;
+      }
+
+      .controls {
+        margin-top: 2rem;
+        padding: 1rem;
+        background-color: #f5f5f5;
+        border-radius: 4px;
+      }
+
+      .control-group {
+        margin-bottom: 1rem;
+      }
+
+      label {
+        display: inline-block;
+        width: 150px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Jupiter Parallax Test</h1>
+    </header>
+
+    <section>
+      <h2>Parallax Scrolling Effect</h2>
+      <p>Scroll down to see the parallax effect in action.</p>
+    </section>
+
+    <div class="spacer">
+      <div>Scroll down to see traditional parallax effect</div>
+    </div>
+
+    <div class="parallax-container" data-testid="default-parallax-container">
+      <div data-parallax data-testid="parallax-element">
+        <div
+          data-parallax-figure
+          data-testid="parallax-figure"
+          style="
+            background-image: url(&quot;https://picsum.photos/1600/900&quot;);
+          "
+        ></div>
+        <div data-parallax-content data-testid="parallax-content">
+          <div
+            class="fade-indicator fade-on"
+            data-testid="default-fade-indicator"
+          >
+            Fade: ON
+          </div>
+          <h2>Traditional Parallax</h2>
+          <p>
+            This is a traditional parallax effect with standard settings
+            (fadeContent=true).
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="spacer">
+      <div>Scroll down to see the custom parallax</div>
+    </div>
+
+    <div class="parallax-container" data-testid="custom-parallax-container">
+      <div id="custom-parallax" data-parallax data-testid="custom-parallax-element">
+        <div
+          data-parallax-figure
+          data-testid="custom-parallax-figure"
+          style="
+            background-image: url(&quot;https://picsum.photos/1600/901&quot;);
+          "
+        ></div>
+        <div data-parallax-content data-testid="custom-parallax-content">
+          <div
+            class="fade-indicator fade-on"
+            data-testid="custom-fade-indicator"
+          >
+            Fade: ON
+          </div>
+          <h2>Custom Parallax</h2>
+          <p>
+            This parallax effect uses custom settings from the controls below.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="spacer">
+      <div>Scroll down to see the multi-element parallax</div>
+    </div>
+
+    <div class="parallax-container" data-testid="multi-parallax-container">
+      <div data-parallax-parent>
+        <div 
+          class="multi-parallax-element" 
+          data-parallax-factor="0.8" 
+          data-testid="multi-slow-element"
+        >
+          Slow Parallax<br>
+          Factor: 0.8
+        </div>
+        <div 
+          class="multi-parallax-element fade-element" 
+          data-parallax-factor="1.5" 
+          data-testid="multi-medium-element"
+          data-parallax-fade
+        >
+          Medium Parallax<br>
+          Factor: 1.5<br>
+          With Fade
+        </div>
+        <div 
+          class="multi-parallax-element no-fade-element" 
+          data-parallax-factor="2.5" 
+          data-testid="multi-fast-element"
+        >
+          Fast Parallax<br>
+          Factor: 2.5<br>
+          No Fade
+        </div>
+      </div>
+    </div>
+
+
+    <div class="spacer">
+      <div>End of parallax demo</div>
+    </div>
+
+    <script type="module">
+      // Import Jupiter modules
+      import { Application, Parallax } from "../src/index.js";
+
+      document.addEventListener("DOMContentLoaded", () => {
+        // Initialize Application with proper size
+        const app = new Application({
+          respectReducedMotion: false,
+          breakpointConfig: {
+            breakpoints: [
+              "iphone",
+              "mobile",
+              "ipad_portrait",
+              "ipad_landscape",
+              "desktop_md",
+              "desktop_lg",
+              "desktop_xl",
+            ],
+          },
+        });
+
+        // Override app size to ensure proper effect
+        app.size = {
+          width: window.innerWidth,
+          height: window.innerHeight,
+        };
+
+        // Initialize default Parallax
+        const defaultParallax = new Parallax(app);
+
+        // Custom parallax with controls
+        let customParallax = new Parallax(app, {
+          el: "#custom-parallax",
+          factor: 2,
+          fadeContent: true,
+          scale: 1.2,  // Scale up background to avoid gaps
+          orientation: 'up'
+        });
+        
+        // Multi-element parallax
+        const multiParallax = new Parallax(app, {
+          el: "[data-parallax-parent]"
+        });
+
+        // Start the application
+        app.initialize();
+
+        // Update app size on resize
+        window.addEventListener("resize", () => {
+          app.size = {
+            width: window.innerWidth,
+            height: window.innerHeight,
+          };
+
+          // Re-initialize the parallax instances
+          if (customParallax && customParallax.initializeTimeline) {
+            customParallax.initializeTimeline();
+          }
+          if (defaultParallax && defaultParallax.initializeTimeline) {
+            defaultParallax.initializeTimeline();
+          }
+          if (multiParallax && multiParallax.initializeMultipleTimelines) {
+            multiParallax.initializeMultipleTimelines();
+          }
+        });
+
+        // Dispatch scroll events on scroll
+        window.addEventListener("scroll", () => {
+          window.dispatchEvent(new CustomEvent("APPLICATION_SCROLL"));
+        });
+      });
+    </script>
+  </body>
+</html>

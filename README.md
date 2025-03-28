@@ -934,81 +934,209 @@ Hero example:
 
 ## Parallax
 
+Smooth parallax scrolling effect for images and elements, inspired by SimpleParallax.js.
+
 ### Options
 
 - `el`
   - default `[data-parallax]`
+  - Can also be `[data-parallax-parent]` for multi-element parallax
+
+- `factor`
+  - default `1.3`
+  - Controls the speed of the parallax effect (higher = more movement)
+  - Can be overridden per-element with `data-parallax-factor` attribute
 
 - `fadeContent`
+  - default `true`
+  - If true, fades out content as it leaves the viewport
+  - For multi-element parallax, can be set per-element with `data-parallax-fade` attribute
+
+- `scale`
+  - default `1.2`
+  - Scale factor to apply to parallax background images to prevent gaps during movement
+
+- `orientation`
+  - default `'up'`
+  - Direction of parallax movement: `'up'`, `'down'`, `'left'`, or `'right'`
+  - Can be overridden per-element with `data-parallax-orientation` attribute
+
+- `overflow`
   - default `false`
-  - If true, fades out `[data-parallax-content]` as we move towards bottom of parallaxed element
+  - Whether to allow element overflow to be visible
 
+### Single-Element Parallax
 
-Example:
+For traditional parallax effects with a background and content:
 
 ```html
 <style>
   [data-parallax] {
     position: relative;
-    min-height: 100vh;
+    min-height: 70vh;
     overflow: hidden;
   }
 
   [data-parallax-figure] {
     position: absolute;
-    top: 0;
+    top: -20%;
     left: 0;
-    height: 100%;
     width: 100%;
-    max-height: 100%;
-  }
-
-  [data-parallax-figure] picture {
-    height: 100%;
-    width: 100%;
-  }
-
-  [data-parallax-figure] picture img {
-    min-height: 100%;
-    min-width: 100%;
-    max-height: 100%;
-    object-fit: cover;
+    height: 140%;
+    background-size: cover;
+    background-position: center;
+    will-change: transform;
   }
 
   [data-parallax-content] {
     position: absolute;
     top: 0;
     left: 0;
-    height: 100%;
     width: 100%;
+    height: 100%;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
-  }
-
-  [data-parallax-content] div {
-    color: #ffffff;
-    font-size: 4rem;
+    color: white;
+    text-align: center;
+    background-color: rgba(0, 0, 0, 0.3);
+    z-index: 1;
+    will-change: transform, opacity;
   }
 </style>
 
 <section data-parallax>
+  <div 
+    data-parallax-figure 
+    style="background-image: url('/path/to/image.jpg');"
+  ></div>
+  <div data-parallax-content>
+    <h2>Parallax Title</h2>
+    <p>Parallax content with automatic fade effect</p>
+  </div>
+</section>
+```
+
+### Multi-Element Parallax
+
+For creating parallax effects with multiple elements, each with their own movement speed and fade settings:
+
+```html
+<style>
+  [data-parallax-parent] {
+    position: relative;
+    height: 80vh;
+    overflow: hidden;
+  }
+  
+  .parallax-element {
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    border-radius: 10px;
+    will-change: transform, opacity;
+  }
+  
+  /* Position elements as needed */
+  .element-1 {
+    background-color: #e74c3c;
+    left: 20%;
+    top: 30%;
+  }
+  
+  .element-2 {
+    background-color: #3498db;
+    left: 50%;
+    top: 40%;
+  }
+  
+  .element-3 {
+    background-color: #2ecc71;
+    left: 70%;
+    top: 50%;
+  }
+</style>
+
+<div data-parallax-parent>
+  <!-- Slow element moving down -->
+  <div 
+    class="parallax-element element-1" 
+    data-parallax-factor="0.8" 
+    data-parallax-orientation="down"
+  >
+    Slow downward movement
+  </div>
+  
+  <!-- Medium element with fade effect -->
+  <div 
+    class="parallax-element element-2" 
+    data-parallax-factor="1.5" 
+    data-parallax-fade
+  >
+    Medium upward movement with fade
+  </div>
+  
+  <!-- Fast element without fade moving left -->
+  <div 
+    class="parallax-element element-3" 
+    data-parallax-factor="2.5"
+    data-parallax-orientation="left"
+  >
+    Fast leftward movement
+  </div>
+</div>
+```
+
+### Initialize in JS
+
+```js
+import { Application, Parallax } from '@brandocms/jupiter'
+
+const app = new Application()
+
+// Traditional parallax with background image and content
+const singleParallax = new Parallax(app, {
+  // Default options
+  factor: 1.3,
+  fadeContent: true,
+  scale: 1.2  
+})
+
+// Multi-element parallax
+const multiParallax = new Parallax(app, {
+  el: '[data-parallax-parent]',
+  orientation: 'up'  // Default movement direction
+})
+
+// Cleanup when needed
+function cleanup() {
+  singleParallax.destroy()
+  multiParallax.destroy()
+}
+```
+
+### Using with picture elements
+
+For using parallax with responsive images:
+
+```html
+<section data-parallax>
   <div data-parallax-figure>
-    <%= picture_tag(
-      work.cover,
-      placeholder: false,
-      key: :original,
-      lazyload: true,
-      srcset: {Kunstnerforbundet.Artists.Work, :cover},
-      prefix: media_url(),
-      img_class: "img-fluid",
-      alt: "#{work.title} (#{work.year}) - #{work.size} - #{work.technique}")
-    %>
+    <picture>
+      <source media="(min-width: 1200px)" srcset="/images/large.jpg">
+      <source media="(min-width: 768px)" srcset="/images/medium.jpg">
+      <img src="/images/small.jpg" alt="Parallax image">
+    </picture>
   </div>
   <div data-parallax-content>
-    <div>
-      Testing some parallax :)
-    </div>
+    <h2>Responsive Parallax</h2>
   </div>
 </section>
 ```
