@@ -27,6 +27,8 @@ const DEFAULT_OPTIONS = {
     menu: '[data-dropdown-menu]',
     menuItems: '[data-dropdown-menu] > li',
   },
+  overlapTweens: true,
+  menuOpenDuration: 0.1,
   tweens: {
     items: {
       duration: 0.2,
@@ -80,7 +82,7 @@ export default class Dropdown {
         this.elements.menu,
         {
           className: `${this.elements.menu.className} zero-height`,
-          duration: 0.1,
+          duration: 0.05,
         },
         'open'
       )
@@ -88,7 +90,7 @@ export default class Dropdown {
         this.elements.menu,
         {
           height: 'auto',
-          duration: 0.1,
+          duration: 0.05,
         },
         'open'
       )
@@ -126,13 +128,16 @@ export default class Dropdown {
           this.elements.menu.style.left = `${currentLeft - (menuRect.right - viewportWidth)}px`
         }
       })
-      .to(this.elements.menu, { opacity: 1 })
+      .to(this.elements.menu, {
+        opacity: 1,
+        duration: this.opts.menuOpenDuration,
+      })
 
     if (this.elements.menuItems.length) {
       this.timeline.from(
         this.elements.menuItems,
         this.opts.tweens.items,
-        'open+=.1'
+        `open+=${this.opts.menuOpenDuration}`
       )
     }
 
@@ -160,7 +165,11 @@ export default class Dropdown {
   async openMenu() {
     if (!this.opts.multipleActive) {
       if (this.app.currentMenu) {
-        this.app.currentMenu.closeMenu()
+        if (this.opts.overlapTweens) {
+          this.app.currentMenu.closeMenu()
+        } else {
+          await this.app.currentMenu.closeMenu()
+        }
       }
       this.app.currentMenu = this
     }

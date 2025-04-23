@@ -114,11 +114,14 @@ export default class Application {
     this.position = {
       top: 0,
       left: 0,
+      lastTop: 0,
+      lastLeft: 0,
     }
 
     this.state = {
       revealed: false,
       forcedScroll: false,
+      scrollDirection: null,
     }
 
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
@@ -668,10 +671,33 @@ export default class Application {
       return
     }
 
+    // Store previous position
+    this.position.lastTop = this.position.top
+    this.position.lastLeft = this.position.left
+
+    // Get current position
     this.position.top = window.pageYOffset
     this.position.left = window.pageXOffset
 
-    const evt = new CustomEvent(Events.APPLICATION_SCROLL, e)
+    // Determine scroll direction
+    if (this.position.top > this.position.lastTop) {
+      this.state.scrollDirection = 'down'
+    } else if (this.position.top < this.position.lastTop) {
+      this.state.scrollDirection = 'up'
+    } else if (this.position.left > this.position.lastLeft) {
+      this.state.scrollDirection = 'right'
+    } else if (this.position.left < this.position.lastLeft) {
+      this.state.scrollDirection = 'left'
+    }
+
+    // Create an enhanced event object with additional data
+    const detail = {
+      scrollDirection: this.state.scrollDirection,
+      position: this.position,
+      originalEvent: e
+    }
+    
+    const evt = new CustomEvent(Events.APPLICATION_SCROLL, { detail })
     window.dispatchEvent(evt)
   }
 

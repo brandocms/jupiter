@@ -21,6 +21,17 @@
   - Triggers, popups, and close buttons can now be properly associated
   - Each popup gets its own backdrop element
   - Improved trigger/closer targeting based on selectors
+- **FEATURE** Moonwalk: Add direction information to run callbacks
+  - Both `callback` and `onExit` functions now receive a third `meta` parameter with direction information
+  - For entry callbacks: `meta.direction` indicates which side the element entered the viewport from
+  - For exit callbacks: `meta.direction` indicates which side the element exited the viewport to
+  - Possible values are 'top', 'bottom', 'left', 'right', or null
+  - Direction detection uses Application's scroll direction for greater accuracy
+  - Added TypeScript definitions for the new `MoonwalkRunMeta` type
+- **FEATURE** Application: Add scroll direction tracking
+  - Application now tracks vertical and horizontal scroll direction
+  - Direction is stored in `app.state.scrollDirection` as 'up', 'down', 'left', or 'right'
+  - Enhanced APPLICATION_SCROLL event includes scrollDirection in event details
 
 
 #### 3.55.0

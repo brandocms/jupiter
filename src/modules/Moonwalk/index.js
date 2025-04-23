@@ -699,15 +699,56 @@ export default class Moonwalk {
    * @param {*} rootMargin
    */
   runObserver(run, rootMargin) {
+    // Store the previous positions of observed elements to compare for exit direction
+    const elementPositions = new WeakMap()
+
     return new IntersectionObserver(
       (entries, self) => {
         for (let i = 0; i < entries.length; i += 1) {
           const entry = entries[i]
+
+          // Store the element's current position in the viewport
+          const boundingRect = entry.boundingClientRect
+          const viewportHeight = window.innerHeight
+          const viewportWidth = window.innerWidth
+
           if (entry.isIntersecting && run.callback) {
+            // Calculate entry direction
+            let meta = { direction: null }
+            
+            // Use the app's scroll direction for reliable detection
+            // If scrollDirection is null, the element was likely revealed on initial load
+            if (this.app.state && this.app.state.scrollDirection) {
+              // Map scroll direction to viewport entry direction
+              switch (this.app.state.scrollDirection) {
+                case 'down':
+                  meta.direction = 'bottom' // When scrolling down, elements enter from bottom
+                  break
+                case 'up':
+                  meta.direction = 'top' // When scrolling up, elements enter from top
+                  break
+                case 'right':
+                  meta.direction = 'left' // When scrolling right, elements enter from left
+                  break
+                case 'left':
+                  meta.direction = 'right' // When scrolling left, elements enter from right
+                  break
+              }
+            }
+            // If no scroll direction is available, direction remains null
+            
+            // Store the element's position when it enters the viewport
+            elementPositions.set(entry.target, {
+              top: boundingRect.top,
+              bottom: boundingRect.bottom,
+              left: boundingRect.left,
+              right: boundingRect.right
+            })
+            
             const runRepeated = entry.target.hasAttribute(
               'data-moonwalk-run-triggered'
             )
-            run.callback(entry.target, runRepeated)
+            run.callback(entry.target, runRepeated, meta)
             entry.target.setAttribute('data-moonwalk-run-triggered', '')
             if (!run.onExit && !run.repeated) {
               self.unobserve(entry.target)
@@ -721,7 +762,42 @@ export default class Moonwalk {
                 'data-moonwalk-run-exit-triggered'
               )
               entry.target.setAttribute('data-moonwalk-run-exit-triggered', '')
-              run.onExit(entry.target, runExited)
+              
+              // Calculate exit direction
+              let meta = { direction: null }
+              
+              // Use the app's scroll direction for reliable detection
+              // For exit direction, it's the opposite of the entry direction for the same scroll
+              if (this.app.state && this.app.state.scrollDirection) {
+                // Map scroll direction to viewport exit direction
+                switch (this.app.state.scrollDirection) {
+                  case 'down':
+                    meta.direction = 'top' // When scrolling down, elements exit from top
+                    break
+                  case 'up':
+                    meta.direction = 'bottom' // When scrolling up, elements exit from bottom
+                    break
+                  case 'right':
+                    meta.direction = 'right' // When scrolling right, elements exit from right
+                    break
+                  case 'left':
+                    meta.direction = 'left' // When scrolling left, elements exit from left
+                    break
+                }
+              } else {
+                // If no scroll direction is available, use the simplest position-based check
+                if (boundingRect.bottom <= 0) {
+                  meta.direction = 'top'
+                } else if (boundingRect.top >= viewportHeight) {
+                  meta.direction = 'bottom'
+                } else if (boundingRect.right <= 0) {
+                  meta.direction = 'left'
+                } else if (boundingRect.left >= viewportWidth) {
+                  meta.direction = 'right'
+                }
+              }
+
+              run.onExit(entry.target, runExited, meta)
               if (!run.repeated) {
                 self.unobserve(entry.target)
               }
