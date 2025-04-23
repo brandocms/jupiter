@@ -1,4 +1,4 @@
-#### 4.0.0
+#### 4.0.0-beta.1
 
 - **BREAKING** Popup: Refactor to accept a specific CSS selector in constructor
   - Popups now require a custom selector to target specific popups

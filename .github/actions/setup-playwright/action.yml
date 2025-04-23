@@ -1,22 +1,24 @@
 # .github/actions/setup-playwright/action.yml
-
 name: "Setup Playwright"
 description: "Setup Playwright with caching, using yarn (should already be installed)"
+
 runs:
   using: "composite"
   steps:
     - name: Extract Playwright version
       id: playwright-version
       shell: bash
-      run: echo "PLAYWRIGHT_VERSION=$(jq -r '.devDependencies["@playwright/test"]' package.json)" >> $GITHUB_ENV
+      run: echo "PLAYWRIGHT_VERSION=$(jq -r '.devDependencies["@playwright/test"]' package.json)" >> "$GITHUB_ENV"
 
-    - name: Cache Playwright
+    - name: Cache Playwright browsers
       id: playwright-cache
       uses: actions/cache@v3
       with:
         path: ~/.cache/ms-playwright
-        key: playwright-${{ runner.os }}-${{ env.PLAYWRIGHT_VERSION }}
+        # Add the Playwright version *and* the browser-revision file to the key
+        key: playwright-${{ runner.os }}-${{ env.PLAYWRIGHT_VERSION }}-${{ hashFiles('**/node_modules/playwright-core/browsers.json') }}
 
-    - name: Install Playwright dependencies
+    # This is safe to run on every build; it’s a no-op when browsers are already there
+    - name: Ensure Playwright browsers are present
       shell: bash
-      run: yarn exec playwright install --with-deps --only-shell
+      run: npx playwright install --with-deps
