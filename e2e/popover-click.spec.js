@@ -8,19 +8,18 @@ test.describe('Jupiter Popover Module with Click Toggle', () => {
 
     // Wait for the page to load completely
     await page.waitForLoadState('networkidle')
-
-    // Initialize a popover with clickToggle enabled
+    
+    // Clear any existing popovers to start fresh
     await page.evaluate(() => {
-      // Get the click trigger element
-      const clickTrigger = document.querySelector('[data-testid="click-trigger"]')
-      
-      // Initialize the popover with clickToggle enabled
-      const popover = new window.Popover(window.app, clickTrigger, {
-        clickToggle: true
-      })
-      
-      // Add to app's popovers array for tracking
-      window.app.popovers.push(popover)
+      // The test page now automatically initializes the click popover,
+      // but we'll reset the popovers array to ensure a clean state
+      if (window.app.popovers) {
+        window.app.popovers.forEach(popover => {
+          if (popover.isVisible) {
+            popover.hide();
+          }
+        });
+      }
     })
   })
 
@@ -75,13 +74,22 @@ test.describe('Jupiter Popover Module with Click Toggle', () => {
   })
 
   test('should only show one popover at a time by default', async ({ page }) => {
-    // Initialize a second popover with clickToggle
+    // Make sure the basic-trigger is also using click toggle for this test
     await page.evaluate(() => {
-      // Get another trigger element
-      const secondTrigger = document.querySelector('[data-testid="basic-trigger"]')
+      // Find the existing popover for the basic trigger
+      const basicTrigger = document.querySelector('[data-testid="basic-trigger"]')
+      const existingPopover = window.app.popovers.find(p => p.trigger === basicTrigger)
       
-      // Initialize the popover with clickToggle enabled
-      const popover = new window.Popover(window.app, secondTrigger, {
+      // Remove it if it exists
+      if (existingPopover) {
+        const index = window.app.popovers.indexOf(existingPopover)
+        if (index !== -1) {
+          window.app.popovers.splice(index, 1)
+        }
+      }
+      
+      // Add a new one with clickToggle
+      const popover = new window.Popover(window.app, basicTrigger, {
         clickToggle: true
       })
       
@@ -117,19 +125,30 @@ test.describe('Jupiter Popover Module with Click Toggle', () => {
   })
 
   test('should allow multiple popovers when allowMultiple is true', async ({ page }) => {
-    // Initialize a second popover with clickToggle and allowMultiple
+    // Setup popovers for this test: one normal click popover, one with allowMultiple
     await page.evaluate(() => {
-      // Get another trigger element
-      const secondTrigger = document.querySelector('[data-testid="basic-trigger"]')
+      // First clear all existing popovers
+      window.app.popovers.forEach(popover => {
+        if (popover.isVisible) {
+          popover.hide();
+        }
+      });
+      window.app.popovers = [];
       
-      // Initialize the popover with clickToggle and allowMultiple enabled
-      const popover = new window.Popover(window.app, secondTrigger, {
+      // Create the click popover (first one)
+      const clickTrigger = document.querySelector('[data-testid="click-trigger"]')
+      const clickPopover = new window.Popover(window.app, clickTrigger, {
+        clickToggle: true
+      });
+      window.app.popovers.push(clickPopover);
+      
+      // Create the basic trigger with allowMultiple
+      const basicTrigger = document.querySelector('[data-testid="basic-trigger"]')
+      const basicPopover = new window.Popover(window.app, basicTrigger, {
         clickToggle: true,
         allowMultiple: true
-      })
-      
-      // Add to app's popovers array
-      window.app.popovers.push(popover)
+      });
+      window.app.popovers.push(basicPopover);
     })
 
     // Get both trigger elements

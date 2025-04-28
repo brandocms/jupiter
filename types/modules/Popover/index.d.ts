@@ -1,6 +1,8 @@
 export interface PopoverOptions {
     clickToggle?: boolean;
     allowMultiple?: boolean;
+    followTrigger?: boolean;
+    followSpeed?: number;
 }
 
 export default class Popover {
