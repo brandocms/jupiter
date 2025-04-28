@@ -2,7 +2,13 @@ import { gsap } from 'gsap/all'
 import Dom from '../Dom'
 import _defaultsDeep from 'lodash.defaultsdeep'
 
-const DEFAULT_OPTIONS = {}
+const DEFAULT_OPTIONS = {
+  clickToggle: false,
+  allowMultiple: false
+}
+
+// Static array to track active popovers
+const activePopovers = []
 
 export default class Popover {
   constructor(app, trigger, opts = {}) {
@@ -24,17 +30,37 @@ export default class Popover {
       position: 'fixed',
     })
 
+    // Add base popover class
     this.popover.classList.add(this.className)
+    
+    // Add any classes from the template element
+    if (popoverTemplate.classList && popoverTemplate.classList.length > 0) {
+      popoverTemplate.classList.forEach(className => {
+        if (className !== 'popover-template') {
+          this.popover.classList.add(className)
+        }
+      })
+    }
+    
+    // Bind document click handler
+    this.boundHandleDocumentClick = this.handleDocumentClick.bind(this)
 
     if (!app.featureTests.results.touch) {
-      this.trigger.addEventListener(
-        'mouseenter',
-        this.handleMouseEnter.bind(this)
-      )
-      this.trigger.addEventListener(
-        'mouseleave',
-        this.handleMouseLeave.bind(this)
-      )
+      if (this.opts.clickToggle) {
+        this.trigger.addEventListener(
+          'click',
+          this.handleClick.bind(this)
+        )
+      } else {
+        this.trigger.addEventListener(
+          'mouseenter',
+          this.handleMouseEnter.bind(this)
+        )
+        this.trigger.addEventListener(
+          'mouseleave',
+          this.handleMouseLeave.bind(this)
+        )
+      }
     } else {
       this.trigger.addEventListener(
         'touchstart',
@@ -55,12 +81,27 @@ export default class Popover {
     this.toggle()
   }
 
+  handleClick(e) {
+    e.stopPropagation()
+    this.toggle()
+  }
+
   get isVisible() {
     return document.body.contains(this.popover)
   }
 
   show() {
+    // Close other popovers if not allowing multiple
+    if (!this.opts.allowMultiple) {
+      this.closeAllExcept(this)
+    }
+
     document.body.appendChild(this.popover)
+    
+    // Add to active popovers list
+    if (!activePopovers.includes(this)) {
+      activePopovers.push(this)
+    }
 
     const { top: triggerTop, left: triggerLeft } =
       this.trigger.getBoundingClientRect()
@@ -115,10 +156,26 @@ export default class Popover {
       this.popover.style.left = positions.bottom.left
       this.popover.classList.add(`${this.className}--bottom`)
     }
+    
+    // Setup document click handler for click outside closing
+    if (this.opts.clickToggle) {
+      this.addDocumentClickHandler()
+    }
   }
 
   hide() {
     this.popover.remove()
+    
+    // Remove from active popovers
+    const index = activePopovers.indexOf(this)
+    if (index !== -1) {
+      activePopovers.splice(index, 1)
+    }
+    
+    // Remove document click handler
+    if (this.opts.clickToggle) {
+      this.removeDocumentClickHandler()
+    }
   }
 
   toggle() {
@@ -127,5 +184,36 @@ export default class Popover {
     } else {
       this.show()
     }
+  }
+  
+  // Add document click handler to close popover when clicking outside
+  addDocumentClickHandler() {
+    document.addEventListener('click', this.boundHandleDocumentClick)
+  }
+  
+  // Remove document click handler
+  removeDocumentClickHandler() {
+    document.removeEventListener('click', this.boundHandleDocumentClick)
+  }
+  
+  // Handle clicks on document to close popover when clicking outside
+  handleDocumentClick(e) {
+    // If click is outside the popover and the trigger, close it
+    if (
+      this.isVisible && 
+      !this.popover.contains(e.target) && 
+      !this.trigger.contains(e.target)
+    ) {
+      this.hide()
+    }
+  }
+  
+  // Close all popovers except the specified one
+  closeAllExcept(exceptPopover) {
+    activePopovers.forEach(popover => {
+      if (popover !== exceptPopover) {
+        popover.hide()
+      }
+    })
   }
 }

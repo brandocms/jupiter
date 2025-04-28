@@ -1,5 +1,10 @@
+export interface PopoverOptions {
+    clickToggle?: boolean;
+    allowMultiple?: boolean;
+}
+
 export default class Popover {
-    constructor(app: any, trigger: any, opts?: {});
+    constructor(app: any, trigger: any, opts?: Partial<PopoverOptions>);
     app: any;
     opts: any;
     trigger: any;
@@ -7,11 +12,17 @@ export default class Popover {
     className: string;
     orderedPositions: string[];
     popover: HTMLDivElement;
+    boundHandleDocumentClick: (e: Event) => void;
     handleMouseEnter(e: any): void;
     handleMouseLeave(e: any): void;
     handleTouchStart(e: any): void;
+    handleClick(e: any): void;
+    handleDocumentClick(e: Event): void;
     get isVisible(): boolean;
     show(): void;
     hide(): void;
     toggle(): void;
+    addDocumentClickHandler(): void;
+    removeDocumentClickHandler(): void;
+    closeAllExcept(exceptPopover: Popover): void;
 }
