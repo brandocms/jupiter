@@ -210,6 +210,52 @@
       </template>
     </section>
 
+    <section id="click-popovers" class="position-section">
+      <h2>Click Popovers</h2>
+      <p>These popovers are triggered by clicks instead of hover.</p>
+      <div class="trigger-container">
+        <div
+          class="popover-trigger"
+          data-popover-target="click-info"
+          data-popover-position="bottom"
+          data-testid="click-trigger"
+        >
+          Click for Info
+        </div>
+      </div>
+
+      <template
+        class="popover-template custom-popover-class"
+        data-popover-template="click-info"
+      >
+        <div data-testid="click-popover-content">
+          <h3>Click Popover</h3>
+          <p>This popover appears when you click the trigger element.</p>
+          <p>
+            Click outside to close it, or click the trigger again to toggle.
+          </p>
+        </div>
+      </template>
+
+      <div
+        class="popover-trigger"
+        data-popover-target="follow-info"
+        data-popover-position="top"
+        data-testid="follow-trigger"
+        style="margin-top: 20px"
+      >
+        Following Popover
+      </div>
+
+      <template class="popover-template" data-popover-template="follow-info">
+        <div data-testid="follow-popover-content">
+          <h3>Following Popover</h3>
+          <p>This popover follows its trigger when scrolling the page.</p>
+          <p>Try scrolling up and down to see it in action.</p>
+        </div>
+      </template>
+    </section>
+
     <script type="module">
       import { Application, Popover } from "../src/index.js";
 
@@ -242,7 +288,23 @@
 
         // Initialize a Popover for each trigger
         popoverTriggers.forEach((trigger) => {
-          app.popovers.push(new Popover(app, trigger));
+          // Use special options for the follow trigger
+          if (trigger.dataset.testid === "follow-trigger") {
+            app.popovers.push(
+              new Popover(app, trigger, {
+                followTrigger: true,
+                clickToggle: true,
+              }),
+            );
+          } else if (trigger.dataset.testid === "click-trigger") {
+            app.popovers.push(
+              new Popover(app, trigger, {
+                clickToggle: true,
+              }),
+            );
+          } else {
+            app.popovers.push(new Popover(app, trigger));
+          }
         });
       });
     </script>

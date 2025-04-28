@@ -12,15 +12,15 @@ module.exports = defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL: 'http://localhost:8448',
     trace: 'on-first-retry',
-    screenshot: 'only-on-failure'
+    screenshot: 'only-on-failure',
   },
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] }
-    }
+      use: { ...devices['Desktop Chrome'] },
+    },
     // Temporarily commenting out other browsers for faster testing
     /*
     {
@@ -44,8 +44,8 @@ module.exports = defineConfig({
   // Use Vite as the webserver for testing
   webServer: {
     command: 'yarn vite',
-    url: 'http://localhost:3000',
+    url: 'http://localhost:8448',
     reuseExistingServer: !process.env.CI,
-    timeout: 120000 // Allow up to 2 minutes for the server to start
-  }
+    timeout: 120000, // Allow up to 2 minutes for the server to start
+  },
 })

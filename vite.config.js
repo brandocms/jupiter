@@ -16,7 +16,7 @@ export default defineConfig({
 
   // Configure server options
   server: {
-    port: 3000,
+    port: 8448,
     open: false, // Don't open browser automatically
     cors: true,
   },

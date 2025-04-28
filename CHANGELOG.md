@@ -32,6 +32,14 @@
   - Application now tracks vertical and horizontal scroll direction
   - Direction is stored in `app.state.scrollDirection` as 'up', 'down', 'left', or 'right'
   - Enhanced APPLICATION_SCROLL event includes scrollDirection in event details
+- **FEATURE** Popover: Add click toggle functionality
+  - New option `clickToggle: false` enables click-based popover interaction instead of hover
+  - Click outside popover closes it automatically
+  - New option `allowMultiple: false` controls whether multiple popovers can be open at once
+  - New option `followTrigger: false` makes popovers follow their triggers during scroll
+  - New option `followSpeed: 0.3` controls the animation speed when following triggers
+  - Improved handling of popover stacking and management
+  - Popovers now inherit custom classes from their template elements
 
 
 #### 3.55.0
