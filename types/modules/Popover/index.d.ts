@@ -3,6 +3,7 @@ export interface PopoverOptions {
     allowMultiple?: boolean;
     followTrigger?: boolean;
     followSpeed?: number;
+    onShow?: (popover: Popover) => void;
 }
 
 export default class Popover {
