@@ -37,6 +37,7 @@ const DEFAULT_OPTIONS = {
   minSize: 40,
   updateSizes: true,
   registerCallback: true,
+  target: null,
 }
 
 /**
@@ -51,6 +52,7 @@ export default class Lazyload {
   constructor(app, opts = {}) {
     this.app = app
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
+    this.target = this.opts.target || document.body
     this.initialize()
 
     if (this.opts.registerCallback) {
@@ -80,13 +82,13 @@ export default class Lazyload {
       'loading' in HTMLImageElement.prototype &&
       this.opts.useNativeLazyloadIfAvailable
     ) {
-      const lazyImages = document.querySelectorAll('[data-ll-image]')
+      const lazyImages = this.target.querySelectorAll('[data-ll-image]')
       lazyImages.forEach((img) => {
         img.setAttribute('loading', 'lazy')
         this.swapImage(img)
       })
 
-      const lazyPictures = document.querySelectorAll('[data-ll-srcset]')
+      const lazyPictures = this.target.querySelectorAll('[data-ll-srcset]')
       lazyPictures.forEach((picture) => {
         picture
           .querySelectorAll('img')
@@ -97,7 +99,7 @@ export default class Lazyload {
       return
     }
 
-    this.lazyPictures = document.querySelectorAll('[data-ll-srcset]')
+    this.lazyPictures = this.target.querySelectorAll('[data-ll-srcset]')
 
     this.loadObserver = new IntersectionObserver(
       this.handleLoadEntries.bind(this),
@@ -117,7 +119,7 @@ export default class Lazyload {
       this.opts.intersectionObserverConfig
     )
 
-    this.lazyImages = document.querySelectorAll('[data-ll-image]')
+    this.lazyImages = this.target.querySelectorAll('[data-ll-image]')
     this.lazyImages.forEach((img, idx) => {
       img.setAttribute('data-ll-blurred', '')
       img.setAttribute('data-ll-idx', idx)

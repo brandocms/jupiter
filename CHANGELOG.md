@@ -38,6 +38,7 @@
   - New option `allowMultiple: false` controls whether multiple popovers can be open at once
   - New option `followTrigger: false` makes popovers follow their triggers during scroll
   - New option `followSpeed: 0.3` controls the animation speed when following triggers
+  - New option `onShow: callback` provides hook for custom actions when popover is shown
   - Improved handling of popover stacking and management
   - Popovers now inherit custom classes from their template elements
 

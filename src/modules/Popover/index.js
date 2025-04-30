@@ -8,6 +8,7 @@ const DEFAULT_OPTIONS = {
   allowMultiple: false,
   followTrigger: false,
   followSpeed: 0.3,
+  onShow: null,
 }
 
 // Static array to track active popovers
@@ -120,6 +121,13 @@ export default class Popover {
         this.addScrollListener()
       })
     }
+
+    // Call onShow callback if provided
+    if (typeof this.opts.onShow === 'function') {
+      requestAnimationFrame(() => {
+        this.opts.onShow(this)
+      })
+    }
   }
 
   // Update popover position based on trigger position
@@ -179,14 +187,14 @@ export default class Popover {
     if (position) {
       if (animate && this.isVisible) {
         gsap.to(this.popover, {
-          top: position.top,
-          left: position.left,
+          top: Math.max(0, position.top),
+          left: Math.max(0, position.left),
           duration: this.opts.followSpeed,
           ease: 'power2.out',
         })
       } else if (!animate) {
-        this.popover.style.top = `${position.top}px`
-        this.popover.style.left = `${position.left}px`
+        this.popover.style.top = `${Math.max(0, position.top)}px`
+        this.popover.style.left = `${Math.max(0, position.left)}px`
       }
       this.popover.classList.add(`${this.className}--${position.name}`)
       this.currentPosition = position.name
@@ -194,14 +202,14 @@ export default class Popover {
       // Fallback to bottom if no position works
       if (animate && this.isVisible) {
         gsap.to(this.popover, {
-          top: positions.bottom.top,
-          left: positions.bottom.left,
+          top: Math.max(0, positions.bottom.top),
+          left: Math.max(0, positions.bottom.left),
           duration: this.opts.followSpeed,
           ease: 'power2.out',
         })
       } else if (!animate) {
-        this.popover.style.top = `${positions.bottom.top}px`
-        this.popover.style.left = `${positions.bottom.left}px`
+        this.popover.style.top = `${Math.max(0, positions.bottom.top)}px`
+        this.popover.style.left = `${Math.max(0, positions.bottom.left)}px`
       }
       this.popover.classList.add(`${this.className}--bottom`)
       this.currentPosition = 'bottom'
