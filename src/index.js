@@ -3,7 +3,15 @@
  * @module jupiter
  */
 
-import { CSSPlugin, Draggable, ScrollToPlugin, ScrollTrigger, gsap } from 'gsap/all'
+import {
+  CSSPlugin,
+  Draggable,
+  ScrollToPlugin,
+  ScrollTrigger,
+  SplitText,
+  InertiaPlugin,
+  gsap,
+} from 'gsap/all'
 
 import Hammer from '@egjs/hammerjs'
 import _defaultsDeep from 'lodash.defaultsdeep'
@@ -84,9 +92,11 @@ export {
 
   // Export some of the libs we use,
   // that can also be used in the main frontend.
+  Hammer,
   gsap,
   CSSPlugin,
   ScrollToPlugin,
   ScrollTrigger,
-  Hammer
+  SplitText,
+  InertiaPlugin,
 }

@@ -1,3 +1,8 @@
+#### 4.0.0-beta.2
+
+- Update gsap - export InertiaPlugin, SplitText <3
+
+
 #### 4.0.0-beta.1
 
 - **BREAKING** Popup: Refactor to accept a specific CSS selector in constructor
