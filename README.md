@@ -277,6 +277,33 @@ HTML
 </div>
 ```
 
+#### Group Functionality
+
+You can group togglers together to create an accordion-like behavior where only one toggler in the group can be open at a time. When you open one toggler, all others in the same group will close automatically.
+
+```html
+<div data-toggle data-toggle-group="phases">
+  <button data-toggle-trigger="phase1">Phase 1 <span class="arrow icon">&darr;</span></button>
+  <div class="panel" data-toggle-content="phase1">
+    Phase 1 content
+  </div>
+</div>
+
+<div data-toggle data-toggle-group="phases">
+  <button data-toggle-trigger="phase2">Phase 2 <span class="arrow icon">&darr;</span></button>
+  <div class="panel" data-toggle-content="phase2">
+    Phase 2 content
+  </div>
+</div>
+
+<div data-toggle data-toggle-group="phases">
+  <button data-toggle-trigger="phase3">Phase 3 <span class="arrow icon">&darr;</span></button>
+  <div class="panel" data-toggle-content="phase3">
+    Phase 3 content
+  </div>
+</div>
+```
+
 CSS
 ```css
 [data-toggle-trigger] {
@@ -288,6 +315,14 @@ CSS
       transform: scaleY(-1);
     }
   }
+}
+
+/* Style active trigger elements */
+[data-toggle-trigger][data-toggle-trigger-active] {
+  background-color: #e8f4ff;
+  border-color: #4a90e2;
+  color: #0056b3;
+  font-weight: bold;
 }
 
 [data-toggle-content] {

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jupiter Toggler Group Test</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+        line-height: 1.6;
+        color: #333;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      header {
+        margin-bottom: 30px;
+      }
+
+      h1 {
+        margin-bottom: 10px;
+      }
+
+      .toggle-section {
+        margin-bottom: 40px;
+        border: 1px solid #eee;
+        padding: 20px;
+        border-radius: 5px;
+      }
+
+      [data-toggle-trigger] {
+        background: #f5f5f5;
+        border: 1px solid #ddd;
+        padding: 10px 15px;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        text-align: left;
+        border-radius: 4px;
+        margin-bottom: 10px;
+        transition: background-color 0.3s ease, border-color 0.3s ease;
+      }
+
+      [data-toggle-trigger][data-toggle-trigger-active] {
+        background-color: #e8f4ff;
+        border-color: #4a90e2;
+        color: #0056b3;
+        font-weight: bold;
+      }
+
+      [data-toggle-trigger] .icon {
+        display: inline-block;
+        transform: scaleY(1);
+        transition: transform 250ms ease;
+      }
+
+      [data-toggle-trigger] .icon.active {
+        transform: scaleY(-1);
+      }
+
+      [data-toggle-content] {
+        height: 0;
+        overflow: hidden;
+        opacity: 1;
+        position: relative;
+        background: #f9f9f9;
+        padding: 0 15px;
+        border-radius: 4px;
+        border: 1px solid transparent;
+      }
+
+      [data-toggle-content][data-toggle-visible] {
+        border-color: #eee;
+      }
+
+      .accordion-item {
+        margin-bottom: 10px;
+      }
+
+      .accordion-header {
+        font-weight: bold;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .accordion-content {
+        padding: 0 15px;
+      }
+
+      .phases-section {
+        background-color: #f0f8ff;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+      }
+
+      .phase-item {
+        background-color: white;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      }
+
+      .phase-header {
+        padding: 15px;
+        font-weight: bold;
+        border-bottom: 1px solid #eee;
+      }
+
+      .phase-content {
+        padding: 0 15px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <h1>Jupiter Toggler Group Test</h1>
+      <p>Testing the Toggler module with group functionality</p>
+    </header>
+
+    <!-- Basic Toggle Group -->
+    <section class="toggle-section">
+      <h2>Toggle Group Example - Phases</h2>
+      <p>Only one phase can be open at a time</p>
+
+      <div class="phases-section">
+        <div data-toggle data-toggle-group="phases" class="phase-item">
+          <div class="phase-header" data-toggle-trigger="phase-1">
+            Phase 1: Discovery <span class="icon">&darr;</span>
+          </div>
+          <div class="phase-content" data-toggle-content="phase-1">
+            <p>This is the discovery phase content.</p>
+            <p>When you open another phase, this one will automatically close.</p>
+          </div>
+        </div>
+
+        <div data-toggle data-toggle-group="phases" class="phase-item">
+          <div class="phase-header" data-toggle-trigger="phase-2">
+            Phase 2: Planning <span class="icon">&darr;</span>
+          </div>
+          <div class="phase-content" data-toggle-content="phase-2">
+            <p>This is the planning phase content.</p>
+            <p>Only one phase can be open at a time in this group.</p>
+          </div>
+        </div>
+
+        <div data-toggle data-toggle-group="phases" class="phase-item">
+          <div class="phase-header" data-toggle-trigger="phase-3">
+            Phase 3: Implementation <span class="icon">&darr;</span>
+          </div>
+          <div class="phase-content" data-toggle-content="phase-3">
+            <p>This is the implementation phase content.</p>
+            <p>The group functionality ensures accordion-like behavior.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Multiple Toggle Groups -->
+    <section class="toggle-section">
+      <h2>Multiple Toggle Groups</h2>
+      <p>Different groups operate independently</p>
+
+      <div class="phases-section">
+        <h3>Group A</h3>
+        <div data-toggle data-toggle-group="group-a" class="phase-item">
+          <div class="phase-header" data-toggle-trigger="group-a-1">
+            Item A1 <span class="icon">&darr;</span>
+          </div>
+          <div class="phase-content" data-toggle-content="group-a-1">
+            <p>Content for Item A1.</p>
+            <p>This belongs to Group A.</p>
+          </div>
+        </div>
+
+        <div data-toggle data-toggle-group="group-a" class="phase-item">
+          <div class="phase-header" data-toggle-trigger="group-a-2">
+            Item A2 <span class="icon">&darr;</span>
+          </div>
+          <div class="phase-content" data-toggle-content="group-a-2">
+            <p>Content for Item A2.</p>
+            <p>This also belongs to Group A.</p>
+          </div>
+        </div>
+
+        <h3>Group B</h3>
+        <div data-toggle data-toggle-group="group-b" class="phase-item">
+          <div class="phase-header" data-toggle-trigger="group-b-1">
+            Item B1 <span class="icon">&darr;</span>
+          </div>
+          <div class="phase-content" data-toggle-content="group-b-1">
+            <p>Content for Item B1.</p>
+            <p>This belongs to Group B.</p>
+          </div>
+        </div>
+
+        <div data-toggle data-toggle-group="group-b" class="phase-item">
+          <div class="phase-header" data-toggle-trigger="group-b-2">
+            Item B2 <span class="icon">&darr;</span>
+          </div>
+          <div class="phase-content" data-toggle-content="group-b-2">
+            <p>Content for Item B2.</p>
+            <p>This also belongs to Group B.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Regular Toggle (No Group) -->
+    <section class="toggle-section">
+      <h2>Regular Toggle (No Group)</h2>
+      <p>This toggle doesn't belong to any group</p>
+
+      <div data-toggle class="phase-item">
+        <div class="phase-header" data-toggle-trigger="no-group">
+          Independent Toggle <span class="icon">&darr;</span>
+        </div>
+        <div class="phase-content" data-toggle-content="no-group">
+          <p>This toggle doesn't belong to any group.</p>
+          <p>It operates independently of the grouped togglers.</p>
+        </div>
+      </div>
+    </section>
+
+    <script type="module">
+      import { Application, Toggler, Events, Dom } from "../src/index.js";
+
+      document.addEventListener("DOMContentLoaded", () => {
+        // Initialize Application
+        const app = new Application({
+          respectReducedMotion: false,
+          breakpointConfig: {
+            breakpoints: [
+              "iphone",
+              "mobile",
+              "ipad_portrait",
+              "ipad_landscape",
+              "desktop_md",
+              "desktop_lg",
+              "desktop_xl",
+            ],
+          },
+        });
+
+        // Initialize togglers
+        app.togglers = [];
+
+        const togglers = Dom.all("[data-toggle]");
+        togglers.forEach((toggleEl) => {
+          app.togglers.push(new Toggler(app, toggleEl));
+        });
+
+        // Start the application
+        app.initialize();
+      });
+    </script>
+  </body>
+</html> 

@@ -29,17 +29,16 @@ export default defineConfig({
     lib: {
       entry: resolve(__dirname, 'src/index.js'),
       name: 'Jupiter',
-      fileName: (format) => `jupiter.${format}.js`,
+      fileName: format => `jupiter.${format}.js`,
     },
     // Roll-up specific options
     rollupOptions: {
       // Make sure external dependencies aren't bundled
-      external: ['gsap', 'lodash.defaultsdeep'],
+      external: ['gsap'],
       output: {
         // Global variable name to use in UMD builds
         globals: {
           gsap: 'gsap',
-          'lodash.defaultsdeep': '_defaultsDeep',
         },
       },
     },

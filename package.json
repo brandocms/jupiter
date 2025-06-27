@@ -44,7 +44,8 @@
     "@egjs/hammerjs": "^2.0.17",
     "body-scroll-lock": "^4.0.0-beta.0",
     "gsap": "^3.13.0",
-    "lodash.defaultsdeep": "^4.6.1"
+    "lodash.defaultsdeep": "^4.6.1",
+    "virtual-scroll": "^2.2.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.52.0",
