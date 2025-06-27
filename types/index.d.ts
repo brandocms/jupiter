@@ -24,7 +24,7 @@ import Popup from './modules/Popup';
 import ScrollSpy from './modules/ScrollSpy';
 import StackedBoxes from './modules/StackedBoxes';
 import StickyHeader from './modules/StickyHeader';
-import Toggler from './modules/Toggler';
+import Toggler, { TogglerOptions } from './modules/Toggler';
 import Typography from './modules/Typography';
 import imageIsLoaded from './utils/imageIsLoaded';
 import imagesAreLoaded from './utils/imagesAreLoaded';
@@ -32,4 +32,51 @@ import loadScript from './utils/loadScript';
 import prefersReducedMotion from './utils/prefersReducedMotion';
 import rafCallback from './utils/rafCallback';
 import Hammer from '@egjs/hammerjs';
-export { Application, Breakpoints, Cookies, CoverOverlay, Dataloader, Dom, Draggable, Dropdown, EqualHeightElements, EqualHeightImages, Events, FixedHeader, FooterReveal, Parallax, HeroSlider, HeroVideo, Lazyload, Lightbox, Links, Marquee, MobileMenu, Moonwalk, Popover, Popup, ScrollSpy, StackedBoxes, StickyHeader, Toggler, Typography, imageIsLoaded, imagesAreLoaded, loadScript, prefersReducedMotion, rafCallback, _defaultsDeep, gsap, CSSPlugin, ScrollToPlugin, ScrollTrigger, Hammer };
+import { gsap, CSSPlugin, Draggable, ScrollToPlugin, ScrollTrigger, SplitText, InertiaPlugin } from 'gsap/all';
+import _defaultsDeep from 'lodash.defaultsdeep';
+
+export { 
+  Application, 
+  Breakpoints, 
+  Cookies, 
+  CoverOverlay, 
+  Dataloader, 
+  Dom, 
+  Draggable, 
+  Dropdown, 
+  EqualHeightElements, 
+  EqualHeightImages, 
+  Events, 
+  FixedHeader, 
+  FooterReveal, 
+  Parallax, 
+  HeroSlider, 
+  HeroVideo, 
+  Lazyload, 
+  Lightbox, 
+  Links, 
+  Marquee, 
+  MobileMenu, 
+  Moonwalk, 
+  Popover, 
+  Popup, 
+  ScrollSpy, 
+  StackedBoxes, 
+  StickyHeader, 
+  Toggler, 
+  TogglerOptions, 
+  Typography, 
+  imageIsLoaded, 
+  imagesAreLoaded, 
+  loadScript, 
+  prefersReducedMotion, 
+  rafCallback, 
+  _defaultsDeep, 
+  gsap, 
+  CSSPlugin, 
+  ScrollToPlugin, 
+  ScrollTrigger, 
+  SplitText, 
+  InertiaPlugin, 
+  Hammer 
+};
