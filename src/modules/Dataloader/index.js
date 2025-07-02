@@ -36,6 +36,10 @@ import _defaultsDeep from 'lodash.defaultsdeep'
  * <div data-loader="/api/posts" data-loader-id="news" data-loader-canvas-target="#news-canvas">
  *
  * <div data-loader-canvas id="#news-canvas">
+ *
+ * And if the "more" button is outside the loader element, use data-loader-more-for:
+ *
+ * <button data-loader-more-for="news">Load more</button>
  */
 
 const DEFAULT_OPTIONS = {
@@ -109,6 +113,11 @@ export default class Dataloader {
     })
 
     this.$moreBtn = Dom.find(this.$el, '[data-loader-more]')
+
+    if (!this.$moreBtn && this.$el.dataset.loaderId) {
+      this.id = this.$el.dataset.loaderId
+      this.$moreBtn = Dom.find(`[data-loader-more-for="${this.id}"]`)
+    }
 
     if (this.$moreBtn) {
       this.$moreBtn.addEventListener('click', this.onMore.bind(this))
