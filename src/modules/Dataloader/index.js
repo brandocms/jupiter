@@ -42,7 +42,7 @@ const DEFAULT_OPTIONS = {
   page: 0,
   loaderParam: {},
   filter: '',
-  onFetch: (dataloader) => {
+  onFetch: dataloader => {
     /**
      * Called after fetch complete. Do your DOM manipulation here
      *
@@ -66,17 +66,20 @@ export default class Dataloader {
     } else {
       this.$canvasEl = Dom.find($el, '[data-loader-canvas]')
     }
+    if (!this.$canvasEl) {
+      throw new Error('No canvas element found.')
+    }
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
     this.initialize()
   }
 
   static replaceInnerHTML(el, url) {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       fetch(url)
-        .then((res) => {
+        .then(res => {
           return res.text()
         })
-        .then((html) => {
+        .then(html => {
           el.innerHTML = html
           return resolve(el)
         })
@@ -101,7 +104,7 @@ export default class Dataloader {
     this.baseURL = this.$el.dataset.loader
     this.$paramEls = Dom.all(this.$el, '[data-loader-param]')
 
-    this.$paramEls.forEach(($paramEl) => {
+    this.$paramEls.forEach($paramEl => {
       $paramEl.addEventListener('click', this.onParam.bind(this))
     })
 
@@ -119,10 +122,7 @@ export default class Dataloader {
     }
 
     if (this.$filterInput) {
-      this.$filterInput.addEventListener(
-        'input',
-        this.debounce(this.onFilterInput.bind(this))
-      )
+      this.$filterInput.addEventListener('input', this.debounce(this.onFilterInput.bind(this)))
     }
   }
 
@@ -159,11 +159,9 @@ export default class Dataloader {
         // if already selected, clear it
         const key = e.currentTarget.dataset.loaderParamKey || 'defaultParam'
         if (multiVals) {
-          this.opts.loaderParam[key] = this.opts.loaderParam[key].filter(
-            (val) => {
-              return val !== e.currentTarget.dataset.loaderParam
-            }
-          )
+          this.opts.loaderParam[key] = this.opts.loaderParam[key].filter(val => {
+            return val !== e.currentTarget.dataset.loaderParam
+          })
         } else {
           delete this.opts.loaderParam[key]
         }
@@ -178,7 +176,7 @@ export default class Dataloader {
           e.currentTarget.setAttribute('data-loader-param-selected', '')
         } else {
           const paramKey = e.currentTarget.dataset.loaderParamKey
-          this.$paramEls.forEach(($paramEl) => {
+          this.$paramEls.forEach($paramEl => {
             if (paramKey) {
               if ($paramEl.dataset.loaderParamKey === paramKey) {
                 $paramEl.removeAttribute('data-loader-param-selected')
@@ -205,12 +203,12 @@ export default class Dataloader {
       `${this.baseURL}/${defaultParam ? defaultParam + '/' : ''}${this.opts.page}?` +
         new URLSearchParams({ filter, ...otherParams })
     )
-      .then((res) => {
+      .then(res => {
         this.status = res.headers.get('jpt-dataloader') || 'available'
         this.updateButton()
         return res.text()
       })
-      .then((html) => {
+      .then(html => {
         if (addEntries) {
           this.$canvasEl.innerHTML += html
         } else {
