@@ -33,12 +33,15 @@ import _defaultsDeep from 'lodash.defaultsdeep'
  *
  * You can also set a target for the canvas if the category selector and canvas are in different modules:
  *
+ * Option 1 (legacy): Using data-loader-canvas-target
  * <div data-loader="/api/posts" data-loader-id="news" data-loader-canvas-target="#news-canvas">
+ * <div data-loader-canvas id="news-canvas">
  *
- * <div data-loader-canvas id="#news-canvas">
+ * Option 2 (recommended): Using data-loader-canvas-for
+ * <div data-loader="/api/posts" data-loader-id="news">
+ * <div data-loader-canvas data-loader-canvas-for="news">
  *
  * And if the "more" button is outside the loader element, use data-loader-more-for:
- *
  * <button data-loader-more-for="news">Load more</button>
  */
 
@@ -70,6 +73,13 @@ export default class Dataloader {
     } else {
       this.$canvasEl = Dom.find($el, '[data-loader-canvas]')
     }
+    
+    // Support new pattern: data-loader-canvas-for
+    if (!this.$canvasEl && $el.dataset.loaderId) {
+      this.id = $el.dataset.loaderId
+      this.$canvasEl = Dom.find(`[data-loader-canvas-for="${this.id}"]`)
+    }
+    
     if (!this.$canvasEl) {
       throw new Error('No canvas element found.')
     }
