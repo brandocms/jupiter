@@ -348,6 +348,136 @@ togglers.forEach(toggleEl => {
 #### Options
 
 
+## Dataloader
+
+A component for dynamically loading and filtering content via AJAX with optional URL synchronization.
+
+### Basic Usage
+
+HTML:
+```html
+<div data-loader="/api/articles" data-loader-id="articles">
+  <div class="filters">
+    <a href="#" data-loader-param="all" data-loader-param-selected>All</a>
+    <a href="#" data-loader-param="tech" data-loader-param-key="category">Technology</a>
+    <a href="#" data-loader-param="design" data-loader-param-key="category">Design</a>
+  </div>
+  
+  <div data-loader-canvas>
+    <!-- Content will be loaded here -->
+  </div>
+  
+  <button data-loader-more>Load More</button>
+</div>
+```
+
+JavaScript:
+```js
+import { Dataloader } from '@brandocms/jupiter'
+
+const dataloader = new Dataloader(app, $loaderEl, {
+  onFetch: (dataloader) => {
+    // Initialize components after content loads
+    const mw = new Moonwalk(app, {}, dataloader.$canvasEl)
+    new Lazyload(app, {}, dataloader.$canvasEl)
+    mw.ready()
+  }
+})
+```
+
+### URL Synchronization
+
+Enable bidirectional sync between dataloader parameters and browser URL:
+
+```js
+// Configure URL patterns for different dataloaders
+const urlConfigs = {
+  events: {
+    templates: {
+      en: '/events/:location/:type',
+      no: '/arrangementer/:location/:type'
+    },
+    updateOnInit: false // Don't update URL on initialization
+  },
+  news: {
+    templates: {
+      en: '/news/:category/:year',
+      no: '/nyheter/:category/:year'
+    }
+  }
+}
+
+// Initialize all dataloaders with URL sync
+app.dataloaders = []
+Dom.all('[data-loader]').forEach($dl => {
+  app.dataloaders.push(
+    new Dataloader(app, $dl, {
+      urlSync: urlConfigs,
+      onFetch: (dataloader) => {
+        // Your onFetch logic
+      }
+    })
+  )
+})
+```
+
+### Split Layout
+
+Components can be placed outside the main dataloader element:
+
+```html
+<!-- Sidebar -->
+<div data-loader="/api/articles" data-loader-id="articles">
+  <a href="#" data-loader-param="tech" data-loader-param-key="category">Tech</a>
+</div>
+
+<!-- Main content area -->
+<div data-loader-canvas-for="articles">
+  <!-- Content loads here -->
+</div>
+
+<!-- Footer -->
+<button data-loader-more-for="articles">Load More</button>
+<input data-loader-filter-for="articles" placeholder="Search...">
+```
+
+### Options
+
+- `page` - `number` - Initial page number (default: 0)
+- `loaderParam` - `object` - Initial parameters
+- `filter` - `string` - Initial filter value
+- `onFetch` - `function` - Called after content is fetched
+- `urlSync` - `object` - URL synchronization configuration:
+  - `templates` - Language-specific URL templates with `:param` placeholders
+  - `updateOnInit` - `boolean` - Update URL on initialization (default: true)
+  - `languageInPath` - `boolean` - Include language in URL path
+  - `hideDefaultLanguage` - `boolean` - Hide default language from URL (default: true)
+  - `defaultLanguage` - `string` - Default language code (default: 'en')
+  - `buildUrl` - `function` - Custom URL building function
+  - `parseUrl` - `function` - Custom URL parsing function
+
+### Attributes
+
+- `data-loader="/api/endpoint"` - Main container with API endpoint
+- `data-loader-id="unique-id"` - Unique identifier for the dataloader
+- `data-loader-canvas` - Container where content will be loaded
+- `data-loader-canvas-for="id"` - Canvas for specific dataloader (split layout)
+- `data-loader-param="value"` - Parameter value to send to API
+- `data-loader-param-key="key"` - Parameter key (default: 'defaultParam')
+- `data-loader-param-multi` - Allow multiple selections for this parameter
+- `data-loader-param-selected` - Marks parameter as selected
+- `data-loader-more` - Load more button
+- `data-loader-more-for="id"` - Load more for specific dataloader (split layout)
+- `data-loader-filter` - Filter input field
+- `data-loader-filter-for="id"` - Filter for specific dataloader (split layout)
+- `data-loader-loading` - Added during loading
+- `data-loader-starved` - Added to load more button when no more content
+
+### API Response Headers
+
+- `jpt-dataloader: starved` - Set this header when there's no more content to load
+
+
 ## Links
 
 #### Options

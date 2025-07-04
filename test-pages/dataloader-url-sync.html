@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jupiter Dataloader URL Sync Test</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        line-height: 1.5;
+        padding: 2rem;
+        margin: 0;
+        max-width: 800px;
+      }
+
+      h1, h2 {
+        margin-bottom: 1rem;
+      }
+
+      .filter-container {
+        margin-bottom: 1.5rem;
+      }
+
+      input[type="text"] {
+        padding: 0.5rem;
+        width: 100%;
+        max-width: 300px;
+        font-size: 1rem;
+      }
+
+      .category-filter {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .category-filter a {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        background-color: #f0f0f0;
+        color: #333;
+        text-decoration: none;
+        border-radius: 4px;
+      }
+
+      .category-filter a[data-loader-param-selected] {
+        background-color: #0066cc;
+        color: white;
+      }
+
+      .article-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+      }
+
+      .article-card {
+        border: 1px solid #e0e0e0;
+        padding: 1.5rem;
+        border-radius: 8px;
+        background-color: white;
+      }
+
+      .article-card h3 {
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+        color: #333;
+      }
+
+      .article-card p {
+        margin: 0;
+        color: #666;
+      }
+
+      .load-more-container {
+        text-align: center;
+        margin-top: 2rem;
+      }
+
+      .load-more-btn {
+        padding: 0.75rem 1.5rem;
+        background-color: #0066cc;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 1rem;
+        cursor: pointer;
+      }
+
+      .load-more-btn:hover {
+        background-color: #0052a3;
+      }
+
+      .load-more-btn[data-loader-starved] {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+
+      [data-loader-loading] {
+        opacity: 0.6;
+      }
+
+      .debug-info {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 1rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        max-width: 300px;
+      }
+
+      .debug-info h4 {
+        margin: 0 0 0.5rem 0;
+      }
+
+      .debug-info pre {
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Jupiter Dataloader URL Sync Test</h1>
+    
+    <div class="debug-info" data-testid="debug-info">
+      <h4>Current URL:</h4>
+      <pre data-testid="current-url"></pre>
+      <h4>Current Params:</h4>
+      <pre data-testid="current-params"></pre>
+    </div>
+
+    <div class="filter-container">
+      <input
+        type="text"
+        placeholder="Search articles..."
+        data-loader-filter-for="articles"
+        data-testid="search-input"
+      />
+    </div>
+
+    <div data-loader="/api/articles" data-loader-id="articles" data-testid="dataloader">
+      <div class="category-filter">
+        <a href="#" data-loader-param="all" data-loader-param-key="category" data-loader-param-selected data-testid="filter-all">All</a>
+        <a href="#" data-loader-param="tech" data-loader-param-key="category" data-testid="filter-tech">Technology</a>
+        <a href="#" data-loader-param="design" data-loader-param-key="category" data-testid="filter-design">Design</a>
+        <a href="#" data-loader-param="business" data-loader-param-key="category" data-testid="filter-business">Business</a>
+      </div>
+
+      <div class="category-filter">
+        <a href="#" data-loader-param="oslo" data-loader-param-key="location" data-testid="filter-oslo">Oslo</a>
+        <a href="#" data-loader-param="bergen" data-loader-param-key="location" data-testid="filter-bergen">Bergen</a>
+        <a href="#" data-loader-param="trondheim" data-loader-param-key="location" data-testid="filter-trondheim">Trondheim</a>
+      </div>
+
+      <div class="article-grid" data-loader-canvas data-testid="article-grid">
+        <!-- Initial articles -->
+        <div class="article-card" data-testid="article-1">
+          <h3>Getting Started with Web Components</h3>
+          <p>Category: tech | Location: oslo</p>
+        </div>
+        <div class="article-card" data-testid="article-2">
+          <h3>Design Systems in 2024</h3>
+          <p>Category: design | Location: bergen</p>
+        </div>
+        <div class="article-card" data-testid="article-3">
+          <h3>Business Strategy for Startups</h3>
+          <p>Category: business | Location: oslo</p>
+        </div>
+        <div class="article-card" data-testid="article-4">
+          <h3>Advanced CSS Techniques</h3>
+          <p>Category: tech | Location: trondheim</p>
+        </div>
+        <div class="article-card" data-testid="article-5">
+          <h3>UX Research Methods</h3>
+          <p>Category: design | Location: oslo</p>
+        </div>
+        <div class="article-card" data-testid="article-6">
+          <h3>Remote Work Best Practices</h3>
+          <p>Category: business | Location: bergen</p>
+        </div>
+      </div>
+
+      <div class="load-more-container">
+        <button class="load-more-btn" data-loader-more data-testid="load-more">
+          Load More Articles
+        </button>
+      </div>
+    </div>
+
+    <script type="module">
+      import { Application, Dataloader } from "../src/index.js";
+
+        // Mock API responses
+      const mockArticles = {
+        all: [
+          { id: 1, title: 'Getting Started with Web Components', category: 'tech', location: 'oslo' },
+          { id: 2, title: 'Design Systems in 2024', category: 'design', location: 'bergen' },
+          { id: 3, title: 'Business Strategy for Startups', category: 'business', location: 'oslo' },
+          { id: 4, title: 'Advanced CSS Techniques', category: 'tech', location: 'trondheim' },
+          { id: 5, title: 'UX Research Methods', category: 'design', location: 'oslo' },
+          { id: 6, title: 'Remote Work Best Practices', category: 'business', location: 'bergen' }
+        ]
+      }
+
+      // Mock fetch for API calls
+      const originalFetch = window.fetch
+      window.fetch = async (url, options) => {
+        
+        if (url.includes('/api/articles')) {
+          const urlObj = new URL(url, window.location.origin)
+          
+          // Parse path parameters (e.g., /api/articles/tech/0)
+          const pathParts = urlObj.pathname.split('/').filter(p => p)
+          let category = 'all'
+          let location = null
+          
+          // Extract category and location from path
+          if (pathParts.length > 2) {
+            const potentialCategory = pathParts[2]
+            // Check if it's a page number (numeric) vs category name
+            if (!isNaN(parseInt(potentialCategory))) {
+              // It's a page number, keep category as 'all'
+              category = 'all'
+            } else {
+              category = potentialCategory
+              if (pathParts.length > 3 && !isNaN(parseInt(pathParts[3]))) {
+                // pathParts[3] is page number, no location
+              } else if (pathParts.length > 3) {
+                location = pathParts[3] // location parameter
+              }
+            }
+          }
+          
+          // Also check query parameters
+          const categoryQuery = urlObj.searchParams.get('category')
+          const locationQuery = urlObj.searchParams.get('location')
+          const filter = urlObj.searchParams.get('filter') || ''
+          
+          if (categoryQuery) category = categoryQuery
+          if (locationQuery) location = locationQuery
+          
+          let articles = mockArticles.all
+          
+          // Filter by category
+          if (category !== 'all') {
+            articles = articles.filter(article => article.category === category)
+          }
+          
+          // Filter by location
+          if (location) {
+            articles = articles.filter(article => article.location === location)
+          }
+          
+          // Filter by search term
+          if (filter) {
+            articles = articles.filter(article => 
+              article.title.toLowerCase().includes(filter.toLowerCase())
+            )
+          }
+          
+          
+          const html = articles.map(article => `
+            <div class="article-card" data-testid="article-${article.id}">
+              <h3>${article.title}</h3>
+              <p>Category: ${article.category} | Location: ${article.location}</p>
+            </div>
+          `).join('')
+          
+          return new Response(html, {
+            status: 200,
+            headers: { 'Content-Type': 'text/html' }
+          })
+        }
+        
+        return originalFetch(url, options)
+      }
+
+      // URL sync configuration
+      const urlConfigs = {
+        articles: {
+          templates: {
+            en: '/articles/:category/:location'
+          },
+          omitFromUrl: {
+            en: ['all']
+          },
+          updateOnInit: false
+        }
+      }
+
+      // Initialize Jupiter
+      const app = new Application()
+      
+      // Initialize dataloader with URL sync
+      const $dataloader = document.querySelector('[data-loader]')
+      const dataloader = new Dataloader(app, $dataloader, {
+        urlSync: urlConfigs,
+        onFetch: (dataloader) => {
+          updateDebugInfo()
+        }
+      })
+
+      app.dataloaders = [dataloader]
+
+      // Debug info updates
+      function updateDebugInfo() {
+        const currentUrl = document.querySelector('[data-testid="current-url"]')
+        const currentParams = document.querySelector('[data-testid="current-params"]')
+        
+        if (currentUrl) {
+          currentUrl.textContent = window.location.pathname + window.location.search
+        }
+        
+        if (currentParams) {
+          currentParams.textContent = JSON.stringify(dataloader.opts.loaderParam, null, 2)
+        }
+      }
+
+      // Update debug info on page load
+      updateDebugInfo()
+
+      // Update debug info on URL changes
+      window.addEventListener('popstate', updateDebugInfo)
+
+      // Make dataloader available globally for testing
+      window.testDataloader = dataloader
+    </script>
+  </body>
+</html>

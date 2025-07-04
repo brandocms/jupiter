@@ -57,6 +57,18 @@ const DEFAULT_OPTIONS = {
     'iframe', // , 'video'?
   ],
 
+  breakpointConfig: {
+    breakpoints: [
+      'iphone',
+      'mobile',
+      'ipad_portrait',
+      'ipad_landscape',
+      'desktop_md',
+      'desktop_lg',
+      'desktop_xl',
+    ],
+  },
+
   bindScroll: true,
   bindResize: true,
 

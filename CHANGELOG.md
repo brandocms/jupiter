@@ -1,6 +1,20 @@
 #### 4.0.0-beta.2
 
 - Update gsap - export InertiaPlugin, SplitText <3
+- **FEATURE** Toggler: Add accordion functionality with group support
+  - New `data-toggle-group` attribute enables accordion-like behavior where only one item can be open at a time
+  - Add callbacks: `onOpen`, `onClose`, `onBeforeOpen`, `onBeforeClose` with toggler instance and group index
+  - Add `data-toggle-trigger-active` attribute for active state styling
+  - Multiple independent groups can exist on the same page
+  - Items without groups continue to work independently
+- **FEATURE** Dataloader: Add URL synchronization support
+  - New `urlSync` configuration option enables bidirectional sync between dataloader parameters and browser URL
+  - Template-based URL patterns with multilingual support (e.g., `/events/:location/:type`)
+  - Browser history support with back/forward navigation
+  - Language-aware URLs with optional language prefixes
+  - Configurable options: `updateOnInit`, `languageInPath`, `hideDefaultLanguage`, `defaultLanguage`
+  - Optional `buildUrl` and `parseUrl` callbacks for custom URL logic
+  - Centralized configuration - pass all URL configs once and dataloaders pick their config by ID
 
 
 #### 4.0.0-beta.1

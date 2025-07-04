@@ -1,5 +1,6 @@
 import Dom from '../Dom'
 import _defaultsDeep from 'lodash.defaultsdeep'
+import DataloaderUrlSync from './url-sync'
 
 /**
  * Load data by ajax
@@ -49,11 +50,13 @@ const DEFAULT_OPTIONS = {
   page: 0,
   loaderParam: {},
   filter: '',
+  urlSync: null,
   onFetch: dataloader => {
     /**
      * Called after fetch complete. Do your DOM manipulation here
      *
      * Example:
+     *
      *
      *    const mw = new Moonwalk(dataloader.app, configureMoonwalk(dataloader.app), dataloader.$canvasEl)
      *    new Lazyload(dataloader.app, { useNativeLazyloadIfAvailable: false }, dataloader.$canvasEl)
@@ -68,18 +71,19 @@ export default class Dataloader {
     this.status = 'available'
     this.app = app
     this.$el = $el
+    this.id = $el.dataset.loaderId
+
     if ($el.hasAttribute('data-loader-canvas-target')) {
       this.$canvasEl = Dom.find($el.getAttribute('data-loader-canvas-target'))
     } else {
       this.$canvasEl = Dom.find($el, '[data-loader-canvas]')
     }
-    
+
     // Support new pattern: data-loader-canvas-for
-    if (!this.$canvasEl && $el.dataset.loaderId) {
-      this.id = $el.dataset.loaderId
+    if (!this.$canvasEl && this.id) {
       this.$canvasEl = Dom.find(`[data-loader-canvas-for="${this.id}"]`)
     }
-    
+
     if (!this.$canvasEl) {
       throw new Error('No canvas element found.')
     }
@@ -114,9 +118,32 @@ export default class Dataloader {
     this.baseURL = url
   }
 
+  setInitialParams() {
+    // Set initial parameters from pre-selected elements
+    this.$paramEls.forEach($paramEl => {
+      if ($paramEl.hasAttribute('data-loader-param-selected')) {
+        const key = $paramEl.dataset.loaderParamKey || 'defaultParam'
+        this.opts.loaderParam[key] = $paramEl.dataset.loaderParam
+      }
+    })
+    
+    // Update URL with initial params if URL sync is enabled
+    if (this.urlSync && this.opts.urlSync[this.id].updateOnInit !== false) {
+      this.urlSync.updateUrl(this.opts.loaderParam)
+    }
+  }
+
   initialize() {
     this.baseURL = this.$el.dataset.loader
     this.$paramEls = Dom.all(this.$el, '[data-loader-param]')
+    
+    // Initialize URL sync if config exists for this dataloader ID
+    if (this.opts.urlSync?.[this.id]) {
+      this.urlSync = new DataloaderUrlSync(this, this.opts.urlSync[this.id])
+    }
+    
+    // Set initial parameters from pre-selected elements
+    this.setInitialParams()
 
     this.$paramEls.forEach($paramEl => {
       $paramEl.addEventListener('click', this.onParam.bind(this))
@@ -124,8 +151,7 @@ export default class Dataloader {
 
     this.$moreBtn = Dom.find(this.$el, '[data-loader-more]')
 
-    if (!this.$moreBtn && this.$el.dataset.loaderId) {
-      this.id = this.$el.dataset.loaderId
+    if (!this.$moreBtn && this.id) {
       this.$moreBtn = Dom.find(`[data-loader-more-for="${this.id}"]`)
     }
 
@@ -135,8 +161,7 @@ export default class Dataloader {
 
     this.$filterInput = Dom.find(this.$el, '[data-loader-filter]')
 
-    if (!this.$filterInput && this.$el.dataset.loaderId) {
-      this.id = this.$el.dataset.loaderId
+    if (!this.$filterInput && this.id) {
       this.$filterInput = Dom.find(`[data-loader-filter-for="${this.id}"]`)
     }
 
@@ -211,17 +236,22 @@ export default class Dataloader {
       }
     }
 
+    // Update URL if sync is enabled
+    if (this.urlSync) {
+      this.urlSync.updateUrl(this.opts.loaderParam)
+    }
+
     this.fetch()
   }
 
   fetch(addEntries = false) {
     const { defaultParam, ...otherParams } = this.opts.loaderParam
     const filter = this.opts.filter
-
-    fetch(
-      `${this.baseURL}/${defaultParam ? defaultParam + '/' : ''}${this.opts.page}?` +
+    
+    const fetchUrl = `${this.baseURL}/${defaultParam ? defaultParam + '/' : ''}${this.opts.page}?` +
         new URLSearchParams({ filter, ...otherParams })
-    )
+
+    fetch(fetchUrl)
       .then(res => {
         this.status = res.headers.get('jpt-dataloader') || 'available'
         this.updateButton()

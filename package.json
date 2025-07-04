@@ -23,7 +23,7 @@
   "scripts": {
     "test": "playwright test",
     "types": "tsc",
-    "playwright": "playwright test",
+    "playwright": "playwright test --project=chromium  --reporter line",
     "playwright:ui": "playwright test --ui",
     "playwright:report": "playwright show-report",
     "playwright:moonwalk": "playwright test e2e/moonwalk.spec.js --project=chromium  --reporter line",
@@ -34,6 +34,7 @@
     "playwright:popover": "playwright test e2e/popover.spec.js e2e/popover.click.spec.js e2e/popover.follow.spec.js --project=chromium  --reporter line",
     "playwright:popup": "playwright test e2e/popup.spec.js --project=chromium  --reporter line",
     "playwright:dataloader": "playwright test e2e/dataloader.spec.js --project=chromium  --reporter line",
+    "playwright:dataloader-url-sync": "playwright test e2e/dataloader-url-sync.spec.js --project=chromium  --reporter line",
     "playwright:parallax": "playwright test e2e/parallax.spec.js --project=chromium  --reporter line",
     "vite": "vite",
     "vite:build": "vite build",

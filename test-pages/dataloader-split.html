@@ -3,19 +3,36 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Jupiter Dataloader Test</title>
+    <title>Jupiter Dataloader Split Layout Test</title>
     <style>
       body {
         font-family: system-ui, sans-serif;
         line-height: 1.5;
         padding: 2rem;
         margin: 0;
-        max-width: 800px;
+        max-width: 1200px;
       }
 
       h1,
       h2 {
         margin-bottom: 1rem;
+      }
+
+      /* Split layout styles */
+      .layout-container {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 2rem;
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 2rem;
+        height: fit-content;
+      }
+
+      .main-content {
+        min-height: 600px;
       }
 
       .filter-container {
@@ -25,19 +42,18 @@
       input[type="text"] {
         padding: 0.5rem;
         width: 100%;
-        max-width: 300px;
         font-size: 1rem;
       }
 
       .category-filter {
         display: flex;
-        flex-wrap: wrap;
+        flex-direction: column;
         gap: 0.5rem;
         margin-bottom: 1.5rem;
       }
 
       .category-filter a {
-        display: inline-block;
+        display: block;
         padding: 0.5rem 1rem;
         background-color: #f0f0f0;
         color: #333;
@@ -101,7 +117,7 @@
         cursor: not-allowed;
       }
 
-      [data-loader-loading] .article-grid {
+      [data-loader-loading] ~ .main-content .article-grid {
         opacity: 0.6;
       }
 
@@ -119,108 +135,118 @@
     </style>
   </head>
   <body>
-    <h1>Jupiter Dataloader Test</h1>
+    <h1>Jupiter Dataloader Split Layout Test</h1>
+    <p>This tests the data-loader-canvas-for and data-loader-more-for attributes when the layout is split across different sections.</p>
 
-    <div class="filter-container">
-      <h2>Search</h2>
-      <input
-        type="text"
-        data-loader-filter-for="articles"
-        placeholder="Filter articles..."
-        data-testid="search-input"
-      />
-    </div>
-
-    <div
-      data-loader="/api/articles"
-      data-loader-id="articles"
-      data-testid="dataloader"
-    >
-      <h2>Categories</h2>
-      <div class="category-filter">
-        <a
-          href="#"
-          data-loader-param="all"
-          data-loader-param-selected
-          data-testid="category-all"
-        >
-          All
-        </a>
-        <a
-          href="#"
-          data-loader-param="technology"
-          data-testid="category-technology"
-        >
-          Technology
-        </a>
-        <a href="#" data-loader-param="science" data-testid="category-science">
-          Science
-        </a>
-        <a href="#" data-loader-param="health" data-testid="category-health">
-          Health
-        </a>
-      </div>
-
-      <h2>Tags (Multi-select)</h2>
-      <div class="category-filter">
-        <a
-          href="#"
-          data-loader-param="web"
-          data-loader-param-key="tags"
-          data-loader-param-multi
-          data-testid="tag-web"
-        >
-          Web
-        </a>
-        <a
-          href="#"
-          data-loader-param="mobile"
-          data-loader-param-key="tags"
-          data-loader-param-multi
-          data-testid="tag-mobile"
-        >
-          Mobile
-        </a>
-        <a
-          href="#"
-          data-loader-param="ai"
-          data-loader-param-key="tags"
-          data-loader-param-multi
-          data-testid="tag-ai"
-        >
-          AI
-        </a>
-      </div>
-
-      <div class="article-grid" data-loader-canvas data-testid="article-grid">
-        <!-- Initial content -->
-        <div class="article-card" data-article-id="1" data-testid="article-1">
-          <img
-            src="https://picsum.photos/seed/1/300/150"
-            alt="Latest Tech Trends"
+    <div class="layout-container">
+      <!-- Sidebar with filters -->
+      <aside class="sidebar">
+        <div class="filter-container">
+          <h2>Search</h2>
+          <input
+            type="text"
+            data-loader-filter-for="articles"
+            placeholder="Filter articles..."
+            data-testid="search-input"
           />
-          <div class="article-card-content">
-            <h3>Latest Tech Trends</h3>
-            <p>Category: technology</p>
-            <p>Tags: web</p>
+        </div>
+
+        <div
+          data-loader="/api/articles"
+          data-loader-id="articles"
+          data-testid="dataloader"
+        >
+          <h2>Categories</h2>
+          <div class="category-filter">
+            <a
+              href="#"
+              data-loader-param="all"
+              data-loader-param-selected
+              data-testid="category-all"
+            >
+              All
+            </a>
+            <a
+              href="#"
+              data-loader-param="technology"
+              data-testid="category-technology"
+            >
+              Technology
+            </a>
+            <a href="#" data-loader-param="science" data-testid="category-science">
+              Science
+            </a>
+            <a href="#" data-loader-param="health" data-testid="category-health">
+              Health
+            </a>
+          </div>
+
+          <h2>Tags (Multi-select)</h2>
+          <div class="category-filter">
+            <a
+              href="#"
+              data-loader-param="web"
+              data-loader-param-key="tags"
+              data-loader-param-multi
+              data-testid="tag-web"
+            >
+              Web
+            </a>
+            <a
+              href="#"
+              data-loader-param="mobile"
+              data-loader-param-key="tags"
+              data-loader-param-multi
+              data-testid="tag-mobile"
+            >
+              Mobile
+            </a>
+            <a
+              href="#"
+              data-loader-param="ai"
+              data-loader-param-key="tags"
+              data-loader-param-multi
+              data-testid="tag-ai"
+            >
+              AI
+            </a>
           </div>
         </div>
-        <div class="article-card" data-article-id="2" data-testid="article-2">
-          <img
-            src="https://picsum.photos/seed/2/300/150"
-            alt="Mobile Development in 2023"
-          />
-          <div class="article-card-content">
-            <h3>Mobile Development in 2023</h3>
-            <p>Category: technology</p>
-            <p>Tags: mobile</p>
+      </aside>
+
+      <!-- Main content area -->
+      <main class="main-content">
+        <h2>Articles</h2>
+        <div class="article-grid" data-loader-canvas data-loader-canvas-for="articles" data-testid="article-grid">
+          <!-- Initial content -->
+          <div class="article-card" data-article-id="1" data-testid="article-1">
+            <img
+              src="https://picsum.photos/seed/1/300/150"
+              alt="Latest Tech Trends"
+            />
+            <div class="article-card-content">
+              <h3>Latest Tech Trends</h3>
+              <p>Category: technology</p>
+              <p>Tags: web</p>
+            </div>
+          </div>
+          <div class="article-card" data-article-id="2" data-testid="article-2">
+            <img
+              src="https://picsum.photos/seed/2/300/150"
+              alt="Mobile Development in 2023"
+            />
+            <div class="article-card-content">
+              <h3>Mobile Development in 2023</h3>
+              <p>Category: technology</p>
+              <p>Tags: mobile</p>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div class="load-more">
-        <button data-loader-more data-testid="load-more">Load more</button>
-      </div>
+        <div class="load-more">
+          <button data-loader-more-for="articles" data-testid="load-more">Load more</button>
+        </div>
+      </main>
     </div>
 
     <script type="module">
