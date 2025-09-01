@@ -163,6 +163,24 @@ class DOM {
 
     return vertInView && horInView
   }
+
+  /**
+   * Strict viewport check - element must be fully contained within viewport bounds
+   * Useful for popovers/tooltips that need to be completely visible
+   *
+   * @param {*} el
+   */
+  inViewportStrict(el) {
+    const rect = el.getBoundingClientRect()
+    const windowHeight = window.innerHeight || document.documentElement.clientHeight
+    const windowWidth = window.innerWidth || document.documentElement.clientWidth
+
+    // Element must be fully within viewport bounds
+    const vertInView = rect.top >= 0 && rect.bottom <= windowHeight
+    const horInView = rect.left >= 0 && rect.right <= windowWidth
+
+    return vertInView && horInView
+  }
 }
 
 export default new DOM()

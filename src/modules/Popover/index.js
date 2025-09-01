@@ -28,6 +28,12 @@ export default class Popover {
     const popoverTemplate = document.querySelector(
       `[data-popover-template=${trigger.dataset.popoverTarget}]`
     )
+
+    if (!popoverTemplate) {
+      console.warn(`Popover template not found for trigger: ${trigger.dataset.popoverTarget}`)
+      return
+    }
+
     this.popover = document.createElement('div')
     this.popover.innerHTML = popoverTemplate.innerHTML
 
@@ -40,7 +46,7 @@ export default class Popover {
 
     // Add any classes from the template element
     if (popoverTemplate.classList && popoverTemplate.classList.length > 0) {
-      popoverTemplate.classList.forEach((className) => {
+      popoverTemplate.classList.forEach(className => {
         if (className !== 'popover-template') {
           this.popover.classList.add(className)
         }
@@ -55,20 +61,11 @@ export default class Popover {
       if (this.opts.clickToggle) {
         this.trigger.addEventListener('click', this.handleClick.bind(this))
       } else {
-        this.trigger.addEventListener(
-          'mouseenter',
-          this.handleMouseEnter.bind(this)
-        )
-        this.trigger.addEventListener(
-          'mouseleave',
-          this.handleMouseLeave.bind(this)
-        )
+        this.trigger.addEventListener('mouseenter', this.handleMouseEnter.bind(this))
+        this.trigger.addEventListener('mouseleave', this.handleMouseLeave.bind(this))
       }
     } else {
-      this.trigger.addEventListener(
-        'touchstart',
-        this.handleTouchStart.bind(this)
-      )
+      this.trigger.addEventListener('touchstart', this.handleTouchStart.bind(this))
     }
   }
 
@@ -132,12 +129,13 @@ export default class Popover {
 
   // Update popover position based on trigger position
   updatePosition(animate = true) {
-    const { top: triggerTop, left: triggerLeft } =
-      this.trigger.getBoundingClientRect()
-    const { offsetHeight: triggerHeight, offsetWidth: triggerWidth } =
-      this.trigger
-    const { offsetHeight: popoverHeight, offsetWidth: popoverWidth } =
-      this.popover
+    const {
+      top: triggerTop,
+      left: triggerLeft,
+      width: triggerWidth,
+      height: triggerHeight,
+    } = this.trigger.getBoundingClientRect()
+    const { offsetHeight: popoverHeight, offsetWidth: popoverWidth } = this.popover
 
     const positionIndex = this.orderedPositions.indexOf(this.position)
 
@@ -168,18 +166,18 @@ export default class Popover {
     const position = this.orderedPositions
       .slice(positionIndex)
       .concat(this.orderedPositions.slice(0, positionIndex))
-      .map((pos) => positions[pos])
-      .find((pos) => {
+      .map(pos => positions[pos])
+      .find(pos => {
         // Temporarily set position to check viewport
         if (!animate) {
           this.popover.style.top = `${pos.top}px`
           this.popover.style.left = `${pos.left}px`
         }
-        return Dom.inViewport(this.popover)
+        return Dom.inViewportStrict(this.popover)
       })
 
     // Remove previous position classes
-    this.orderedPositions.forEach((pos) => {
+    this.orderedPositions.forEach(pos => {
       this.popover.classList.remove(`${this.className}--${pos}`)
     })
 
@@ -256,18 +254,14 @@ export default class Popover {
   // Handle clicks on document to close popover when clicking outside
   handleDocumentClick(e) {
     // If click is outside the popover and the trigger, close it
-    if (
-      this.isVisible &&
-      !this.popover.contains(e.target) &&
-      !this.trigger.contains(e.target)
-    ) {
+    if (this.isVisible && !this.popover.contains(e.target) && !this.trigger.contains(e.target)) {
       this.hide()
     }
   }
 
   // Close all popovers except the specified one
   closeAllExcept(exceptPopover) {
-    activePopovers.forEach((popover) => {
+    activePopovers.forEach(popover => {
       if (popover !== exceptPopover) {
         popover.hide()
       }
@@ -288,9 +282,6 @@ export default class Popover {
 
   // Remove scroll event listener
   removeScrollListener() {
-    window.removeEventListener(
-      Events.APPLICATION_SCROLL,
-      this.boundHandleScroll
-    )
+    window.removeEventListener(Events.APPLICATION_SCROLL, this.boundHandleScroll)
   }
 }
