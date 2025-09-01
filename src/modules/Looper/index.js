@@ -24,14 +24,19 @@ export default class Looper extends Core {
     }
 
     // do we have arrows?
-    const arrows = this.container.querySelector('[data-arrows]')
-    if (arrows) {
+    const prevArrow = this.container.querySelector('[data-panner-previous]')
+    const nextArrow = this.container.querySelector('[data-panner-next]')
+    if (prevArrow || nextArrow) {
       this.state.arrows = true
-      this.arrows = [...arrows.children]
-      this.arrows.forEach(
-        (arrow, index) =>
-          (arrow.onclick = () => (index === 0 ? this.goToPrev() : this.goToNext()))
-      )
+      this.arrows = []
+      if (prevArrow) {
+        this.arrows.push(prevArrow)
+        prevArrow.onclick = () => this.goToPrev()
+      }
+      if (nextArrow) {
+        this.arrows.push(nextArrow)
+        nextArrow.onclick = () => this.goToNext()
+      }
     }
   }
 
