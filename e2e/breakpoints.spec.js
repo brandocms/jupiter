@@ -5,10 +5,10 @@ test.describe('Jupiter Breakpoints Module', () => {
   test.beforeEach(async ({ page }) => {
     // Load the breakpoints test page from Vite server
     await page.goto('/breakpoints.html')
-    
+
     // Wait for the page to load completely
     await page.waitForLoadState('networkidle')
-    
+
     // Wait additional time for Jupiter to initialize
     await page.waitForTimeout(1000)
   })
@@ -16,17 +16,24 @@ test.describe('Jupiter Breakpoints Module', () => {
   test('should initialize and set current breakpoint', async ({ page }) => {
     // Check if current breakpoint is displayed
     const currentBreakpoint = page.locator('[data-testid="current-breakpoint"]')
-    
+
+    // Wait for the breakpoint to be set (not "Loading...")
+    await expect(currentBreakpoint).not.toHaveText('Loading...')
+
     // Current breakpoint should be one of the defined breakpoints
     const breakpointText = await currentBreakpoint.textContent()
-    expect(['xs', 'sm', 'md', 'lg', 'xl']).toContain(breakpointText)
+    expect(breakpointText).toMatch(/^(xs|sm|md|lg|xl)$/)
   })
 
   test('should activate the correct breakpoint indicator', async ({ page, browserName }) => {
     // Get current breakpoint text
     const currentBreakpoint = page.locator('[data-testid="current-breakpoint"]')
+
+    // Wait for the breakpoint to be set (not "Loading...")
+    await expect(currentBreakpoint).not.toHaveText('Loading...')
+
     const breakpointText = await currentBreakpoint.textContent()
-    
+
     // Check that the corresponding indicator is active (has the 'active' class)
     const activeIndicator = page.locator(`[data-testid="${breakpointText}-indicator"]`)
     await expect(activeIndicator).toHaveClass(/active/)

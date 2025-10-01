@@ -158,7 +158,15 @@ export default class Application {
       scrollDirection: null,
     }
 
+    // Special handling for breakpointConfig to avoid array merging
+    const breakpointConfig = opts.breakpointConfig
+    delete opts.breakpointConfig
+
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
+
+    // Restore breakpointConfig, using provided config or default
+    this.opts.breakpointConfig = breakpointConfig || DEFAULT_OPTIONS.breakpointConfig
+
     this.focusableSelectors = this.opts.focusableSelectors
     this.featureTests = new FeatureTests(this, this.opts.featureTests)
 
