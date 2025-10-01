@@ -23,8 +23,7 @@ const DEFAULT_OPTIONS = {
   scrollOffsetNav: false,
   mobileMenuDelay: 800,
   openExternalInWindow: true,
-  linkQuery:
-    'a:not([href^="#"]):not([target="_blank"]):not([data-lightbox]):not(.noanim)',
+  linkQuery: 'a:not([href^="#"]):not([target="_blank"]):not([data-lightbox]):not(.noanim)',
   anchorQuery: 'a[href^="#"]:not(.noanim)',
 
   onAnchor: (target, links) => {
@@ -33,11 +32,7 @@ const DEFAULT_OPTIONS = {
       const headerHeight = header ? header.clientHeight : 0
       target = { y: target, offsetY: headerHeight }
     }
-    links.app.scrollTo(
-      target,
-      links.opts.scrollDuration,
-      links.opts.triggerEvents
-    )
+    links.app.scrollTo(target, links.opts.scrollDuration, links.opts.triggerEvents)
   },
 
   onTransition: (href, app) => {
@@ -48,11 +43,15 @@ const DEFAULT_OPTIONS = {
 
     if (fader) {
       gsap.set(fader, { display: 'block', opacity: 0 })
-      gsap.to(main, {
-        duration: 0.8,
-        y: 25,
-        ease: 'power3.out',
-      })
+
+      if (main) {
+        gsap.to(main, {
+          duration: 0.8,
+          y: 25,
+          ease: 'power3.out',
+        })
+        gsap.to(main, { duration: 0.2, opacity: 0 })
+      }
 
       if (header) {
         gsap.to(header, { duration: 0.2, opacity: 0 })
@@ -70,11 +69,14 @@ const DEFAULT_OPTIONS = {
         },
       })
     } else {
-      gsap.to(main, {
-        duration: 0.8,
-        y: 25,
-        ease: 'power3.out',
-      })
+      if (main) {
+        gsap.to(main, {
+          duration: 0.8,
+          y: 25,
+          ease: 'power3.out',
+        })
+        gsap.to(main, { duration: 0.2, opacity: 0 })
+      }
 
       if (header) {
         gsap.to(header, { duration: 0.2, opacity: 0 })
@@ -119,7 +121,7 @@ export default class Links {
   bindHeroLink() {
     const el = document.querySelector('[data-link-to-content]')
     if (el) {
-      el.addEventListener('click', (e) => {
+      el.addEventListener('click', e => {
         const dataTarget = document.querySelector('main')
         e.preventDefault()
         if (dataTarget) {
@@ -131,8 +133,8 @@ export default class Links {
 
   bindAnchors(anchors) {
     let wait = false
-    Array.from(anchors).forEach((anchor) => {
-      anchor.addEventListener('click', (e) => {
+    Array.from(anchors).forEach(anchor => {
+      anchor.addEventListener('click', e => {
         e.preventDefault()
         const href = anchor.getAttribute('href')
         if (href === '#') {
@@ -187,21 +189,21 @@ export default class Links {
   bindLinks(links) {
     const loadingContainer = document.querySelector('.loading-container')
 
-    Array.from(links).forEach((link) => {
+    Array.from(links).forEach(link => {
       const href = link.getAttribute('href')
       if (!href || href === '#' || href.startsWith('javascript:')) {
         return // Skip empty, anchor, or JS-based links
       }
 
       // Determine the normalized hostname of the current document.
-      const normalizedCurrentHost = this.normalizeHostname(
-        document.location.hostname
-      )
+      const normalizedCurrentHost = this.normalizeHostname(document.location.hostname)
 
       // For absolute URLs, use the URL constructor.
       let linkHostname
+      let linkUrl
       try {
-        linkHostname = new URL(href, document.location.href).hostname
+        linkUrl = new URL(href, document.location.href)
+        linkHostname = linkUrl.hostname
       } catch (error) {
         // If URL construction fails, assume it's not internal.
         console.warn(`Failed to parse URL for href "${href}":`, error) // Log errors for debugging
@@ -216,7 +218,7 @@ export default class Links {
         link.setAttribute('target', '_blank')
       }
 
-      link.addEventListener('click', (e) => {
+      link.addEventListener('click', e => {
         if (e.shiftKey || e.metaKey || e.ctrlKey) {
           return
         }
@@ -225,9 +227,29 @@ export default class Links {
           loadingContainer.style.display = 'none'
         }
 
-        if (internalLink) {
-          e.preventDefault()
-          this.opts.onTransition(href, this.app)
+        if (internalLink && linkUrl) {
+          // Check if we're navigating to the same page with just a different hash
+          const currentUrl = new URL(window.location.href)
+          const isSamePage = linkUrl.pathname === currentUrl.pathname && 
+                            linkUrl.search === currentUrl.search
+          
+          if (isSamePage && linkUrl.hash) {
+            // Same page, just different hash - treat as anchor navigation
+            e.preventDefault()
+            const target = linkUrl.hash
+            const element = document.querySelector(target)
+            if (element) {
+              this.opts.onAnchor(element, this)
+              history.pushState({}, '', href)
+            }
+          } else if (isSamePage && !linkUrl.hash && !currentUrl.hash) {
+            // Same exact page without hash - do nothing
+            e.preventDefault()
+          } else {
+            // Different page or same page with/without hash change - do transition
+            e.preventDefault()
+            this.opts.onTransition(href, this.app)
+          }
         }
       })
     })
