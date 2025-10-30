@@ -39,6 +39,7 @@ gsap.registerPlugin(CSSPlugin)
  * @property {boolean} [repeated=false] - Whether the run should repeat
  * @property {string} [rootMargin] - IntersectionObserver rootMargin
  * @property {Function} [initialize] - Function called during initialization
+ * @property {Function} [onReady] - Function called when APPLICATION_REVEALED fires, before viewport observers start
  */
 
 /**
@@ -344,6 +345,7 @@ export default class Moonwalk {
           el: run,
           threshold: foundRun.threshold || 0,
           initialize: foundRun.initialize,
+          onReady: foundRun.onReady,
           callback: foundRun.callback,
           onExit: foundRun.onExit,
           repeated: foundRun.repeated,
@@ -645,6 +647,14 @@ export default class Moonwalk {
    */
   ready() {
     const { opts } = this
+
+    // Execute onReady callbacks for all runs
+    for (let idx = 0; idx < this.runs.length; idx += 1) {
+      const run = this.runs[idx]
+      if (run && run.onReady) {
+        run.onReady(run.el)
+      }
+    }
 
     for (let idx = 0; idx < this.runs.length; idx += 1) {
       const run = this.runs[idx]

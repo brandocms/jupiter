@@ -258,6 +258,41 @@ test.describe('Jupiter Moonwalk Module', () => {
     await expect(directionIndicator).toHaveClass(/triggered/)
   })
 
+  test('should execute onReady callback before viewport entry', async ({
+    page,
+  }) => {
+    // The onReady callback should fire when APPLICATION_REVEALED fires,
+    // even before the element enters the viewport
+
+    // First, make sure we're at the top of the page
+    await page.evaluate(() => {
+      window.scrollTo(0, 0)
+    })
+    await page.waitForTimeout(1000)
+
+    // Locate the ready test element (which should be below the fold)
+    const readyTestIndicator = page.locator('[data-testid="ready-test-indicator"]')
+
+    // The onReady callback should have already fired, even though element is not in viewport
+    await expect(readyTestIndicator).toHaveAttribute('data-ready-triggered', 'true', { timeout: 5000 })
+    await expect(readyTestIndicator).toHaveAttribute('data-ready-time')
+
+    // The viewport callback should NOT have fired yet
+    const hasViewportTriggered = await readyTestIndicator.getAttribute('data-viewport-triggered')
+    expect(hasViewportTriggered).toBeNull()
+
+    // Now scroll to the element
+    await readyTestIndicator.scrollIntoViewIfNeeded()
+    await page.waitForTimeout(500)
+
+    // Now the viewport callback should have fired
+    await expect(readyTestIndicator).toHaveAttribute('data-viewport-triggered', 'true', { timeout: 5000 })
+
+    // The element should display the time difference
+    await expect(readyTestIndicator).toContainText('onReady fired')
+    await expect(readyTestIndicator).toContainText('ms before viewport entry')
+  })
+
   test('should respect ordering with data-moonwalk-order', async ({ page }) => {
     // Test ordered section
     const orderedSection = page.locator('[data-testid="ordered-section"]')

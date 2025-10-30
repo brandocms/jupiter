@@ -278,6 +278,24 @@
       </div>
     </section>
 
+    <!-- onReady Hook Test -->
+    <section class="spacer">Spacer for onReady test</section>
+    <section data-testid="ready-section">
+      <h2 data-moonwalk>onReady Hook Test</h2>
+      <p data-moonwalk>
+        Testing onReady callback that fires on APPLICATION_REVEALED, before
+        viewport entry.
+      </p>
+      <div
+        data-moonwalk-run="readyTest"
+        class="run-target"
+        id="ready-test-indicator"
+        data-testid="ready-test-indicator"
+      >
+        Ready Test (scroll down to trigger viewport callback)
+      </div>
+    </section>
+
     <!-- Ordered Items -->
     <section data-moonwalk-section="ordered" data-testid="ordered-section">
       <h2>Ordered Animation</h2>
@@ -485,6 +503,23 @@
                 }
                 el.classList.remove("triggered");
                 el.textContent = `Exited to ${meta?.direction || "unknown"}`;
+              },
+            },
+            readyTest: {
+              threshold: 0.5,
+              onReady: (el) => {
+                // This runs when APPLICATION_REVEALED fires, even if element is not in viewport
+                console.log("readyTest onReady called for element:", el);
+                el.setAttribute("data-ready-time", Date.now());
+                el.setAttribute("data-ready-triggered", "true");
+              },
+              callback: (el) => {
+                // This runs when element enters viewport
+                console.log("readyTest callback called for element:", el);
+                const readyTime = el.getAttribute("data-ready-time");
+                const elapsed = Date.now() - parseInt(readyTime);
+                el.setAttribute("data-viewport-triggered", "true");
+                el.textContent = `onReady fired ${elapsed}ms before viewport entry`;
               },
             },
           },
