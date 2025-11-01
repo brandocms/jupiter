@@ -1,4 +1,3 @@
-import { Manager, Swipe } from '@egjs/hammerjs'
 import { gsap } from 'gsap/all'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import imageIsLoaded from '../../utils/imageIsLoaded'
@@ -16,7 +15,6 @@ import Dom from '../Dom'
  * @typedef {Object} LightboxOptions
  * @property {boolean} [captions=false] - Enable captions
  * @property {boolean} [numbers=false] - Enable index numbers
- * @property {boolean} [swipe=true] - Enable swipe - this breaks native zoom
  * @property {string|boolean} [trigger=false] - Selector for trigger element to open the lightbox
  * @property {LightboxElements} [elements] - Custom elements configuration
  * @property {Function} [onClick] - Click handler for lightbox
@@ -40,9 +38,6 @@ const DEFAULT_OPTIONS = {
 
   /* enable index numbers */
   numbers: false,
-
-  /* enable swipe — this breaks native zoom! */
-  swipe: true,
 
   /* set to a selector if you want a specific trigger element to open the box */
   trigger: false,
@@ -342,9 +337,6 @@ export default class Lightbox {
     document.body.appendChild(this.elements.wrapper)
 
     this.setImg(section, index, this.getPrevIdx(section))
-    if (this.opts.swipe) {
-      this.attachSwiper(section, this.elements.content, index)
-    }
 
     this.opts.onOpen(this)
 
@@ -500,24 +492,5 @@ export default class Lightbox {
       this.pointerDirection = 'right'
       this.opts.onPointerRight(this)
     }
-  }
-
-  attachSwiper(section, el, initialIdx) {
-    const hammerManager = new Manager(el)
-    const swipeHandler = new Swipe()
-
-    this.elements.content.setAttribute('data-current-idx', initialIdx)
-
-    hammerManager.add(swipeHandler)
-
-    hammerManager.on('swipeleft', () => {
-      const index = this.getNextIdx(section)
-      this.setImg(section, index)
-    })
-
-    hammerManager.on('swiperight', () => {
-      const index = this.getPrevIdx(section)
-      this.setImg(section, index)
-    })
   }
 }

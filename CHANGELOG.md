@@ -1,6 +1,11 @@
 #### 4.0.0-beta.2
 
 - Update gsap - export InertiaPlugin, SplitText <3
+- **BREAKING** Lightbox: Removed Hammer.js dependency and swipe functionality
+  - The `swipe` option has been removed from LightboxOptions
+  - Swipe gestures are no longer supported - use keyboard arrows, click navigation, or native touch gestures
+  - This removes the @egjs/hammerjs dependency, reducing bundle size
+  - Lightbox now relies on click (arrows/dots), keyboard (arrow keys/ESC), and mouse-based navigation
 - **FEATURE** Toggler: Add accordion functionality with group support
   - New `data-toggle-group` attribute enables accordion-like behavior where only one item can be open at a time
   - Add callbacks: `onOpen`, `onClose`, `onBeforeOpen`, `onBeforeClose` with toggler instance and group index

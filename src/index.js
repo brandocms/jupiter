@@ -13,7 +13,6 @@ import {
   gsap,
 } from 'gsap/all'
 
-import Hammer from '@egjs/hammerjs'
 import _defaultsDeep from 'lodash.defaultsdeep'
 
 import Application from './modules/Application'
@@ -92,7 +91,6 @@ export {
 
   // Export some of the libs we use,
   // that can also be used in the main frontend.
-  Hammer,
   gsap,
   CSSPlugin,
   ScrollToPlugin,

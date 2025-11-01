@@ -11,6 +11,8 @@ export default class Breakpoints {
     app: any;
     mediaQueries: {};
     opts: any;
+    currentBreakpoint: string;
+    initialized: boolean;
     initialize(reveal?: boolean): void;
     getCurrentBreakpoint(): {
         key: string;

@@ -28,6 +28,7 @@ export default class Moonwalk {
         el: Element;
         threshold: any;
         initialize: any;
+        onReady: any;
         callback: any;
         onExit: any;
         repeated: any;
@@ -76,6 +77,7 @@ export default class Moonwalk {
         el: Element;
         threshold: any;
         initialize: any;
+        onReady: any;
         callback: any;
         onExit: any;
         repeated: any;
@@ -230,15 +232,6 @@ export type MoonwalkWalk = {
      */
     sectionTargets?: string;
 };
-export type MoonwalkRunMeta = {
-    /**
-     * - Direction of viewport crossing ('top', 'bottom', 'left', 'right', or null)
-     * - For entry callbacks: indicates which side the element entered from
-     * - For exit callbacks: indicates which side the element exited to
-     */
-    direction: string | null;
-};
-
 export type MoonwalkRun = {
     /**
      * - IntersectionObserver threshold
@@ -246,16 +239,10 @@ export type MoonwalkRun = {
     threshold?: number;
     /**
      * - Function called when element enters viewport
-     * - @param {HTMLElement} element - The element that triggered the callback
-     * - @param {boolean} repeated - Whether this is a repeated trigger
-     * - @param {MoonwalkRunMeta} meta - Information about how the element entered the viewport
      */
     callback: Function;
     /**
      * - Function called when element exits viewport
-     * - @param {HTMLElement} element - The element that triggered the callback
-     * - @param {boolean} repeated - Whether this is a repeated exit
-     * - @param {MoonwalkRunMeta} meta - Information about how the element exited the viewport
      */
     onExit?: Function;
     /**
@@ -270,6 +257,10 @@ export type MoonwalkRun = {
      * - Function called during initialization
      */
     initialize?: Function;
+    /**
+     * - Function called when APPLICATION_REVEALED fires, before viewport observers start
+     */
+    onReady?: Function;
 };
 export type MoonwalkOptions = {
     /**

@@ -5,7 +5,7 @@ export default class EqualHeightImages {
     opts: any;
     run(): void;
     initialize(): void;
-    canvases: any[];
+    canvases: any;
     getRenderedSize(contains: any, cWidth: any, cHeight: any, width: any, height: any, pos: any): any;
     getImgSizeInfo(img: any): any;
 }

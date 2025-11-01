@@ -4,16 +4,18 @@ export default class Dataloader {
     status: string;
     app: any;
     $el: any;
+    id: any;
     $canvasEl: any;
     opts: any;
     debounce(func: any, delay?: number): (...args: any[]) => void;
     updateBaseURL(url: any): void;
     baseURL: any;
+    setInitialParams(): void;
     initialize(): void;
-    $paramEls: any[];
+    $paramEls: any;
+    urlSync: DataloaderUrlSync;
     $moreBtn: any;
     $filterInput: any;
-    id: any;
     onFilterInput(e: any): void;
     onMore(e: any): void;
     onParam(e: any): void;
@@ -33,3 +35,4 @@ export default class Dataloader {
      */
     updateButton(): void;
 }
+import DataloaderUrlSync from './url-sync';

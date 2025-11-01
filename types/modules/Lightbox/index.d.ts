@@ -36,7 +36,6 @@ export default class Lightbox {
     onKeyup(e: any, section: any): void;
     onMouseMove(e: any): void;
     pointerDirection: string;
-    attachSwiper(section: any, el: any, initialIdx: any): void;
 }
 export type LightboxElements = {
     /**
@@ -65,10 +64,6 @@ export type LightboxOptions = {
      * - Enable index numbers
      */
     numbers?: boolean;
-    /**
-     * - Enable swipe - this breaks native zoom
-     */
-    swipe?: boolean;
     /**
      * - Selector for trigger element to open the lightbox
      */

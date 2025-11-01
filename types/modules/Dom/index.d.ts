@@ -37,4 +37,11 @@ declare class DOM {
      * @param {*} el
      */
     inViewport(el: any): boolean;
+    /**
+     * Strict viewport check - element must be fully contained within viewport bounds
+     * Useful for popovers/tooltips that need to be completely visible
+     *
+     * @param {*} el
+     */
+    inViewportStrict(el: any): boolean;
 }

@@ -237,7 +237,6 @@ include images from this section. Otherwise, all lightboxed images will be inclu
 
 - `trigger` - `false` - selector representing an element you want to use as a trigger to open lightbox
 - `captions` - `false` - whether to show captions or not in the overlay
-- `swipe` - `true` – if swipe is true, native zoom won't work, so allow choosing
 - `elements` - `object` - switch out default elements in the overlay
   - `arrowRight` - `function` - returns an element
   - `arrowLeft` - `function` - returns an element

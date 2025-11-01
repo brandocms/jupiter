@@ -2,13 +2,6 @@
 # yarn lockfile v1
 
 
-"@egjs/hammerjs@^2.0.17":
-  version "2.0.17"
-  resolved "https://registry.yarnpkg.com/@egjs/hammerjs/-/hammerjs-2.0.17.tgz#5dc02af75a6a06e4c2db0202cae38c9263895124"
-  integrity sha512-XQsZgjm2EcVUiZQf11UBJQfmZeEmOW8DpI1gsFeln6w0ae0ii4dMQEQ0kjl6DspdWX1aGY1/loyXnP0JS06e/A==
-  dependencies:
-    "@types/hammerjs" "^2.0.36"
-
 "@esbuild/aix-ppc64@0.25.1":
   version "0.25.1"
   resolved "https://registry.yarnpkg.com/@esbuild/aix-ppc64/-/aix-ppc64-0.25.1.tgz#c33cf6bbee34975626b01b80451cbb72b4c6c91d"
@@ -245,11 +238,6 @@
   version "1.0.7"
   resolved "https://registry.yarnpkg.com/@types/estree/-/estree-1.0.7.tgz#4158d3105276773d5b7695cd4834b1722e4f37a8"
   integrity sha512-w28IoSUCJpidD/TGviZwwMJckNESJZXFu7NBZ5YJ4mEUnNraUn9Pm8HSZm/jDF1pDWYKspWE7oVphigUPRakIQ==
-
-"@types/hammerjs@^2.0.36":
-  version "2.0.36"
-  resolved "https://registry.yarnpkg.com/@types/hammerjs/-/hammerjs-2.0.36.tgz#17ce0a235e9ffbcdcdf5095646b374c2bf615a4c"
-  integrity sha512-7TUK/k2/QGpEAv/BCwSHlYu3NXZhQ9ZwBYpzr9tjlPIL2C5BeGhH3DmVavRx3ZNyELX5TLC91JTz/cen6AAtIQ==
 
 "@types/node@^22.15.16":
   version "22.15.16"

@@ -18,16 +18,19 @@ export default class Application {
     position: {
         top: number;
         left: number;
+        lastTop: number;
+        lastLeft: number;
     };
     state: {
         revealed: boolean;
         forcedScroll: boolean;
+        scrollDirection: any;
     };
     opts: any;
     focusableSelectors: any;
-    featureTests: FeatureTests;
-    breakpoints: Breakpoints;
-    fontLoader: Fontloader;
+    featureTests: any;
+    breakpoints: any;
+    fontLoader: any;
     fader: any;
     callbacks: {};
     SCROLL_LOCKED: boolean;
@@ -163,6 +166,3 @@ export default class Application {
      */
     getFocusableSelectors(): any;
 }
-import FeatureTests from '../FeatureTests';
-import Breakpoints from '../Breakpoints';
-import Fontloader from '../Fontloader';

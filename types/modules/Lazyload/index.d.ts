@@ -10,22 +10,22 @@ export default class Lazyload {
     constructor(app: any, opts?: LazyloadOptions);
     app: any;
     opts: any;
+    target: any;
+    resizePending: Map<any, any>;
+    rafId: number;
+    srcsetReadyObserver: MutationObserver;
     watch(): void;
     initialize(): void;
-    lazyPictures: NodeListOf<Element>;
+    lazyPictures: any;
     loadObserver: IntersectionObserver;
     revealObserver: IntersectionObserver;
     imageObserver: IntersectionObserver;
-    lazyImages: NodeListOf<Element>;
+    lazyImages: any;
     initObserver(observer: any, setAttrs?: boolean): void;
     forceLoad($container?: HTMLElement): void;
-    initializeAutoSizes(): void;
-    $autoSizesImages: any[];
-    /**
-     * Set sizes attribute for all imgs with `data-sizes="auto"` and source within the <picture>
-     */
-    autoSizes(): void;
-    getWidth(img: any): any;
+    initializeResizeObserver(): void;
+    sizeObserver: ResizeObserver;
+    flushSizeUpdates(): void;
     initializeSections(): void;
     handleLoadEntries(elements: any): void;
     handleRevealEntries(elements: any): void;

@@ -30,7 +30,7 @@ export default class FixedHeader {
     mobileMenuOpen: boolean;
     timer: any;
     resetResizeTimer: any;
-    intersectingElements: any[];
+    intersectingElements: any;
     initialize(): void;
     pageIsScrolledOnReady: boolean;
     preflight(): void;

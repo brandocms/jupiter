@@ -1,31 +1,29 @@
-export interface PopoverOptions {
-    clickToggle?: boolean;
-    allowMultiple?: boolean;
-    followTrigger?: boolean;
-    followSpeed?: number;
-    onShow?: (popover: Popover) => void;
-}
-
 export default class Popover {
-    constructor(app: any, trigger: any, opts?: Partial<PopoverOptions>);
+    constructor(app: any, trigger: any, opts?: {});
     app: any;
     opts: any;
     trigger: any;
     position: any;
     className: string;
     orderedPositions: string[];
+    currentPosition: any;
     popover: HTMLDivElement;
-    boundHandleDocumentClick: (e: Event) => void;
+    boundHandleDocumentClick: any;
+    boundHandleScroll: any;
     handleMouseEnter(e: any): void;
     handleMouseLeave(e: any): void;
     handleTouchStart(e: any): void;
     handleClick(e: any): void;
-    handleDocumentClick(e: Event): void;
     get isVisible(): boolean;
     show(): void;
+    updatePosition(animate?: boolean): void;
     hide(): void;
     toggle(): void;
     addDocumentClickHandler(): void;
     removeDocumentClickHandler(): void;
-    closeAllExcept(exceptPopover: Popover): void;
+    handleDocumentClick(e: any): void;
+    closeAllExcept(exceptPopover: any): void;
+    handleScroll(): void;
+    addScrollListener(): void;
+    removeScrollListener(): void;
 }
