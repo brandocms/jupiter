@@ -3,8 +3,8 @@
 ## Tier 1 - Easy
 
 - [x] **01-StackedBoxes** ✅ 2025-11-02
-- [ ] 02-FooterReveal
-- [ ] 03-EqualHeightImages
+- [x] **02-FooterReveal** ✅ 2025-11-02
+- [x] **03-EqualHeightImages** ✅ 2025-11-02
 - [ ] 04-EqualHeightElements
 - [ ] 05-Popover
 

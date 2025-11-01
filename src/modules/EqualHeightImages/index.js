@@ -1,4 +1,4 @@
-import { gsap } from 'gsap/all'
+import { set } from '../../utils/motion-helpers'
 import Dom from '../Dom'
 import * as Events from '../../events'
 import imagesAreLoaded from '../../utils/imagesAreLoaded'
@@ -63,7 +63,7 @@ export default class EqualHeightImages {
 
         if (actionables.length) {
           actionables.forEach((a) => {
-            gsap.set(a.elements, { minHeight: a.height })
+            set(a.elements, { minHeight: a.height })
           })
         }
       })

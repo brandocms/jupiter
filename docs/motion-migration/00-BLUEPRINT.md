@@ -38,6 +38,14 @@
 - Track progress: `docs/motion-migration/STATUS.md`
 - Git handles rollbacks (no need to comment out old code)
 
+### Tier 1 Pattern (Validated)
+All Tier 1 modules follow the same simple pattern:
+- Only use `gsap.set()` (no animations)
+- Direct replacement: `gsap.set()` → `set()`
+- Migration time: ~5 minutes per module
+- Zero issues encountered
+- Completed: StackedBoxes, FooterReveal, EqualHeightImages
+
 ---
 
 ## API Mapping Reference
