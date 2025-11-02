@@ -44,19 +44,7 @@ items.forEach((item, i) => {
 })
 ```
 
-**Option 2: Use stagger utility**
-```javascript
-import { stagger } from '../../utils/motion-helpers'
-
-// After header animation starts
-stagger('.nav-items', { opacity: 1 }, {
-  duration: 0.3,
-  stagger: 0.1,
-  delay: 0.35
-})
-```
-
-**Option 3: Timeline array**
+**Option 2: Timeline array**
 ```javascript
 const sequence = [
   [header, { y: 0, opacity: 1 }, { duration: 0.35 }]

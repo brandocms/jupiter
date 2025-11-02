@@ -5,8 +5,8 @@
 - [x] **01-StackedBoxes** ✅ 2025-11-02
 - [x] **02-FooterReveal** ✅ 2025-11-02
 - [x] **03-EqualHeightImages** ✅ 2025-11-02
-- [ ] 04-EqualHeightElements
-- [ ] 05-Popover
+- [x] **04-EqualHeightElements** ✅ 2025-11-02
+- [x] **05-Popover** ✅ 2025-11-02 (Note: Has animations, more complex than expected)
 
 ## Tier 2 - Moderate
 

@@ -38,13 +38,24 @@
 - Track progress: `docs/motion-migration/STATUS.md`
 - Git handles rollbacks (no need to comment out old code)
 
-### Tier 1 Pattern (Validated)
-All Tier 1 modules follow the same simple pattern:
+### Tier 1 Learnings (All 5 Complete!)
+
+**Simple modules (01-04)**:
 - Only use `gsap.set()` (no animations)
 - Direct replacement: `gsap.set()` → `set()`
 - Migration time: ~5 minutes per module
-- Zero issues encountered
-- Completed: StackedBoxes, FooterReveal, EqualHeightImages
+
+**Popover (05)** - More complex than expected:
+- Has actual animations (`gsap.to()` not just `set()`)
+- **Naming collision**: Function param `animate` shadows Motion's `animate()`
+  - Solution: Rename param to `shouldAnimate` (more descriptive anyway)
+- Animates position with easing: `ease: 'power2.out'` → `easing: 'ease-out'`
+
+**Special cases discovered**:
+- `attr` property (GSAP): Motion doesn't support, set manually with `element.setAttribute()`
+- `clearProps` (GSAP): Use our `clearProps()` helper
+
+**Completed**: All Tier 1 (5/5) ✅
 
 ---
 

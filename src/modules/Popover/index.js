@@ -1,4 +1,4 @@
-import { gsap } from 'gsap/all'
+import { animate } from 'motion'
 import Dom from '../Dom'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import * as Events from '../../events'
@@ -128,7 +128,7 @@ export default class Popover {
   }
 
   // Update popover position based on trigger position
-  updatePosition(animate = true) {
+  updatePosition(shouldAnimate = true) {
     const {
       top: triggerTop,
       left: triggerLeft,
@@ -169,7 +169,7 @@ export default class Popover {
       .map(pos => positions[pos])
       .find(pos => {
         // Temporarily set position to check viewport
-        if (!animate) {
+        if (!shouldAnimate) {
           this.popover.style.top = `${pos.top}px`
           this.popover.style.left = `${pos.left}px`
         }
@@ -183,14 +183,15 @@ export default class Popover {
 
     // Set position and apply appropriate class
     if (position) {
-      if (animate && this.isVisible) {
-        gsap.to(this.popover, {
+      if (shouldAnimate && this.isVisible) {
+        animate(this.popover, {
           top: Math.max(0, position.top),
-          left: Math.max(0, position.left),
+          left: Math.max(0, position.left)
+        }, {
           duration: this.opts.followSpeed,
-          ease: 'power2.out',
+          easing: 'ease-out'
         })
-      } else if (!animate) {
+      } else if (!shouldAnimate) {
         this.popover.style.top = `${Math.max(0, position.top)}px`
         this.popover.style.left = `${Math.max(0, position.left)}px`
       }
@@ -198,14 +199,15 @@ export default class Popover {
       this.currentPosition = position.name
     } else {
       // Fallback to bottom if no position works
-      if (animate && this.isVisible) {
-        gsap.to(this.popover, {
+      if (shouldAnimate && this.isVisible) {
+        animate(this.popover, {
           top: Math.max(0, positions.bottom.top),
-          left: Math.max(0, positions.bottom.left),
+          left: Math.max(0, positions.bottom.left)
+        }, {
           duration: this.opts.followSpeed,
-          ease: 'power2.out',
+          easing: 'ease-out'
         })
-      } else if (!animate) {
+      } else if (!shouldAnimate) {
         this.popover.style.top = `${Math.max(0, positions.bottom.top)}px`
         this.popover.style.left = `${Math.max(0, positions.bottom.left)}px`
       }

@@ -1,4 +1,4 @@
-import { gsap } from 'gsap/all'
+import { set, clearProps } from '../../utils/motion-helpers'
 import Dom from '../Dom'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import * as Events from '../../events'
@@ -13,9 +13,7 @@ export default class EqualHeightElements {
     this.selector = selector
     this.initialize()
     window.addEventListener(Events.APPLICATION_RESIZE, () => {
-      gsap.set('[data-eq-height-elements-adjusted]', {
-        clearProps: 'minHeight',
-      })
+      clearProps('[data-eq-height-elements-adjusted]', 'minHeight')
       this.initialize()
     })
   }
@@ -61,9 +59,10 @@ export default class EqualHeightElements {
 
       if (actionables.length) {
         actionables.forEach((a) => {
-          gsap.set(a.elements, {
-            minHeight: a.height,
-            attr: { 'data-eq-height-elements-adjusted': true },
+          set(a.elements, { minHeight: a.height })
+          // Set attribute manually (Motion doesn't support attr property)
+          a.elements.forEach(el => {
+            el.setAttribute('data-eq-height-elements-adjusted', 'true')
           })
         })
       }
