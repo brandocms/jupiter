@@ -1,6 +1,7 @@
-import { gsap } from 'gsap/all'
+import { animate, stagger } from 'motion'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import * as Events from '../../events'
+import { set, clearProps } from '../../utils/motion-helpers'
 
 /**
  * @typedef {Object} MobileMenuOptions
@@ -23,136 +24,81 @@ const DEFAULT_OPTIONS = {
   hamburgerColor: '#000',
 
   onResize: null,
-  openTween: (m) => {
-    const timeline = gsap.timeline()
-
+  openTween: async (m) => {
     m.hamburger.classList.toggle('is-active')
     document.body.classList.toggle('open-menu')
 
-    timeline
-      .fromTo(
-        m.bg,
-        {
-          duration: 0.35,
-          x: '0%',
-          opacity: 0,
-          height: window.innerHeight,
-        },
-        {
-          duration: 0.35,
-          opacity: 1,
-          ease: 'sine.in',
-        }
-      )
-      .to(
-        m.logo,
-        {
-          duration: 0.35,
-          opacity: 0,
-          ease: 'power3.out',
-        },
-        '-=0.35'
-      )
-      .to(
-        m.header,
-        {
-          duration: 0.55,
-          backgroundColor: 'transparent',
-          ease: 'power3.out',
-        },
-        '-=0.35'
-      )
-      .call(() => {
-        m.nav.style.gridTemplateRows = 'auto 1fr'
-      })
-      .set(m.nav, { height: window.innerHeight })
-      .set(m.content, { display: 'block' })
-      .set(m.logoPath, { fill: m.opts.logoColor })
-      .set(m.logo, { xPercent: 3 })
-      .staggerFromTo(
-        m.lis,
-        {
-          duration: 1,
-          opacity: 0,
-          x: 20,
-        },
-        {
-          duration: 1,
-          x: 0,
-          opacity: 1,
-          ease: 'power3.out',
-        },
-        0.05
-      )
-      .to(
-        m.logo,
-        {
-          duration: 0.55,
-          opacity: 1,
-          xPercent: 0,
-          ease: 'power3.inOut',
-        },
-        '-=1.2'
-      )
-      .call(m._emitMobileMenuOpenEvent)
+    // Set initial state for bg
+    set(m.bg, { x: '0%', opacity: 0, height: window.innerHeight })
+
+    // Parallel animations at start (0-0.35s)
+    const timeline = [
+      [m.bg, { opacity: 1 }, { duration: 0.35, easing: 'ease-in', at: 0 }],
+      [m.logo, { opacity: 0 }, { duration: 0.35, easing: 'ease-out', at: 0 }],
+      [m.header, { backgroundColor: 'transparent' }, { duration: 0.55, easing: 'ease-out', at: 0 }]
+    ]
+
+    await animate(timeline).finished
+
+    // Immediate settings
+    m.nav.style.gridTemplateRows = 'auto 1fr'
+    set(m.nav, { height: window.innerHeight })
+    Array.from(m.content).forEach(el => set(el, { display: 'block' }))
+    Array.from(m.logoPath).forEach(path => path.setAttribute('fill', m.opts.logoColor))
+    set(m.logo, { x: '3%' })
+
+    // Staggered li animations and logo animation in parallel
+    const lisAnimation = animate(
+      m.lis,
+      { opacity: [0, 1], x: [20, 0] },
+      { duration: 1, easing: 'ease-out', delay: stagger(0.05) }
+    )
+
+    const logoAnimation = animate(
+      m.logo,
+      { opacity: 1, x: ['3%', '0%'] },
+      { duration: 0.55, easing: 'ease-in-out', at: 0.15 }
+    )
+
+    await Promise.all([lisAnimation.finished, logoAnimation.finished])
+
+    m._emitMobileMenuOpenEvent()
   },
 
-  closeTween: (m) => {
+  closeTween: async (m) => {
     document.body.classList.toggle('open-menu')
-    const timeline = gsap.timeline()
+    m.hamburger.classList.toggle('is-active')
 
-    timeline
-      .call(() => {
-        m.hamburger.classList.toggle('is-active')
-      })
-      .fromTo(
-        m.logo,
-        {
-          duration: 0.2,
-          opacity: 1,
-          xPercent: 0,
-        },
-        {
-          duration: 0.2,
-          opacity: 0,
-          xPercent: 5,
-          ease: 'power3.out',
-        }
-      )
-      .set(m.logoPath, { clearProps: 'fill' })
-      .staggerTo(
-        m.lis,
-        {
-          duration: 0.5,
-          opacity: 0,
-          x: 20,
-          ease: 'power3.out',
-        },
-        0.04
-      )
-      .set(m.nav, { clearProps: 'height' })
-      .to(
-        m.bg,
-        {
-          duration: 0.25,
-          x: '100%',
-          ease: 'sine.in',
-        },
-        '-=0.3'
-      )
-      .call(() => {
-        m._emitMobileMenuClosedEvent()
-      })
-      .set(m.content, { display: 'none' })
-      .call(() => {
-        m.nav.style.gridTemplateRows = 'auto'
-      })
-      .set(m.lis, { clearProps: 'opacity' })
-      .to(m.logo, {
-        duration: 0.35,
-        opacity: 1,
-        ease: 'power3.in',
-      })
+    // Fade out logo
+    await animate(m.logo, { opacity: 0, x: '5%' }, { duration: 0.2, easing: 'ease-out' }).finished
+
+    // Clear logo fill
+    Array.from(m.logoPath).forEach(path => path.removeAttribute('fill'))
+
+    // Stagger out lis and slide bg in parallel
+    const lisAnimation = animate(
+      m.lis,
+      { opacity: 0, x: 20 },
+      { duration: 0.5, easing: 'ease-out', delay: stagger(0.04) }
+    )
+
+    // bg animation starts 0.3s before lis finish
+    // lis duration is 0.5s + last stagger delay, so starts around 0.2s
+    setTimeout(() => {
+      animate(m.bg, { x: '100%' }, { duration: 0.25, easing: 'ease-in' })
+    }, 200)
+
+    await lisAnimation.finished
+
+    // Cleanup
+    clearProps(m.nav, 'height')
+    m._emitMobileMenuClosedEvent()
+    Array.from(m.content).forEach(el => set(el, { display: 'none' }))
+    m.nav.style.gridTemplateRows = 'auto'
+    Array.from(m.lis).forEach(li => clearProps(li, 'opacity'))
+
+    // Fade logo back in
+    await animate(m.logo, { opacity: 1 }, { duration: 0.35, easing: 'ease-in' }).finished
   },
 }
 

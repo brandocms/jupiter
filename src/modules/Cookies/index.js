@@ -68,13 +68,15 @@ const DEFAULT_OPTIONS = {
       return
     }
 
-    // Set display block immediately
+    // Set display block and reset state immediately
     c.cc.style.display = 'block'
+    set(c.cc, { opacity: 1 })
+    set(c.inner, { opacity: 1 })
 
     // Calculate timeline positions:
-    // - c.cc: starts at 1s (0.5s position + 0.5s delay), duration 0.5s, ends at 1.5s
-    // - c.text: starts at 1.15s (1.5s - 0.35s overlap), duration 0.7s, ends at 1.85s
-    // - c.btns: starts at 1.5s (1.85s - 0.35s overlap), duration 0.7s
+    // - c.cc: starts at 1s, duration 0.5s, ends at 1.5s
+    // - c.text: starts at 1.15s (0.15s after cc starts), duration 0.7s, ends at 1.85s
+    // - c.btns: starts at 1.5s (when cc finishes), duration 0.7s
     const timeline = [
       [c.cc, { y: ['120%', '0%'] }, { duration: 0.5, easing: 'ease-out', at: 1 }],
       [c.text, { opacity: [0, 1] }, { duration: 0.7, easing: 'ease-out', at: 1.15 }],

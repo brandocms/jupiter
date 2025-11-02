@@ -169,7 +169,7 @@
 
     <script type="module">
       // Import Jupiter modules
-      import { Application, Cookies, gsap } from "../src/index.js";
+      import { Application, Cookies, animate } from "../src/index.js";
 
       document.addEventListener("DOMContentLoaded", () => {
         // Initialize Application
@@ -218,12 +218,8 @@
             consentStatus.textContent = "Accepted";
             consentStatus.style.color = "green";
 
-            gsap.to(c.cc, {
-              duration: 1,
-              opacity: 0,
-              onComplete: () => {
-                c.cc.style.display = "none";
-              },
+            animate(c.cc, { opacity: 0 }, { duration: 1 }).finished.then(() => {
+              c.cc.style.display = "none";
             });
           },
 
@@ -235,12 +231,8 @@
             consentStatus.textContent = "Declined";
             consentStatus.style.color = "red";
 
-            gsap.to(c.cc, {
-              duration: 1,
-              opacity: 0,
-              onComplete: () => {
-                c.cc.style.display = "none";
-              },
+            animate(c.cc, { opacity: 0 }, { duration: 1 }).finished.then(() => {
+              c.cc.style.display = "none";
             });
           },
 

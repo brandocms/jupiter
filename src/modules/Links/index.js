@@ -1,7 +1,6 @@
-import { gsap, ScrollToPlugin } from 'gsap/all'
+import { animate } from 'motion'
 import _defaultsDeep from 'lodash.defaultsdeep'
-
-gsap.registerPlugin(ScrollToPlugin)
+import { set } from '../../utils/motion-helpers'
 
 /**
  * @typedef {Object} LinksOptions
@@ -42,56 +41,40 @@ const DEFAULT_OPTIONS = {
     const fader = document.querySelector('#fader')
 
     if (fader) {
-      gsap.set(fader, { display: 'block', opacity: 0 })
+      set(fader, { display: 'block', opacity: 0 })
 
       if (main) {
-        gsap.to(main, {
-          duration: 0.8,
-          y: 25,
-          ease: 'power3.out',
-        })
-        gsap.to(main, { duration: 0.2, opacity: 0 })
+        animate(main, { y: 25 }, { duration: 0.8, easing: 'ease-out' })
+        animate(main, { opacity: 0 }, { duration: 0.2 })
       }
 
       if (header) {
-        gsap.to(header, { duration: 0.2, opacity: 0 })
+        animate(header, { opacity: 0 }, { duration: 0.2 })
       }
 
       if (footer) {
-        gsap.to(footer, { duration: 0.2, opacity: 0 })
+        animate(footer, { opacity: 0 }, { duration: 0.2 })
       }
 
-      gsap.to(fader, {
-        duration: 0.2,
-        opacity: 1,
-        onComplete: () => {
-          window.location = href
-        },
+      animate(fader, { opacity: 1 }, { duration: 0.2 }).finished.then(() => {
+        window.location = href
       })
     } else {
       if (main) {
-        gsap.to(main, {
-          duration: 0.8,
-          y: 25,
-          ease: 'power3.out',
-        })
-        gsap.to(main, { duration: 0.2, opacity: 0 })
+        animate(main, { y: 25 }, { duration: 0.8, easing: 'ease-out' })
+        animate(main, { opacity: 0 }, { duration: 0.2 })
       }
 
       if (header) {
-        gsap.to(header, { duration: 0.2, opacity: 0 })
+        animate(header, { opacity: 0 }, { duration: 0.2 })
       }
 
       if (footer) {
-        gsap.to(footer, { duration: 0.2, opacity: 0 })
+        animate(footer, { opacity: 0 }, { duration: 0.2 })
       }
 
-      gsap.to(main, {
-        duration: 0.2,
-        opacity: 0,
-        onComplete: () => {
-          window.location = href
-        },
+      animate(main, { opacity: 0 }, { duration: 0.2 }).finished.then(() => {
+        window.location = href
       })
     }
   },

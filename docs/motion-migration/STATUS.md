@@ -18,11 +18,11 @@
 - [x] **11-FixedHeader** ✅ 2025-11-02
 - [x] **12-StickyHeader** ✅ 2025-11-02
 - [ ] 13-Dropdown
-- [ ] 14-MobileMenu
-- [ ] 15-Links
-- [ ] 16-Lightbox
+- [x] **14-MobileMenu** ✅ 2025-11-02
+- [x] **15-Links** ✅ 2025-11-02
+- [x] **16-Lightbox** ✅ 2025-11-02
 - [ ] 17-HeroSlider
-- [ ] 18-Marquee
+- [x] **18-Marquee** ✅ 2025-11-02
 
 ## Tier 3 - Complex
 

@@ -1,6 +1,7 @@
-import gsap from 'gsap/gsap-core'
+import { animate } from 'motion'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import Dom from '../Dom'
+import { set, clearProps } from '../../utils/motion-helpers'
 
 const DEFAULT_OPTIONS = {
   speed: 100,
@@ -11,7 +12,7 @@ const DEFAULT_OPTIONS = {
   spacer: '<span>&nbsp;&mdash;&nbsp;</span>',
 
   onReveal: marqueeEl => {
-    gsap.to(marqueeEl, { opacity: 1, ease: 'none' })
+    animate(marqueeEl, { opacity: 1 }, { easing: 'linear' })
   }
 }
 
@@ -31,7 +32,7 @@ export default class Marquee {
   }
 
   initialize() {
-    gsap.set(this.elements.$marquee, { opacity: 0 })
+    set(this.elements.$marquee, { opacity: 0 })
     window.addEventListener('APPLICATION:RESIZE', this.updateMarquee.bind(this))
     window.addEventListener('APPLICATION:REVEALED', this.revealMarquee.bind(this))
     this.updateMarquee()
@@ -65,7 +66,7 @@ export default class Marquee {
     const marqueeWidth = holderWidth * $allHolders.length
     this.duration = (holderWidth + marqueeWidth) / this.opts.speed
 
-    gsap.set(this.elements.$marquee, { width: marqueeWidth })
+    set(this.elements.$marquee, { width: marqueeWidth })
     this.initializeTween()
 
     if (Dom.inViewport(this.elements.$el)) {
@@ -75,13 +76,17 @@ export default class Marquee {
 
   clearHolders() {
     const $allHolders = Dom.all(this.elements.$el, '[data-marquee-holder]')
-    Array.from($allHolders).forEach(h => gsap.set(h, { clearProps: 'all' }))
+    Array.from($allHolders).forEach(h => clearProps(h, 'all'))
   }
 
   killTweens() {
     if (this.timeline) {
-      this.timeline.kill()
+      this.timeline.stop()
       this.timeline = null
+    }
+    if (this.speedAnimation) {
+      this.speedAnimation.stop()
+      this.speedAnimation = null
     }
   }
 
@@ -89,15 +94,20 @@ export default class Marquee {
     const $allHolders = Dom.all(this.elements.$el, '[data-marquee-holder]')
 
     Array.from($allHolders).forEach((h, idx) => {
-      gsap.set(h, { position: 'absolute', left: h.offsetWidth * idx })
+      set(h, { position: 'absolute', left: h.offsetWidth * idx })
     })
 
-    this.timeline = gsap.timeline({ paused: true })
-    this.timeline
-      .to($allHolders, { xPercent: -100, ease: 'none', duration: this.duration }, 'standard')
-      .repeat(-1)
+    this.timeline = animate(
+      $allHolders,
+      { x: '-100%' },
+      { duration: this.duration, easing: 'linear', repeat: Infinity }
+    )
+    this.timeline.pause()
 
-    this.timeline.totalProgress(this.opts.startProgress)
+    // Set initial progress if specified
+    if (this.opts.startProgress > 0) {
+      this.timeline.currentTime = this.opts.startProgress * this.duration
+    }
 
     window.timeline = this.timeline
     window.marquee = this
@@ -105,45 +115,80 @@ export default class Marquee {
 
   play(rampUp = false) {
     this.playing = true
-    gsap.killTweensOf(this.timeline)
+    if (this.speedAnimation) {
+      this.speedAnimation.stop()
+    }
 
     if (rampUp) {
       this.timeline.play()
-      gsap.to(this.timeline, {
-        timeScale: 1,
-        ease: 'sine.in',
-        duration: 0.8
-      })
+      const state = { speed: this.timeline.speed || 0 }
+      this.speedAnimation = animate(
+        state,
+        { speed: 1 },
+        {
+          duration: 0.8,
+          easing: 'ease-in',
+          onUpdate: () => {
+            this.timeline.speed = state.speed
+          }
+        }
+      )
     } else {
-      this.timeline.timeScale(1)
+      this.timeline.speed = 1
       this.timeline.play()
     }
   }
 
   pause() {
     this.playing = false
-    gsap.to(this.timeline, {
-      timeScale: 0.01,
-      onComplete: () => {
-        this.timeline.pause()
-      },
-      duration: 0.8
+    const state = { speed: this.timeline.speed || 1 }
+    this.speedAnimation = animate(
+      state,
+      { speed: 0.01 },
+      {
+        duration: 0.8,
+        onUpdate: () => {
+          this.timeline.speed = state.speed
+        }
+      }
+    ).finished.then(() => {
+      this.timeline.pause()
     })
   }
 
   slowDown() {
-    gsap.to(this.timeline, {
-      timeScale: 0.5,
-      duration: 0.8
-    })
+    if (this.speedAnimation) {
+      this.speedAnimation.stop()
+    }
+    const state = { speed: this.timeline.speed || 1 }
+    this.speedAnimation = animate(
+      state,
+      { speed: 0.5 },
+      {
+        duration: 0.8,
+        onUpdate: () => {
+          this.timeline.speed = state.speed
+        }
+      }
+    )
   }
 
   speedUp() {
-    gsap.to(this.timeline, {
-      timeScale: 1,
-      duration: 0.8,
-      ease: 'sine.in'
-    })
+    if (this.speedAnimation) {
+      this.speedAnimation.stop()
+    }
+    const state = { speed: this.timeline.speed || 0.5 }
+    this.speedAnimation = animate(
+      state,
+      { speed: 1 },
+      {
+        duration: 0.8,
+        easing: 'ease-in',
+        onUpdate: () => {
+          this.timeline.speed = state.speed
+        }
+      }
+    )
   }
 
   setupObserver() {
@@ -200,6 +245,6 @@ export default class Marquee {
 
   setHeight() {
     const height = this.elements.$item.offsetHeight + this.opts.extraHeight
-    gsap.set(this.elements.$el, { height })
+    set(this.elements.$el, { height })
   }
 }

@@ -81,3 +81,71 @@ export function delayedCall(duration, callback) {
     }, duration)
   })
 }
+
+/**
+ * Paused Timeline helper
+ * Mimics GSAP's paused timeline pattern for building sequences
+ * Used by modules like Lightbox that build animations before playing them
+ */
+export class PausedTimeline {
+  constructor() {
+    this.sequence = []
+  }
+
+  /**
+   * Add animation to timeline
+   * @param {Element|string} target - Element or selector
+   * @param {Object} values - Properties to animate
+   * @param {Object} options - Animation options
+   * @returns {PausedTimeline} this for chaining
+   */
+  to(target, values, options = {}) {
+    this.sequence.push(['animate', target, values, options])
+    return this
+  }
+
+  /**
+   * Add callback to timeline
+   * @param {Function} callback - Function to call
+   * @returns {PausedTimeline} this for chaining
+   */
+  call(callback) {
+    this.sequence.push(['call', callback])
+    return this
+  }
+
+  /**
+   * Clear timeline sequence
+   * @returns {PausedTimeline} this for chaining
+   */
+  clear() {
+    this.sequence = []
+    return this
+  }
+
+  /**
+   * Play timeline sequence
+   * Executes all animations and callbacks in order
+   * @returns {Promise} Promise that resolves when sequence completes
+   */
+  async play() {
+    const sequence = [...this.sequence] // Copy so we can clear while playing
+    this.sequence = [] // Clear for next time
+
+    for (const item of sequence) {
+      if (item[0] === 'animate') {
+        const [, target, values, options] = item
+        // Handle autoAlpha
+        if (values.autoAlpha !== undefined) {
+          const autoAlphaOptions = { ...options }
+          delete autoAlphaOptions.autoAlpha
+          await animateAutoAlpha(target, values.autoAlpha, autoAlphaOptions).finished
+        } else {
+          await animate(target, values, options).finished
+        }
+      } else if (item[0] === 'call') {
+        item[1]() // Execute callback
+      }
+    }
+  }
+}

@@ -13,6 +13,8 @@ import {
   gsap,
 } from 'gsap/all'
 
+import { animate, scroll, stagger } from 'motion'
+
 import _defaultsDeep from 'lodash.defaultsdeep'
 
 import Application from './modules/Application'
@@ -97,4 +99,9 @@ export {
   ScrollTrigger,
   SplitText,
   InertiaPlugin,
+
+  // Export Motion functions for animation (replacing GSAP)
+  animate,
+  scroll,
+  stagger,
 }
