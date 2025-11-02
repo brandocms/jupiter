@@ -14,9 +14,9 @@
 - [x] **07-Toggler** ✅ 2025-11-02
 - [x] **08-Popup** ✅ 2025-11-02
 - [x] **09-CoverOverlay** ✅ 2025-11-02
-- [ ] 10-Cookies
-- [ ] 11-FixedHeader
-- [ ] 12-StickyHeader
+- [x] **10-Cookies** ✅ 2025-11-02
+- [x] **11-FixedHeader** ✅ 2025-11-02
+- [x] **12-StickyHeader** ✅ 2025-11-02
 - [ ] 13-Dropdown
 - [ ] 14-MobileMenu
 - [ ] 15-Links

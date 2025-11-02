@@ -6,6 +6,22 @@ import { set } from '../../utils/motion-helpers'
  * Toggler component for show/hide functionality
  * Uses [data-toggle-trigger] for the toggle button and [data-toggle-content] for toggleable content
  * Can be grouped using [data-toggle-group] to create accordion-like behavior
+ *
+ * IMPORTANT: For smooth animations, avoid padding/margins on [data-toggle-content].
+ * Instead, wrap content in a child element with padding/margins:
+ *
+ * @example
+ * // ❌ DON'T: Padding/margins directly on toggle content
+ * <div data-toggle-content style="padding: 20px; margin-top: 10px">
+ *   Content here
+ * </div>
+ *
+ * // ✅ DO: Wrap content in child element
+ * <div data-toggle-content>
+ *   <div style="padding: 20px; margin-top: 10px">
+ *     Content here
+ *   </div>
+ * </div>
  */
 export default class Toggler {
   /**
@@ -64,9 +80,15 @@ export default class Toggler {
         this.triggerIcon.classList.toggle('active')
       }
       this.trigger.setAttribute('data-toggle-trigger-active', '')
+
+      // Set initial state before making visible
       this.content.forEach(el => {
+        el.style.height = '0'
         el.style.display = 'block'
+        // Force layout reflow to ensure 0 height is applied
+        el.offsetHeight
       })
+
       this.el.classList.toggle('open')
       if (this.onBeforeOpen) {
         this.onBeforeOpen(this, this.getGroupIndex())
@@ -75,8 +97,11 @@ export default class Toggler {
       // Animate each content element with stagger
       const animations = []
       this.content.forEach((el, index) => {
+        // Measure the actual height now
+        const targetHeight = el.scrollHeight
+
         animations.push(
-          animate(el, { height: [0, 'auto'] }, {
+          animate(el, { height: [0, targetHeight + 'px'] }, {
             easing: 'ease-in-out',
             delay: index * 0.1
           })
@@ -87,8 +112,12 @@ export default class Toggler {
       const lastAnimation = animations[animations.length - 1]
       if (lastAnimation) {
         lastAnimation.finished.then(() => {
-          this.content.forEach(el => el.removeAttribute('data-toggle-hidden'))
-          this.content.forEach(el => el.setAttribute('data-toggle-visible', ''))
+          // Set height to auto for responsiveness
+          this.content.forEach(el => {
+            el.style.height = 'auto'
+            el.removeAttribute('data-toggle-hidden')
+            el.setAttribute('data-toggle-visible', '')
+          })
           if (this.onOpen) {
             this.onOpen(this, this.getGroupIndex())
           }
@@ -106,6 +135,12 @@ export default class Toggler {
       // Animate each content element with stagger
       const animations = []
       this.content.forEach((el, index) => {
+        // Get current height and set explicitly before animating
+        const currentHeight = el.scrollHeight
+        el.style.height = currentHeight + 'px'
+        // Force layout reflow to ensure pixel height is applied
+        el.offsetHeight
+
         animations.push(
           animate(el, { height: 0 }, {
             duration: 0.25,
@@ -120,8 +155,12 @@ export default class Toggler {
       if (lastAnimation) {
         lastAnimation.finished.then(() => {
           this.el.classList.toggle('open')
-          this.content.forEach(el => el.removeAttribute('data-toggle-visible'))
-          this.content.forEach(el => el.setAttribute('data-toggle-hidden', ''))
+          this.content.forEach(el => {
+            el.style.display = 'none'
+            el.style.removeProperty('height')
+            el.removeAttribute('data-toggle-visible')
+            el.setAttribute('data-toggle-hidden', '')
+          })
           if (this.onClose) {
             this.onClose(this, this.getGroupIndex())
           }
@@ -156,6 +195,12 @@ export default class Toggler {
         // Animate content closing with stagger
         const animations = []
         toggler.content.forEach((el, index) => {
+          // Get current height and set explicitly before animating
+          const currentHeight = el.scrollHeight
+          el.style.height = currentHeight + 'px'
+          // Force layout reflow to ensure pixel height is applied
+          el.offsetHeight
+
           animations.push(
             animate(el, { height: 0 }, {
               duration: 0.25,
@@ -169,8 +214,12 @@ export default class Toggler {
         const lastAnimation = animations[animations.length - 1]
         if (lastAnimation) {
           lastAnimation.finished.then(() => {
-            toggler.content.forEach(el => el.removeAttribute('data-toggle-visible'))
-            toggler.content.forEach(el => el.setAttribute('data-toggle-hidden', ''))
+            toggler.content.forEach(el => {
+              el.style.display = 'none'
+              el.style.removeProperty('height')
+              el.removeAttribute('data-toggle-visible')
+              el.setAttribute('data-toggle-hidden', '')
+            })
 
             if (toggler.onClose) {
               toggler.onClose(toggler, toggler.getGroupIndex())

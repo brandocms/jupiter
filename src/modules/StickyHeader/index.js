@@ -23,45 +23,47 @@
  *
  */
 
-import { gsap } from 'gsap/all'
+import { animate, stagger } from 'motion'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import * as Events from '../../events'
+import { set } from '../../utils/motion-helpers'
 
 const DEFAULT_EVENTS = {
   onMainVisible: (h) => {
-    gsap.to(h.el, {
+    animate(h.el, {
+      opacity: 1
+    }, {
       duration: 3,
-      opacity: 1,
-      delay: 0.5,
+      delay: 0.5
     })
   },
 
   onMainInvisible: (h) => {
-    gsap.to(h.el, {
-      duration: 1,
-      opacity: 0,
+    animate(h.el, {
+      opacity: 0
+    }, {
+      duration: 1
     })
   },
 
   onPin: (h) => {
-    gsap.to(h.auxEl, {
+    animate(h.auxEl, {
+      yPercent: '0'
+    }, {
       duration: 0.35,
-      yPercent: '0',
-      ease: 'sine.out',
-      autoRound: true,
+      easing: 'ease-out'
     })
   },
 
   onUnpin: (h) => {
     h._hiding = true
-    gsap.to(h.auxEl, {
+    animate(h.auxEl, {
+      yPercent: '-100'
+    }, {
       duration: 0.25,
-      yPercent: '-100',
-      ease: 'sine.in',
-      autoRound: true,
-      onComplete: () => {
-        h._hiding = false
-      },
+      easing: 'ease-in'
+    }).finished.then(() => {
+      h._hiding = false
     })
   },
   onSmall: () => {},
@@ -78,20 +80,30 @@ const DEFAULT_OPTIONS = {
     onClone: (h) => h.el.cloneNode(true),
     canvas: window,
     beforeEnter: (h) => {
-      gsap.set(h.el, { opacity: 0 })
+      set(h.el, { opacity: 0 })
     },
     enter: (h) => {
-      const timeline = gsap.timeline()
-      timeline
-        .set(h.auxEl, { yPercent: -100 })
-        .set(h.lis, { opacity: 0 })
-        .to(h.auxEl, 1, {
-          yPercent: 0,
-          delay: h.opts.enterDelay,
-          ease: 'power3.out',
-          autoRound: true,
-        })
-        .staggerTo(h.lis, 0.8, { opacity: 1, ease: 'sine.in' }, 0.1, '-=1')
+      // Set initial states
+      set(h.auxEl, { yPercent: -100 })
+      set(h.lis, { opacity: 0 })
+
+      // Auxiliary header slides down
+      animate(h.auxEl, {
+        yPercent: 0
+      }, {
+        duration: 1,
+        delay: h.opts.enterDelay,
+        easing: 'ease-out'
+      })
+
+      // Menu items fade in with stagger (starts at same time: '-=1' means 1s overlap)
+      animate(h.lis, {
+        opacity: 1
+      }, {
+        duration: 0.8,
+        delay: stagger(0.1, { startDelay: h.opts.enterDelay }),
+        easing: 'ease-in'
+      })
     },
     enterDelay: 1.2,
     tolerance: 3,
@@ -152,6 +164,7 @@ export default class StickyHeader {
     this.mobileMenuOpen = false
     this.timer = null
     this.resetResizeTimer = null
+    this.scrollSettleTimeout = null
     this.firstReveal = true
 
     this.initialize()
@@ -209,6 +222,26 @@ export default class StickyHeader {
       this.update.bind(this),
       false
     )
+
+    // Add debounced scroll listener for accurate top/bottom detection after scroll settles
+    // RAF-throttled events can lag behind actual scroll position during fast scrolls
+    window.addEventListener('scroll', () => {
+      clearTimeout(this.scrollSettleTimeout)
+      this.scrollSettleTimeout = setTimeout(() => {
+        // Get real-time scroll position after scroll has settled
+        const actualScrollY = this.opts.canvas === window || this.opts.canvas === document.body
+          ? window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop
+          : this.opts.canvas.scrollTop
+
+        // Update current scroll and force accurate boundary checks
+        this.currentScrollY = actualScrollY
+        this.checkTop(true)
+        this.checkBot(true)
+      }, 100)
+    }, {
+      capture: false,
+      passive: true,
+    })
 
     if (this.mainOpts.pinOnForcedScroll) {
       window.addEventListener(Events.APPLICATION_FORCED_SCROLL_START, () => {

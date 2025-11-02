@@ -6,6 +6,11 @@
   - Swipe gestures are no longer supported - use keyboard arrows, click navigation, or native touch gestures
   - This removes the @egjs/hammerjs dependency, reducing bundle size
   - Lightbox now relies on click (arrows/dots), keyboard (arrow keys/ESC), and mouse-based navigation
+- **POTENTIALLY BREAKING** Toggler: Padding/margins on `[data-toggle-content]` may cause animation glitches
+  - For smooth animations, avoid applying padding/margins directly to `[data-toggle-content]` elements
+  - Instead, wrap content in a child element and apply padding/margins to that child
+  - Example: `<div data-toggle-content><div style="padding: 20px">Content</div></div>`
+  - This is a common pattern for height-based accordion animations
 - **FEATURE** Toggler: Add accordion functionality with group support
   - New `data-toggle-group` attribute enables accordion-like behavior where only one item can be open at a time
   - Add callbacks: `onOpen`, `onClose`, `onBeforeOpen`, `onBeforeClose` with toggler instance and group index

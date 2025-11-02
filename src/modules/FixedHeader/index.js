@@ -23,10 +23,11 @@
  *
  */
 
-import { gsap } from 'gsap/all'
+import { animate, stagger } from 'motion'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import * as Events from '../../events'
 import Dom from '../Dom'
+import { set } from '../../utils/motion-helpers'
 
 /**
  * @typedef {Object} FixedHeaderEvents
@@ -77,41 +78,42 @@ import Dom from '../Dom'
 /** @type {FixedHeaderEvents} */
 const DEFAULT_EVENTS = {
   onPin: (h) => {
-    gsap.to(h.el, {
+    animate(h.el, {
+      yPercent: '0'
+    }, {
       duration: 0.35,
-      yPercent: '0',
-      ease: 'sine.out',
-      autoRound: true,
+      easing: 'ease-out'
     })
   },
 
   onUnpin: (h) => {
     h._hiding = true
-    gsap.to(h.el, {
+    animate(h.el, {
+      yPercent: '-100'
+    }, {
       duration: 0.25,
-      yPercent: '-100',
-      ease: 'sine.in',
-      autoRound: true,
-      onComplete: () => {
-        h._hiding = false
-      },
+      easing: 'ease-in'
+    }).finished.then(() => {
+      h._hiding = false
     })
   },
 
   onAltBg: (h) => {
     if (h.opts.altBgColor) {
-      gsap.to(h.el, {
-        duration: 0.2,
-        backgroundColor: h.opts.altBgColor,
+      animate(h.el, {
+        backgroundColor: h.opts.altBgColor
+      }, {
+        duration: 0.2
       })
     }
   },
 
   onNotAltBg: (h) => {
     if (h.opts.regBgColor) {
-      gsap.to(h.el, {
-        duration: 0.4,
-        backgroundColor: h.opts.regBgColor,
+      animate(h.el, {
+        backgroundColor: h.opts.regBgColor
+      }, {
+        duration: 0.4
       })
     }
   },
@@ -154,21 +156,28 @@ const DEFAULT_OPTIONS = {
     canvas: window,
     intersects: null,
     beforeEnter: (h) => {
-      const timeline = gsap.timeline()
-      timeline.set(h.el, { yPercent: -100 }).set(h.lis, { opacity: 0 })
+      set(h.el, { yPercent: -100 })
+      set(h.lis, { opacity: 0 })
     },
 
     enter: (h) => {
-      const timeline = gsap.timeline()
-      timeline
-        .to(h.el, {
-          duration: 1,
-          yPercent: 0,
-          delay: h.opts.enterDelay,
-          ease: 'power3.out',
-          autoRound: true,
-        })
-        .staggerTo(h.lis, 0.8, { opacity: 1, ease: 'sine.in' }, 0.1, '-=1')
+      // Header slides down
+      animate(h.el, {
+        yPercent: 0
+      }, {
+        duration: 1,
+        delay: h.opts.enterDelay,
+        easing: 'ease-out'
+      })
+
+      // Menu items fade in with stagger (starts at same time as header: '-=1' means 1s overlap)
+      animate(h.lis, {
+        opacity: 1
+      }, {
+        duration: 0.8,
+        delay: stagger(0.1, { startDelay: h.opts.enterDelay }),
+        easing: 'ease-in'
+      })
     },
 
     enterDelay: 0,
@@ -227,6 +236,7 @@ export default class FixedHeader {
     this.mobileMenuOpen = false
     this.timer = null
     this.resetResizeTimer = null
+    this.scrollSettleTimeout = null
 
     if (this.opts.intersects) {
       this.intersectingElements = Dom.all('[data-intersect]')
@@ -294,6 +304,26 @@ export default class FixedHeader {
       }
 
       window.addEventListener(SCROLL_EVENT, this.redraw.bind(this), {
+        capture: false,
+        passive: true,
+      })
+
+      // Add debounced scroll listener for accurate top/bottom detection after scroll settles
+      // RAF-throttled events can lag behind actual scroll position during fast scrolls
+      window.addEventListener('scroll', () => {
+        clearTimeout(this.scrollSettleTimeout)
+        this.scrollSettleTimeout = setTimeout(() => {
+          // Get real-time scroll position after scroll has settled
+          const actualScrollY = this.opts.canvas === window || this.opts.canvas === document.body
+            ? window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop
+            : this.opts.canvas.scrollTop
+
+          // Update current scroll and force accurate boundary checks
+          this.currentScrollY = actualScrollY
+          this.checkTop(true)
+          this.checkBot(true)
+        }, 100)
+      }, {
         capture: false,
         passive: true,
       })

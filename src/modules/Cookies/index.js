@@ -1,6 +1,7 @@
-import { gsap } from 'gsap/all'
+import { animate } from 'motion'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import * as Events from '../../events'
+import { set } from '../../utils/motion-helpers'
 
 /**
  * @typedef {Object} CookiesOptions
@@ -18,27 +19,33 @@ const DEFAULT_OPTIONS = {
     const oneYearFromNow = new Date()
     oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1)
 
-    const timeline = gsap.timeline()
     c.setCookie('COOKIES_CONSENT_STATUS', 1, oneYearFromNow, '/')
     c.opts.setCookies(c)
 
-    timeline
-      .to(c.cc, { duration: 0.35, y: '120%', ease: 'power3.in' }, '0')
-      .to(c.inner, { duration: 0.3, opacity: 0, ease: 'power3.in' }, '0')
-      .set(c.cc, { display: 'none' })
+    const timeline = [
+      [c.cc, { y: '120%' }, { duration: 0.35, easing: 'ease-in', at: 0 }],
+      [c.inner, { opacity: 0 }, { duration: 0.3, easing: 'ease-in', at: 0 }]
+    ]
+
+    animate(timeline).finished.then(() => {
+      c.cc.style.display = 'none'
+    })
   },
 
   onRefuse: (c) => {
     const oneYearFromNow = new Date()
     oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1)
 
-    const timeline = gsap.timeline()
     c.setCookie('COOKIES_CONSENT_STATUS', 0, oneYearFromNow, '/')
 
-    timeline
-      .to(c.cc, { duration: 0.35, y: '120%', ease: 'power3.in' }, '0')
-      .to(c.inner, { duration: 0.3, opacity: 0, ease: 'power3.in' }, '0')
-      .set(c.cc, { display: 'none' })
+    const timeline = [
+      [c.cc, { y: '120%' }, { duration: 0.35, easing: 'ease-in', at: 0 }],
+      [c.inner, { opacity: 0 }, { duration: 0.3, easing: 'ease-in', at: 0 }]
+    ]
+
+    animate(timeline).finished.then(() => {
+      c.cc.style.display = 'none'
+    })
   },
 
   alreadyConsented: (c) => {
@@ -61,50 +68,20 @@ const DEFAULT_OPTIONS = {
       return
     }
 
-    const timeline = gsap.timeline()
+    // Set display block immediately
+    c.cc.style.display = 'block'
 
-    timeline
-      .fromTo(
-        c.cc,
-        {
-          duration: 0.5,
-          y: '120%',
-          display: 'block',
-        },
-        {
-          duration: 0.5,
-          y: '0%',
-          delay: '0.5',
-          ease: 'power3.out',
-        },
-        '0.5'
-      )
-      .fromTo(
-        c.text,
-        {
-          duration: 0.7,
-          opacity: 0,
-        },
-        {
-          duration: 0.7,
-          opacity: 1,
-          ease: 'power3.out',
-        },
-        '-=0.35'
-      )
-      .fromTo(
-        c.btns,
-        {
-          duration: 0.7,
-          opacity: 0,
-        },
-        {
-          duration: 0.7,
-          opacity: 1,
-          ease: 'power3.out',
-        },
-        '-=0.35'
-      )
+    // Calculate timeline positions:
+    // - c.cc: starts at 1s (0.5s position + 0.5s delay), duration 0.5s, ends at 1.5s
+    // - c.text: starts at 1.15s (1.5s - 0.35s overlap), duration 0.7s, ends at 1.85s
+    // - c.btns: starts at 1.5s (1.85s - 0.35s overlap), duration 0.7s
+    const timeline = [
+      [c.cc, { y: ['120%', '0%'] }, { duration: 0.5, easing: 'ease-out', at: 1 }],
+      [c.text, { opacity: [0, 1] }, { duration: 0.7, easing: 'ease-out', at: 1.15 }],
+      [c.btns, { opacity: [0, 1] }, { duration: 0.7, easing: 'ease-out', at: 1.5 }]
+    ]
+
+    animate(timeline)
   },
 }
 
