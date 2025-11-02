@@ -21,7 +21,7 @@
 - [x] **14-MobileMenu** ✅ 2025-11-02
 - [x] **15-Links** ✅ 2025-11-02
 - [x] **16-Lightbox** ✅ 2025-11-02
-- [ ] 17-HeroSlider
+- [x] **17-HeroSlider** ✅ 2025-11-02 (Note: Recursive pattern with overlapping animations)
 - [x] **18-Marquee** ✅ 2025-11-02
 
 ## Tier 3 - Complex

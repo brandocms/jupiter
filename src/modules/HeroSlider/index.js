@@ -9,13 +9,12 @@
  *
  */
 
-import { gsap, CSSPlugin } from 'gsap/all'
+import { animate } from 'motion'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import prefersReducedMotion from '../../utils/prefersReducedMotion'
 import * as Events from '../../events'
 import imageIsLoaded from '../../utils/imageIsLoaded'
-
-gsap.registerPlugin(CSSPlugin)
+import { set, delayedCall } from '../../utils/motion-helpers'
 
 const DEFAULT_OPTIONS = {
   el: '[data-hero-slider]',
@@ -47,18 +46,11 @@ const DEFAULT_OPTIONS = {
   onInitialize: (/* hs */) => {},
 
   onFadeIn: (hs, callback) => {
+    const animation = animate(hs.el, { opacity: 1 }, { duration: 0.25 })
+
     if (hs.slides.length > 1) {
-      gsap.to(hs.el, {
-        duration: 0.25,
-        opacity: 1,
-        onComplete: () => {
-          callback()
-        },
-      })
-    } else {
-      gsap.to(hs.el, {
-        duration: 0.25,
-        opacity: 1,
+      animation.finished.then(() => {
+        callback()
       })
     }
   },
@@ -85,7 +77,7 @@ export default class HeroSlider {
   initialize() {
     this._addResizeHandler()
     // style the container
-    gsap.set(this.el, {
+    set(this.el, {
       position: 'absolute',
       top: 0,
       left: 0,
@@ -102,7 +94,7 @@ export default class HeroSlider {
 
     // style the slides
     Array.from(this.slides).forEach((s) => {
-      gsap.set(s, {
+      set(s, {
         zIndex: this.opts.zIndex.regular,
         position: 'absolute',
         top: 0,
@@ -114,7 +106,7 @@ export default class HeroSlider {
       const img = s.querySelector('.hero-slide-img')
 
       if (img) {
-        gsap.set(img, {
+        set(img, {
           width: document.body.clientWidth,
           height: '100%',
           top: 0,
@@ -181,87 +173,101 @@ export default class HeroSlider {
    * Switches between slides
    */
   slide(type) {
-    const timeline = gsap.timeline()
-
     switch (type) {
       case 'fade':
-        timeline
-          .set(this._currentSlide, {
+        {
+          // Setup: set current slide invisible at correct z-index
+          set(this._currentSlide, {
             opacity: 0,
             scale: 1,
             zIndex: this.opts.zIndex.visible,
           })
-          .set(this._nextSlide, {
-            opacity: 0,
-          })
-          .to(this._previousSlide, {
-            duration: this.opts.interval,
-            scale: this.opts.transition.scale,
-          })
-          .to(this._currentSlide, {
-            duration: this.opts.transition.duration,
-            opacity: 1,
-            delay: this.opts.interval - this.opts.transition.duration,
-            force3D: true,
-            ease: 'sine.inOut',
-          })
-          .set(this._previousSlide, {
-            opacity: 0,
-          })
-          .call(
-            () => {
-              this._nextSlide.style.zIndex = this.opts.zIndex.visible
-              this._currentSlide.style.zIndex = this.opts.zIndex.regular
-              this._previousSlide.style.zIndex = this.opts.zIndex.regular
-              this.next()
-            },
-            null,
-            this
-          )
+          set(this._nextSlide, { opacity: 0 })
 
+          // Build animation sequence
+          // Previous slide zooms from 1 to 1.05 over interval (4.2s)
+          // Current slide fades in starting at interval - duration (3.4s), lasting duration (0.8s)
+          // Both complete at interval (4.2s)
+          const sequence = [
+            // Previous slide zoom (starts at 0s, runs for interval)
+            [
+              this._previousSlide,
+              { scale: this.opts.transition.scale },
+              { duration: this.opts.interval, at: 0 },
+            ],
+            // Current slide fade-in (starts at interval - duration to overlap zoom)
+            [
+              this._currentSlide,
+              { opacity: 1 },
+              {
+                duration: this.opts.transition.duration,
+                easing: [0.45, 0, 0.55, 1], // sine.inOut bezier
+                at: this.opts.interval - this.opts.transition.duration,
+              },
+            ],
+          ]
+
+          const animation = animate(sequence)
+
+          animation.finished.then(() => {
+            // Cleanup after animation completes
+            set(this._previousSlide, { opacity: 0 })
+            this._nextSlide.style.zIndex = this.opts.zIndex.visible
+            this._currentSlide.style.zIndex = this.opts.zIndex.regular
+            this._previousSlide.style.zIndex = this.opts.zIndex.regular
+            this.next()
+          })
+        }
         break
 
       case 'parallax':
-        timeline
-          .set(this._currentSlide, {
+        {
+          // Setup: current slide behind previous slide
+          set(this._currentSlide, {
             zIndex: this.opts.zIndex.next,
             scale: 1.0,
             width: '100%',
           })
-          .fromTo(
-            this._previousSlide,
-            {
-              duration: this.opts.interval,
-              overflow: 'hidden',
-            },
-            {
-              duration: this.opts.interval,
-              scale: this.opts.transition.scale,
-            }
-          )
-          .to(this._previousSlide, {
-            duration: this.opts.transition.duration,
-            width: 0,
-            ease: 'power3.in',
-            autoRound: true,
-            overwrite: 'preexisting',
-          })
-          .set(this._nextSlide, {
-            zIndex: this.opts.zIndex.next,
-          })
-          .set(this._currentSlide, {
-            zIndex: this.opts.zIndex.visible,
-            width: '100%',
-          })
-          .set(this._previousSlide, {
-            zIndex: this.opts.zIndex.regular,
-            scale: 1.0,
-            width: '100%',
-          })
-          .call(() => {
+          set(this._previousSlide, { overflow: 'hidden' })
+
+          // Build animation sequence
+          // Previous slide zooms, then width collapses
+          const sequence = [
+            // Previous slide zoom (starts at 0s, runs for interval)
+            [
+              this._previousSlide,
+              { scale: this.opts.transition.scale },
+              { duration: this.opts.interval, at: 0 },
+            ],
+            // Previous slide width collapse (starts at interval)
+            [
+              this._previousSlide,
+              { width: 0 },
+              {
+                duration: this.opts.transition.duration,
+                easing: [0.895, 0.03, 0.685, 0.22], // power3.in bezier
+                at: this.opts.interval,
+              },
+            ],
+          ]
+
+          const animation = animate(sequence)
+
+          animation.finished.then(() => {
+            // Cleanup and shuffle z-indexes
+            set(this._nextSlide, { zIndex: this.opts.zIndex.next })
+            set(this._currentSlide, {
+              zIndex: this.opts.zIndex.visible,
+              width: '100%',
+            })
+            set(this._previousSlide, {
+              zIndex: this.opts.zIndex.regular,
+              scale: 1.0,
+              width: '100%',
+            })
             this.next()
           })
-
+        }
         break
 
       default:
@@ -295,10 +301,15 @@ export default class HeroSlider {
   }
 
   _resizeSlides() {
-    gsap.to(this.images, {
-      duration: 0.15,
-      width: document.body.clientWidth,
-      overwrite: 'all',
-    })
+    // Stop any running resize animations
+    if (this.resizeAnimation) {
+      this.resizeAnimation.stop()
+    }
+
+    this.resizeAnimation = animate(
+      this.images,
+      { width: document.body.clientWidth },
+      { duration: 0.15 }
+    )
   }
 }
