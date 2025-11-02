@@ -1,4 +1,4 @@
-import { animate } from 'motion'
+import { animate, delay } from 'motion'
 
 /**
  * Set properties immediately (like gsap.set)
@@ -38,12 +38,7 @@ export function animateAutoAlpha(target, value, options = {}) {
   } else {
     // Show, then fade in
     element.style.visibility = 'visible'
-    return animate(element, { opacity: value }, {
-      ...options,
-      onComplete: () => {
-        options.onComplete?.()
-      }
-    })
+    return animate(element, { opacity: value }, options)
   }
 }
 
@@ -72,16 +67,17 @@ export function clearProps(target, props = 'all') {
 /**
  * Delayed call helper
  * Mimics gsap.delayedCall
+ * Uses Motion's delay function (locked to animation frame loop for better sync)
  *
- * @param {number} delay - Delay in seconds
+ * @param {number} duration - Delay in seconds
  * @param {Function} callback - Callback function
  * @returns {Promise} Promise that resolves after delay
  */
-export function delayedCall(delay, callback) {
+export function delayedCall(duration, callback) {
   return new Promise(resolve => {
-    setTimeout(() => {
+    delay(() => {
       callback()
       resolve()
-    }, delay * 1000)  // Convert to ms
+    }, duration)
   })
 }

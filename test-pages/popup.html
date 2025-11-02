@@ -234,7 +234,8 @@
     </section>
 
     <script type="module">
-      import { Application, Popup, gsap } from "../src/index.js";
+      import { Application, Popup } from "../src/index.js";
+      import { animate } from "motion";
 
       // Initialize Application
       const app = new Application({
@@ -265,28 +266,23 @@
         tweenIn: (trigger, target, popup) => {
           console.log("custom tweenIn");
           // Set a different animation for the custom popup
-          gsap.set(popup.backdrop, { display: "block" });
-          gsap.to(popup.backdrop, {
-            duration: 0.3,
-            opacity: 1,
-            onComplete: () => {
-              gsap.fromTo(
+          popup.backdrop.style.display = "block";
+          animate(popup.backdrop, { opacity: 1 }, { duration: 0.3 })
+            .finished
+            .then(() => {
+              target.style.display = "block";
+              animate(
                 target,
                 {
-                  duration: 0.3,
-                  scale: 0.5,
-                  opacity: 0,
-                  display: "block",
+                  scale: [0.5, 1],
+                  opacity: [0, 1]
                 },
                 {
                   duration: 0.5,
-                  scale: 1,
-                  opacity: 1,
-                  ease: "back.out(1.7)",
-                },
+                  easing: [0.68, -0.55, 0.265, 1.55] // Cubic-bezier approximation of back.out
+                }
               );
-            },
-          });
+            });
         },
       });
 

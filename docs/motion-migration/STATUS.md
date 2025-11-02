@@ -10,10 +10,10 @@
 
 ## Tier 2 - Moderate
 
-- [ ] 06-HeroVideo
-- [ ] 07-Toggler
-- [ ] 08-Popup
-- [ ] 09-CoverOverlay
+- [x] **06-HeroVideo** ✅ 2025-11-02
+- [x] **07-Toggler** ✅ 2025-11-02
+- [x] **08-Popup** ✅ 2025-11-02
+- [x] **09-CoverOverlay** ✅ 2025-11-02
 - [ ] 10-Cookies
 - [ ] 11-FixedHeader
 - [ ] 12-StickyHeader

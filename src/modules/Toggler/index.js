@@ -1,5 +1,6 @@
-import { gsap } from 'gsap/all'
+import { animate } from 'motion'
 import Dom from '../Dom'
+import { set } from '../../utils/motion-helpers'
 
 /**
  * Toggler component for show/hide functionality
@@ -63,23 +64,36 @@ export default class Toggler {
         this.triggerIcon.classList.toggle('active')
       }
       this.trigger.setAttribute('data-toggle-trigger-active', '')
-      gsap.set(this.content, { height: 'auto', display: 'block' })
+      this.content.forEach(el => {
+        el.style.display = 'block'
+      })
       this.el.classList.toggle('open')
       if (this.onBeforeOpen) {
         this.onBeforeOpen(this, this.getGroupIndex())
       }
-      gsap.from(this.content, {
-        height: 0,
-        ease: 'power1.inOut',
-        stagger: 0.1,
-        onComplete: () => {
+
+      // Animate each content element with stagger
+      const animations = []
+      this.content.forEach((el, index) => {
+        animations.push(
+          animate(el, { height: [0, 'auto'] }, {
+            easing: 'ease-in-out',
+            delay: index * 0.1
+          })
+        )
+      })
+
+      // Wait for the last animation to complete
+      const lastAnimation = animations[animations.length - 1]
+      if (lastAnimation) {
+        lastAnimation.finished.then(() => {
           this.content.forEach(el => el.removeAttribute('data-toggle-hidden'))
           this.content.forEach(el => el.setAttribute('data-toggle-visible', ''))
           if (this.onOpen) {
             this.onOpen(this, this.getGroupIndex())
           }
-        },
-      })
+        })
+      }
     } else {
       if (this.triggerIcon) {
         this.triggerIcon.classList.toggle('active')
@@ -88,19 +102,31 @@ export default class Toggler {
       if (this.onBeforeClose) {
         this.onBeforeClose(this, this.getGroupIndex())
       }
-      gsap.to(this.content, {
-        duration: 0.25,
-        onComplete: () => {
+
+      // Animate each content element with stagger
+      const animations = []
+      this.content.forEach((el, index) => {
+        animations.push(
+          animate(el, { height: 0 }, {
+            duration: 0.25,
+            easing: 'ease-out',
+            delay: index * 0.1
+          })
+        )
+      })
+
+      // Wait for the last animation to complete
+      const lastAnimation = animations[animations.length - 1]
+      if (lastAnimation) {
+        lastAnimation.finished.then(() => {
           this.el.classList.toggle('open')
           this.content.forEach(el => el.removeAttribute('data-toggle-visible'))
           this.content.forEach(el => el.setAttribute('data-toggle-hidden', ''))
           if (this.onClose) {
             this.onClose(this, this.getGroupIndex())
           }
-        },
-      })
-
-      gsap.to(this.content, { height: 0, ease: 'power3.out', stagger: 0.1 })
+        })
+      }
     }
   }
 
@@ -127,20 +153,30 @@ export default class Toggler {
         toggler.trigger.removeAttribute('data-toggle-trigger-active')
         toggler.el.classList.remove('open')
 
-        // Animate content closing
-        gsap.to(toggler.content, {
-          duration: 0.25,
-          onComplete: () => {
+        // Animate content closing with stagger
+        const animations = []
+        toggler.content.forEach((el, index) => {
+          animations.push(
+            animate(el, { height: 0 }, {
+              duration: 0.25,
+              easing: 'ease-out',
+              delay: index * 0.1
+            })
+          )
+        })
+
+        // Wait for the last animation to complete
+        const lastAnimation = animations[animations.length - 1]
+        if (lastAnimation) {
+          lastAnimation.finished.then(() => {
             toggler.content.forEach(el => el.removeAttribute('data-toggle-visible'))
             toggler.content.forEach(el => el.setAttribute('data-toggle-hidden', ''))
 
             if (toggler.onClose) {
               toggler.onClose(toggler, toggler.getGroupIndex())
             }
-          },
-        })
-
-        gsap.to(toggler.content, { height: 0, ease: 'power3.out', stagger: 0.1 })
+          })
+        }
       }
     })
   }

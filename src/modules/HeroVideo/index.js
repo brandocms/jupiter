@@ -9,14 +9,13 @@
  *    const heroVideo = new HeroVideo(app, opts)
  */
 
-import { gsap, CSSPlugin } from 'gsap/all'
+import { animate } from 'motion'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import * as Events from '../../events'
 import prefersReducedMotion from '../../utils/prefersReducedMotion'
 import imageIsLoaded from '../../utils/imageIsLoaded'
 import Dom from '../Dom'
-
-gsap.registerPlugin(CSSPlugin)
+import { set, animateAutoAlpha } from '../../utils/motion-helpers'
 
 /**
  * @typedef {Object} HeroVideoElementGenerators
@@ -41,24 +40,15 @@ gsap.registerPlugin(CSSPlugin)
 const DEFAULT_OPTIONS = {
   el: '[data-hero-video]',
   onFadeIn: (hero) => {
-    gsap.to(hero.videoDiv, {
-      duration: 1,
-      autoAlpha: 1,
-    })
+    animateAutoAlpha(hero.videoDiv, 1, { duration: 1 })
   },
 
   onFadeInCover: (hero) => {
-    gsap.to(hero.cover, {
-      duration: 0.35,
-      autoAlpha: 1,
-    })
+    animateAutoAlpha(hero.cover, 1, { duration: 0.35 })
   },
 
   onFadeOutCover: (hero) => {
-    gsap.set(hero.cover, {
-      duration: 0.35,
-      autoAlpha: 0,
-    })
+    animateAutoAlpha(hero.cover, 0, { duration: 0.35 })
   },
 
   onPlayReady: () => {},
@@ -114,7 +104,7 @@ export default class HeroVideo {
   initialize() {
     this._addResizeHandler()
     // style the container
-    gsap.set(this.el, {
+    set(this.el, {
       position: 'absolute',
       top: 0,
       left: 0,
@@ -125,7 +115,7 @@ export default class HeroVideo {
 
     this.cover = Dom.find(this.el, '[data-cover]')
     if (this.cover) {
-      gsap.set(this.cover, { autoAlpha: 0 })
+      animateAutoAlpha(this.cover, 0, { duration: 0 })
     }
 
     const pauseParent = document.querySelector(this.opts.pauseParent)
@@ -146,7 +136,7 @@ export default class HeroVideo {
     this.addEvents()
     this.setSrc()
 
-    gsap.set(this.videoDiv, {
+    set(this.videoDiv, {
       position: 'absolute',
       top: 0,
       left: 0,
@@ -163,7 +153,7 @@ export default class HeroVideo {
     }
     this.video.muted = true
 
-    gsap.set(this.video, {
+    set(this.video, {
       width: document.body.clientWidth,
       height: '100%',
       top: 0,
@@ -222,7 +212,7 @@ export default class HeroVideo {
           this.fadeIn()
           this.booting = false
         } else {
-          gsap.set(this.videoDiv, { opacity: 1 })
+          set(this.videoDiv, { opacity: 1 })
         }
       }
     })
@@ -309,10 +299,10 @@ export default class HeroVideo {
   }
 
   _resize() {
-    gsap.to(this.video, {
-      duration: 0.15,
+    animate(this.video, {
       width: document.body.clientWidth,
-      overwrite: 'all',
+    }, {
+      duration: 0.15,
     })
   }
 }

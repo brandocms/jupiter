@@ -22,8 +22,8 @@
   - `set(target, values)` - Immediate property setting (gsap.set equivalent)
   - `animateAutoAlpha(target, value, options)` - Opacity + visibility
   - `clearProps(target, props)` - Clear inline styles
-  - `delayedCall(delay, callback)` - Delayed callbacks
-- **Motion built-ins**: Import `stagger` directly from 'motion' (no custom wrapper needed)
+  - `delayedCall(duration, callback)` - Delayed callbacks (uses Motion's `delay` function)
+- **Motion built-ins**: Import `stagger` and `delay` directly from 'motion' (no custom wrappers needed)
 
 ### Migration Pattern
 1. Replace GSAP import with Motion utilities
@@ -56,6 +56,72 @@
 - `clearProps` (GSAP): Use our `clearProps()` helper
 
 **Completed**: All Tier 1 (5/5) ✅
+
+### Tier 2 Learnings (Batch 1: 3/16 Complete)
+
+**HeroVideo (06)** - Mostly straightforward:
+- Primarily `gsap.set()` calls → `set()` helper
+- Uses `autoAlpha` extensively → `animateAutoAlpha()` helper
+- Migration time: ~10 minutes
+
+**CoverOverlay (09)** - Timeline with callback gotcha:
+- Simple GSAP timeline → Motion array syntax
+- **CRITICAL BUG DISCOVERED**: Timeline callbacks are different!
+  - ❌ WRONG: `animate(timeline, { onComplete })`
+  - ✅ RIGHT: `animate(timeline).finished.then(callback)`
+- Timeline arrays do NOT accept second options parameter
+- This caused page timeout in tests (animation never completed)
+- Migration time: ~10 minutes
+
+**Toggler (07)** - Stagger with promises:
+- Uses `gsap.from()` → keyframe arrays `{ height: [0, 'auto'] }`
+- Manual stagger: `forEach` with `delay: index * 0.1`
+- Multiple animations need `.finished.then()` for callbacks
+- Accordion group behavior: same pattern repeated
+- Migration time: ~15 minutes
+
+**Key patterns established**:
+- Timeline callbacks: Always use `.finished.then()`
+- Stagger: Manual loop with calculated delays
+- From animations: Keyframe arrays `[startValue, endValue]`
+- Multiple content elements: Array of animations, track last one's `.finished`
+
+**Completed**: Batch 1 of Tier 2 (3/16) ✅
+
+### Motion Docs Review (2025-11-02)
+
+**Reviewed helpers against official Motion documentation** - Key findings:
+
+**✅ Already correct:**
+- `set()` - Using `animate(target, values, { duration: 0 })` is the official approach
+- `clearProps()` - Motion has no built-in, manual approach is correct
+- `animateAutoAlpha()` - Custom helper is needed (Motion has no autoAlpha)
+- Timeline callbacks with `.finished.then()` - Exactly as documented
+
+**⚠️ Fixed based on docs:**
+1. **`delayedCall`** - Should use Motion's built-in `delay` function
+   - Old: Used `setTimeout` (not synchronized with animations)
+   - New: Uses `delay` from 'motion' (locked to animation frame loop)
+   - Benefit: Better sync with animations, less overhead
+
+2. **`animateAutoAlpha`** - Removed unnecessary onComplete wrapper
+   - In non-zero case, just pass options directly
+   - No need to wrap the callback
+
+3. **Stagger** - Motion has this built-in, no custom helper needed!
+   - Import: `import { animate, stagger } from 'motion'`
+   - Usage: `animate('.items', { opacity: 1 }, { delay: stagger(0.1) })`
+   - Options: `stagger(0.1, { startDelay: 0.2, from: 'center', ease: 'easeOut' })`
+   - Removed custom stagger helper from blueprint
+
+**Motion built-ins to use directly:**
+- `stagger` - For staggered animations
+- `delay` - For delayed callbacks (better than setTimeout)
+
+**Verification:**
+- ✅ Build successful
+- ✅ All 85 tests passing
+- ✅ CoverOverlay confirmed using correct timeline callback pattern
 
 ---
 
@@ -197,18 +263,21 @@ gsap.to('.items', {
 // GSAP (GSAP 2 legacy - we use this)
 tl.staggerTo('.items', 1, { opacity: 1 }, 0.1)
 
-// Motion - manual delay calculation
-const items = document.querySelectorAll('.items')
-items.forEach((item, i) => {
-  animate(item,
-    { opacity: 1 },
-    { delay: i * 0.1, duration: 1 }
-  )
-})
+// Motion - use built-in stagger function
+import { animate, stagger } from 'motion'
 
-// Or use stagger utility (see Utility Functions)
-import { stagger } from './utils/motion-helpers'
-stagger('.items', { opacity: 1 }, { stagger: 0.1, duration: 1 })
+animate(
+  '.items',
+  { opacity: 1 },
+  { delay: stagger(0.1), duration: 1 }
+)
+
+// With options (start delay, from center, easing)
+animate(
+  '.items',
+  { opacity: 1 },
+  { delay: stagger(0.1, { startDelay: 0.2, from: 'center' }), duration: 1 }
+)
 ```
 
 ---
@@ -319,6 +388,38 @@ animation.play()
 // No reverse() - plan differently
 ```
 
+### Timeline Callbacks
+
+**CRITICAL**: Timeline arrays do NOT accept a second options parameter!
+
+```javascript
+// GSAP - onComplete in timeline options
+const tl = gsap.timeline({
+  onComplete: () => { console.log('done') }
+})
+tl.to('#a', { x: 100 })
+
+// Motion - WRONG! ❌
+const tl = [['#a', { x: 100 }]]
+animate(tl, {
+  onComplete: () => { console.log('done') }  // This doesn't work!
+})
+
+// Motion - CORRECT! ✅
+const tl = [['#a', { x: 100 }]]
+const animation = animate(tl)
+animation.finished.then(() => {
+  console.log('done')  // Use .finished promise instead
+})
+```
+
+**Key Difference**:
+- Single animation: `animate(el, props, { onComplete })` ✅
+- Timeline: `animate(timeline).finished.then(callback)` ✅
+- Timeline: ~~`animate(timeline, { onComplete })`~~ ❌ Does NOT work!
+
+**Discovered in**: CoverOverlay migration (Tier 2)
+
 ### Dynamic Timeline Insertion
 
 **This is the biggest challenge**
@@ -421,12 +522,14 @@ tl.staggerTo('.items', 0.5, { opacity: 1, y: 0 }, 0.1)
 // GSAP 3 syntax
 gsap.to('.items', { opacity: 1, y: 0, stagger: 0.1, duration: 0.5 })
 
-// Motion - use utility
-import { stagger } from './utils/motion-helpers'
-stagger('.items', { opacity: 1, y: 0 }, {
-  stagger: 0.1,
-  duration: 0.5
-})
+// Motion - use built-in stagger
+import { animate, stagger } from 'motion'
+
+animate(
+  '.items',
+  { opacity: 1, y: 0 },
+  { delay: stagger(0.1), duration: 0.5 }
+)
 ```
 
 ### Pattern 6: Infinite Loop
@@ -484,7 +587,7 @@ element.style.removeProperty('transform')
 Create `src/utils/motion-helpers.js`:
 
 ```javascript
-import { animate } from 'motion'
+import { animate, delay } from 'motion'
 
 /**
  * Animate autoAlpha (opacity + visibility)
@@ -508,28 +611,6 @@ export function animateAutoAlpha(target, value, options = {}) {
     // Show, then fade in
     element.style.visibility = 'visible'
     return animate(element, { opacity: value }, options)
-  }
-}
-
-/**
- * Stagger animation helper
- * Mimics GSAP's stagger functionality
- */
-export function stagger(selector, values, options = {}) {
-  const elements = document.querySelectorAll(selector)
-  const { stagger: staggerDelay = 0.1, ...animationOptions } = options
-
-  const animations = Array.from(elements).map((element, index) => {
-    return animate(element, values, {
-      ...animationOptions,
-      delay: (animationOptions.delay || 0) + (index * staggerDelay)
-    })
-  })
-
-  return {
-    stop: () => animations.forEach(a => a.stop()),
-    complete: () => animations.forEach(a => a.complete()),
-    animations
   }
 }
 
@@ -562,13 +643,14 @@ export function set(target, values) {
 /**
  * Delayed call helper
  * Mimics gsap.delayedCall
+ * Uses Motion's delay function (locked to animation frame loop)
  */
-export function delayedCall(delay, callback) {
+export function delayedCall(duration, callback) {
   return new Promise(resolve => {
-    setTimeout(() => {
+    delay(() => {
       callback()
       resolve()
-    }, delay * 1000)  // Convert to ms
+    }, duration)
   })
 }
 

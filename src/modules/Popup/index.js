@@ -1,4 +1,5 @@
-import { gsap } from 'gsap/all'
+import { animate } from 'motion'
+import { set } from '../../utils/motion-helpers'
 import _defaultsDeep from 'lodash.defaultsdeep'
 
 /**
@@ -36,51 +37,38 @@ const DEFAULT_OPTIONS = {
   onClose: () => {},
 
   tweenIn: (trigger, target, popup) => {
-    gsap.set(popup.backdrop, { display: 'block' })
-    gsap.to(popup.backdrop, {
-      duration: 0.3,
-      opacity: 1,
-      onComplete: () => {
-        gsap.fromTo(
+    popup.backdrop.style.display = 'block'
+    animate(popup.backdrop, { opacity: 1 }, { duration: 0.3 })
+      .finished
+      .then(() => {
+        target.style.display = 'block'
+        animate(
           target,
           {
-            duration: 0.3,
-            yPercent: -50,
-            x: -5,
-            xPercent: -50,
-            opacity: 0,
-            display: 'block',
+            x: [-5, 0],
+            opacity: [0, 1]
           },
-          {
-            duration: 0.3,
-            yPercent: -50,
-            xPercent: -50,
-            x: 0,
-            opacity: 1,
-          }
+          { duration: 0.3 }
         )
-      },
-    })
+      })
   },
 
   tweenOut: (popup) => {
     console.log('default tweenOut')
     const popupElement = popup.currentPopup
     if (popupElement) {
-      gsap.to(popupElement, {
-        duration: 0.3,
-        opacity: 0,
-        display: 'none',
-      })
+      animate(popupElement, { opacity: 0 }, { duration: 0.3 })
+        .finished
+        .then(() => {
+          popupElement.style.display = 'none'
+        })
     }
-    gsap.to(popup.backdrop, {
-      duration: 0.3,
-      opacity: 0,
-      onComplete: () => {
+    animate(popup.backdrop, { opacity: 0 }, { duration: 0.3 })
+      .finished
+      .then(() => {
         // Remove the backdrop completely instead of just hiding it
         popup.backdrop.remove()
-      },
-    })
+      })
   },
 }
 
@@ -189,7 +177,9 @@ export default class Popup {
     if (key) {
       backdrop.setAttribute('data-popup-key', key)
     }
-    gsap.set(backdrop, { opacity: 0, display: 'none', zIndex: 4999 })
+    backdrop.style.display = 'none'
+    backdrop.style.zIndex = '4999'
+    set(backdrop, { opacity: 0 })
 
     backdrop.addEventListener('click', (e) => {
       e.stopPropagation()
