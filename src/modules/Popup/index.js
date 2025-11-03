@@ -45,10 +45,13 @@ const DEFAULT_OPTIONS = {
         animate(
           target,
           {
-            x: [-5, 0],
+            transform: [
+              'translate(calc(-50% - 5px), -50%)',
+              'translate(-50%, -50%)'
+            ],
             opacity: [0, 1]
           },
-          { duration: 0.3 }
+          { duration: 0.3, easing: [0.4, 0, 0.2, 1] }
         )
       })
   },

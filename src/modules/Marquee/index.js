@@ -58,13 +58,17 @@ export default class Marquee {
 
     this.killTweens()
     this.clearHolders()
-    this.setHeight()
     this.fillText()
+    this.setHeight()
 
     const holderWidth = this.elements.$holder.offsetWidth
     const $allHolders = Dom.all(this.elements.$el, '[data-marquee-holder]')
     const marqueeWidth = holderWidth * $allHolders.length
-    this.duration = (holderWidth + marqueeWidth) / this.opts.speed
+    // Cap duration at 40s to prevent precision issues at slow speeds
+    this.duration = Math.min(
+      (holderWidth + marqueeWidth) / this.opts.speed,
+      40
+    )
 
     set(this.elements.$marquee, { width: marqueeWidth })
     this.initializeTween()
@@ -94,12 +98,17 @@ export default class Marquee {
     const $allHolders = Dom.all(this.elements.$el, '[data-marquee-holder]')
 
     Array.from($allHolders).forEach((h, idx) => {
-      set(h, { position: 'absolute', left: h.offsetWidth * idx })
+      set(h, {
+        position: 'absolute',
+        left: h.offsetWidth * idx,
+        transform: 'translateZ(0)',
+        willChange: 'transform'
+      })
     })
 
     this.timeline = animate(
       $allHolders,
-      { x: '-100%' },
+      { transform: ['translateX(0) translateZ(0)', 'translateX(-100%) translateZ(0)'] },
       { duration: this.duration, easing: 'linear', repeat: Infinity }
     )
     this.timeline.pause()
@@ -151,8 +160,12 @@ export default class Marquee {
           this.timeline.speed = state.speed
         }
       }
-    ).finished.then(() => {
-      this.timeline.pause()
+    )
+    this.speedAnimation.finished.then(() => {
+      // Only pause if we're still in paused state (haven't called play() in the meantime)
+      if (!this.playing) {
+        this.timeline.pause()
+      }
     })
   }
 
@@ -165,7 +178,8 @@ export default class Marquee {
       state,
       { speed: 0.5 },
       {
-        duration: 0.8,
+        duration: 0.3,
+        easing: [0.4, 0, 0.2, 1], // ease-out
         onUpdate: () => {
           this.timeline.speed = state.speed
         }
@@ -182,8 +196,8 @@ export default class Marquee {
       state,
       { speed: 1 },
       {
-        duration: 0.8,
-        easing: 'ease-in',
+        duration: 0.3,
+        easing: [0.4, 0, 0.2, 1], // ease-out
         onUpdate: () => {
           this.timeline.speed = state.speed
         }
@@ -214,11 +228,18 @@ export default class Marquee {
   }
 
   fillText() {
+    // Clear any previously set heights to get accurate measurement
+    clearProps(this.elements.$el, 'height')
+    clearProps(this.elements.$marquee, 'height')
+
     this.elements.$marquee.innerHTML = ''
     this.elements.$marquee.appendChild(this.elements.$holder)
 
     this.elements.$holder.innerHTML = ''
     this.elements.$holder.appendChild(this.elements.$item)
+
+    // Measure height of item only (marquee padding will be added by CSS)
+    this.measuredHeight = this.elements.$item.offsetHeight
 
     const textWidth = this.elements.$item.offsetWidth
     if (textWidth) {
@@ -244,7 +265,10 @@ export default class Marquee {
   }
 
   setHeight() {
-    const height = this.elements.$item.offsetHeight + this.opts.extraHeight
+    // Use the height measured in fillText() (before cloning) plus any extra height
+    const height = this.measuredHeight + this.opts.extraHeight
+    // Set height on both container and marquee to preserve it when holders become absolute
     set(this.elements.$el, { height })
+    set(this.elements.$marquee, { height })
   }
 }

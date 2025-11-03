@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jupiter Marquee Test</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        line-height: 1.5;
+        padding: 0;
+        margin: 0;
+      }
+
+      header {
+        background-color: #333;
+        color: white;
+        padding: 1rem;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+
+      section {
+        padding: 2rem;
+        margin-bottom: 2rem;
+      }
+
+      .marquee-container {
+        width: 100%;
+        margin: 2rem 0;
+        border: 2px solid #ddd;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      [data-marquee] {
+        opacity: 0;
+        background: linear-gradient(90deg, #4a90e2, #357abd);
+        color: white;
+        padding: 2rem 0;
+      }
+
+      [data-marquee-holder] {
+        display: inline-block;
+        white-space: nowrap;
+      }
+
+      [data-marquee-item] {
+        font-size: 2rem;
+        font-weight: bold;
+        display: inline-block;
+      }
+
+      .controls {
+        margin: 2rem 0;
+        padding: 1rem;
+        background-color: #f5f5f5;
+        border-radius: 4px;
+      }
+
+      button {
+        background-color: #4a90e2;
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1rem;
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      button:hover {
+        background-color: #3579c6;
+      }
+
+      .info {
+        margin-top: 1rem;
+        padding: 1rem;
+        background-color: #e8f4f8;
+        border-left: 4px solid #4a90e2;
+        border-radius: 4px;
+      }
+
+      .spacer {
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f9f9f9;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Jupiter Marquee Test</h1>
+    </header>
+
+    <section data-testid="marquee-section">
+      <h2>Basic Marquee</h2>
+      <p>Continuous scrolling text that pauses on hover</p>
+
+      <div class="marquee-container">
+        <div data-marquee data-testid="marquee-basic">
+          <div data-marquee-holder>
+            <div data-marquee-item>
+              Jupiter Framework • Continuous Scrolling • Smooth Animation • GPU Accelerated • Motion Powered
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="info">
+        <strong>Features:</strong>
+        <ul>
+          <li>Automatic content duplication for seamless loop</li>
+          <li>Pauses when out of viewport (IntersectionObserver)</li>
+          <li>Slows down on hover</li>
+          <li>Customizable speed</li>
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <h2>Fast Marquee</h2>
+      <p>Faster scrolling speed</p>
+
+      <div class="marquee-container">
+        <div data-marquee data-marquee-speed="200" data-testid="marquee-fast">
+          <div data-marquee-holder>
+            <div data-marquee-item>
+              🚀 Fast Scrolling • Motion Library • High Performance • Smooth Transitions • WebGL Ready
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Slow Marquee</h2>
+      <p>Slower, relaxed pace</p>
+
+      <div class="marquee-container">
+        <div data-marquee data-marquee-speed="50" data-testid="marquee-slow">
+          <div data-marquee-holder>
+            <div data-marquee-item>
+              🐢 Slow & Steady • Infinite Loop • CSS Transforms • Hover to Slow More • Accessibility Friendly
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="spacer">
+      <p>Scroll down to see marquees pause when out of viewport...</p>
+    </div>
+
+    <section>
+      <h2>Marquee After Scroll</h2>
+      <p>This marquee only plays when scrolled into view</p>
+
+      <div class="marquee-container">
+        <div data-marquee data-testid="marquee-lazy">
+          <div data-marquee-holder>
+            <div data-marquee-item>
+              👀 Lazy Loading • IntersectionObserver • Performance Optimization • Battery Friendly • Smart Playback
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="spacer">
+      <p>✓ Test complete! All marquees should be working.</p>
+    </div>
+
+    <script type="module">
+      import { Application, Marquee } from "../src/index.js";
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const app = new Application({
+          respectReducedMotion: false,
+        });
+
+        // Initialize all marquees - pass the container element
+        const marqueeContainers = document.querySelectorAll('.marquee-container');
+        marqueeContainers.forEach(container => {
+          new Marquee(app, container);
+        });
+
+        // Start the application
+        app.initialize();
+      });
+    </script>
+  </body>
+</html>

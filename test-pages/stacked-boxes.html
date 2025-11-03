@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jupiter StackedBoxes Test</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: system-ui, sans-serif;
+        line-height: 1.5;
+      }
+
+      header {
+        background-color: #333;
+        color: white;
+        padding: 1rem;
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+
+      .intro {
+        padding: 3rem 2rem;
+        text-align: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+
+      .intro h2 {
+        margin-bottom: 1rem;
+      }
+
+      [data-stacked-section] {
+        position: relative;
+      }
+
+      [data-stacked-container] {
+        position: relative;
+      }
+
+      [data-stacked-item] {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 3rem;
+        position: relative;
+      }
+
+      [data-stacked-item]:nth-child(1) {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      }
+
+      [data-stacked-item]:nth-child(2) {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      }
+
+      [data-stacked-item]:nth-child(3) {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      }
+
+      [data-stacked-item]:nth-child(4) {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+      }
+
+      [data-stacked-item]:nth-child(5) {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+      }
+
+      .box-content {
+        max-width: 600px;
+        text-align: center;
+        color: white;
+      }
+
+      .box-content h2 {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+      }
+
+      .box-content p {
+        font-size: 1.25rem;
+        opacity: 0.9;
+      }
+
+      .outro {
+        padding: 3rem 2rem;
+        text-align: center;
+        background-color: #333;
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Jupiter StackedBoxes Test</h1>
+    </header>
+
+    <section class="intro">
+      <h2>Scroll Down to See the Stacking Effect</h2>
+      <p>Each box will stack on top of the previous one as you scroll</p>
+    </section>
+
+    <!-- Stacked Boxes -->
+    <div data-stacked-section data-testid="stacked-section">
+      <div data-stacked-container>
+        <div data-stacked-item data-testid="stacked-item-1">
+          <div class="box-content">
+            <h2>Box 1</h2>
+            <p>First box with parallax stacking effect</p>
+          </div>
+        </div>
+
+        <div data-stacked-item data-testid="stacked-item-2">
+          <div class="box-content">
+            <h2>Box 2</h2>
+            <p>Stacks on top of Box 1</p>
+          </div>
+        </div>
+
+        <div data-stacked-item data-testid="stacked-item-3">
+          <div class="box-content">
+            <h2>Box 3</h2>
+            <p>Stacks on top of Box 2</p>
+          </div>
+        </div>
+
+        <div data-stacked-item data-testid="stacked-item-4">
+          <div class="box-content">
+            <h2>Box 4</h2>
+            <p>Stacks on top of Box 3</p>
+          </div>
+        </div>
+
+        <div data-stacked-item data-testid="stacked-item-5">
+          <div class="box-content">
+            <h2>Box 5</h2>
+            <p>Final stacked box</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <section class="outro">
+      <h2>✓ Stacking Complete!</h2>
+      <p>All boxes should have stacked smoothly as you scrolled.</p>
+    </section>
+
+    <script type="module">
+      import { Application, StackedBoxes } from "../src/index.js";
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const app = new Application({
+          respectReducedMotion: false,
+        });
+
+        // Initialize StackedBoxes
+        new StackedBoxes(app);
+
+        // Start the application
+        app.initialize();
+      });
+    </script>
+  </body>
+</html>

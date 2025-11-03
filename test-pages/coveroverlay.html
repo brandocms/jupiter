@@ -191,7 +191,7 @@
 
     <script type="module">
       // Import Jupiter modules
-      import { Application, CoverOverlay } from "../src/index.js";
+      import { Application, CoverOverlay, animate } from "../src/index.js";
 
       document.addEventListener("DOMContentLoaded", () => {
         // Initialize Application
@@ -225,11 +225,14 @@
             '[data-testid="video-iframe"]',
           );
 
-          // Reset the styles
-          overlay.style.display = "block";
-          overlay.style.opacity = "1";
-          button.style.opacity = "1";
-          iframe.style.opacity = "0";
+          // Reset with smooth animations
+          const sequence = [
+            [overlay, { display: 'block' }, { duration: 0, at: 0 }],
+            [iframe, { opacity: 0 }, { duration: 0, at: 0 }],
+            [overlay, { opacity: 1 }, { duration: 0.5, at: 0 }],
+            [button, { opacity: 1 }, { duration: 0.5, at: 0 }]
+          ];
+          animate(sequence);
         });
 
         const resetVimeoButton = document.getElementById("reset-vimeo-overlay");
@@ -247,11 +250,14 @@
             '[data-testid="vimeo-iframe"]',
           );
 
-          // Reset the styles
-          overlay.style.display = "block";
-          overlay.style.opacity = "1";
-          button.style.opacity = "1";
-          iframe.style.opacity = "0";
+          // Reset with smooth animations
+          const sequence = [
+            [overlay, { display: 'block' }, { duration: 0, at: 0 }],
+            [iframe, { opacity: 0 }, { duration: 0, at: 0 }],
+            [overlay, { opacity: 1 }, { duration: 0.5, at: 0 }],
+            [button, { opacity: 1 }, { duration: 0.5, at: 0 }]
+          ];
+          animate(sequence);
         });
 
         // Start the application

@@ -36,16 +36,22 @@ export default class CoverOverlay {
 
       btn.addEventListener('click', () => {
         const timeline = [
-          [iframe, { opacity: 1 }, { duration: 0 }],
-          [btn, { opacity: 0 }, { duration: 0.5, easing: 'ease-in' }],
-          [overlay, { opacity: 0 }, { duration: 1, easing: 'ease-in' }],
-          [overlay, { display: 'none' }, { duration: 0 }]
+          [btn, { opacity: 0 }, { duration: 0.5, easing: 'ease-in', at: 0 }],
+          [overlay, { opacity: 0 }, { duration: 1, easing: 'ease-in', at: 0 }],
+          [iframe, { opacity: 1 }, { duration: 0.5, easing: 'ease-out', at: 0.5 }],
+          [overlay, { display: 'none' }, { duration: 0, at: 1 }]
         ]
 
-        const animation = animate(timeline)
-        animation.finished.then(() => {
+        animate(timeline).finished.then(() => {
           if (player) {
+            // Vimeo player
             player.play()
+          } else if (iframe && iframe.src.includes('youtube.com')) {
+            // YouTube postMessage API
+            iframe.contentWindow.postMessage(
+              '{"event":"command","func":"playVideo","args":""}',
+              '*'
+            )
           }
         })
       })
