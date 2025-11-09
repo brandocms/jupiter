@@ -32,14 +32,14 @@
         margin-bottom: 2rem;
       }
 
-      [data-equal-height-images] {
+      [data-eq-height-images] {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 1rem;
         margin: 2rem 0;
       }
 
-      [data-equal-height-images-item] {
+      [data-eq-height-images-item] {
         position: relative;
         overflow: hidden;
         border-radius: 8px;
@@ -47,12 +47,12 @@
         transition: transform 0.2s, box-shadow 0.2s;
       }
 
-      [data-equal-height-images-item]:hover {
+      [data-eq-height-images-item]:hover {
         transform: scale(1.02);
         box-shadow: 0 4px 12px rgba(0,0,0,0.2);
       }
 
-      [data-equal-height-images-item] img {
+      [data-eq-height-images-item] img {
         width: 100%;
         height: 100%;
         object-fit: cover;
@@ -98,65 +98,65 @@
       </div>
 
       <h3 class="section-title">Landscape & Portrait Mix</h3>
-      <div data-equal-height-images data-testid="gallery-1">
-        <div data-equal-height-images-item data-testid="img-1">
+      <div data-eq-height-images data-testid="gallery-1">
+        <div data-eq-height-images-item data-testid="img-1">
           <img src="https://picsum.photos/400/300?random=1" alt="Landscape 1" />
           <div class="caption">Landscape Image</div>
         </div>
-        <div data-equal-height-images-item data-testid="img-2">
+        <div data-eq-height-images-item data-testid="img-2">
           <img src="https://picsum.photos/300/400?random=2" alt="Portrait 1" />
           <div class="caption">Portrait Image</div>
         </div>
-        <div data-equal-height-images-item data-testid="img-3">
+        <div data-eq-height-images-item data-testid="img-3">
           <img src="https://picsum.photos/400/300?random=3" alt="Landscape 2" />
           <div class="caption">Landscape Image</div>
         </div>
       </div>
 
       <h3 class="section-title">Square Gallery</h3>
-      <div data-equal-height-images data-testid="gallery-2">
-        <div data-equal-height-images-item data-testid="img-4">
+      <div data-eq-height-images data-testid="gallery-2">
+        <div data-eq-height-images-item data-testid="img-4">
           <img src="https://picsum.photos/400/400?random=4" alt="Square 1" />
           <div class="caption">Square 1</div>
         </div>
-        <div data-equal-height-images-item data-testid="img-5">
+        <div data-eq-height-images-item data-testid="img-5">
           <img src="https://picsum.photos/400/400?random=5" alt="Square 2" />
           <div class="caption">Square 2</div>
         </div>
-        <div data-equal-height-images-item data-testid="img-6">
+        <div data-eq-height-images-item data-testid="img-6">
           <img src="https://picsum.photos/400/400?random=6" alt="Square 3" />
           <div class="caption">Square 3</div>
         </div>
-        <div data-equal-height-images-item data-testid="img-7">
+        <div data-eq-height-images-item data-testid="img-7">
           <img src="https://picsum.photos/400/400?random=7" alt="Square 4" />
           <div class="caption">Square 4</div>
         </div>
       </div>
 
       <h3 class="section-title">Wide Panoramas</h3>
-      <div data-equal-height-images data-testid="gallery-3">
-        <div data-equal-height-images-item data-testid="img-8">
+      <div data-eq-height-images data-testid="gallery-3">
+        <div data-eq-height-images-item data-testid="img-8">
           <img src="https://picsum.photos/600/200?random=8" alt="Wide 1" />
           <div class="caption">Panorama 1</div>
         </div>
-        <div data-equal-height-images-item data-testid="img-9">
+        <div data-eq-height-images-item data-testid="img-9">
           <img src="https://picsum.photos/600/200?random=9" alt="Wide 2" />
           <div class="caption">Panorama 2</div>
         </div>
       </div>
 
       <h3 class="section-title">Mixed Aspect Ratios</h3>
-      <div data-equal-height-images data-testid="gallery-4">
-        <div data-equal-height-images-item data-testid="img-10">
+      <div data-eq-height-images data-testid="gallery-4">
+        <div data-eq-height-images-item data-testid="img-10">
           <img src="https://picsum.photos/500/300?random=10" alt="Mixed 1" />
         </div>
-        <div data-equal-height-images-item data-testid="img-11">
+        <div data-eq-height-images-item data-testid="img-11">
           <img src="https://picsum.photos/300/500?random=11" alt="Mixed 2" />
         </div>
-        <div data-equal-height-images-item data-testid="img-12">
+        <div data-eq-height-images-item data-testid="img-12">
           <img src="https://picsum.photos/400/400?random=12" alt="Mixed 3" />
         </div>
-        <div data-equal-height-images-item data-testid="img-13">
+        <div data-eq-height-images-item data-testid="img-13">
           <img src="https://picsum.photos/600/300?random=13" alt="Mixed 4" />
         </div>
       </div>
@@ -176,17 +176,15 @@
     <script type="module">
       import { Application, EqualHeightImages } from "../src/index.js";
 
-      document.addEventListener("DOMContentLoaded", () => {
-        const app = new Application({
-          respectReducedMotion: false,
-        });
-
-        // Initialize EqualHeightImages
-        new EqualHeightImages(app);
-
-        // Start the application
-        app.initialize();
+      const app = new Application({
+        respectReducedMotion: false,
       });
+
+      // Initialize EqualHeightImages
+      new EqualHeightImages(app);
+
+      // Start the application
+      app.initialize();
     </script>
   </body>
 </html>

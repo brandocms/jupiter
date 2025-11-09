@@ -46,12 +46,20 @@ const DEFAULT_OPTIONS = {
   onInitialize: (/* hs */) => {},
 
   onFadeIn: (hs, callback) => {
-    const animation = animate(hs.el, { opacity: 1 }, { duration: 0.25 })
+    // Get the first slide's image to start zooming during reveal
+    const firstSlideImg = hs.slides[hs._currentSlideIdx].querySelector('.hero-slide-img')
 
-    if (hs.slides.length > 1) {
-      animation.finished.then(() => {
-        callback()
-      })
+    // Fade in the container
+    animate(hs.el, { opacity: 1 }, { duration: 0.25 })
+
+    // Start zoom immediately as container fades in
+    if (firstSlideImg && hs.slides.length > 1) {
+      // Animate with linear easing - MUST specify type: "tween"!
+      animate(
+        firstSlideImg,
+        { scale: [1, hs.opts.transition.scale] },
+        { type: "tween", duration: hs.opts.interval, ease: "linear" }
+      ).finished.then(callback)
     }
   },
 }
@@ -93,7 +101,7 @@ export default class HeroSlider {
     this._currentSlideIdx = this.opts.initialSlideNumber
 
     // style the slides
-    Array.from(this.slides).forEach((s) => {
+    Array.from(this.slides).forEach((s, index) => {
       set(s, {
         zIndex: this.opts.zIndex.regular,
         position: 'absolute',
@@ -101,6 +109,7 @@ export default class HeroSlider {
         left: 0,
         width: '100%',
         height: '100%',
+        opacity: index === 0 ? 1 : 0, // Only first slide visible initially
       })
 
       const img = s.querySelector('.hero-slide-img')
@@ -112,6 +121,10 @@ export default class HeroSlider {
           top: 0,
           left: 0,
           position: 'absolute',
+          transition: 'none',
+          transformOrigin: 'center center',
+          willChange: 'transform',
+          scale: 1, // Initialize scale
         })
       } else {
         console.error(
@@ -120,6 +133,7 @@ export default class HeroSlider {
       }
     })
 
+    // Set proper z-indexes for first two slides
     this.slides[0].style.zIndex = this.opts.zIndex.visible
     if (this.slides[1]) {
       this.slides[1].style.zIndex = this.opts.zIndex.next
@@ -179,31 +193,47 @@ export default class HeroSlider {
           // Setup: set current slide invisible at correct z-index
           set(this._currentSlide, {
             opacity: 0,
-            scale: 1,
             zIndex: this.opts.zIndex.visible,
           })
           set(this._nextSlide, { opacity: 0 })
 
+          // Get the images to animate
+          const previousSlideImg = this._previousSlide.querySelector('.hero-slide-img')
+          const currentSlideImg = this._currentSlide.querySelector('.hero-slide-img')
+
+          // Explicitly set starting scale for current slide
+          set(currentSlideImg, { scale: 1 })
+
           // Build animation sequence
-          // Previous slide zooms from 1 to 1.05 over interval (4.2s)
-          // Current slide fades in starting at interval - duration (3.4s), lasting duration (0.8s)
-          // Both complete at interval (4.2s)
+          // Previous slide continues zooming at same rate during fade out
+          // Zoom rate: (scale - 1) / interval, so in transition.duration we zoom by that rate * duration
+          const zoomRate = (this.opts.transition.scale - 1) / this.opts.interval
+          const continueZoomAmount = zoomRate * this.opts.transition.duration
+          const continueZoomTarget = this.opts.transition.scale + continueZoomAmount
+
           const sequence = [
-            // Previous slide zoom (starts at 0s, runs for interval)
+            // Previous slide continues zooming during fade at same rate
             [
-              this._previousSlide,
-              { scale: this.opts.transition.scale },
-              { duration: this.opts.interval, at: 0 },
+              previousSlideImg,
+              { scale: [this.opts.transition.scale, continueZoomTarget] },
+              { type: "tween", duration: this.opts.transition.duration, ease: "linear", at: 0 },
             ],
-            // Current slide fade-in (starts at interval - duration to overlap zoom)
+            // Current slide fade-in (starts immediately)
             [
               this._currentSlide,
               { opacity: 1 },
               {
+                type: "tween",
                 duration: this.opts.transition.duration,
-                easing: [0.45, 0, 0.55, 1], // sine.inOut bezier
-                at: this.opts.interval - this.opts.transition.duration,
+                ease: [0.45, 0, 0.55, 1], // sine.inOut bezier
+                at: 0,
               },
+            ],
+            // Current slide image zoom (starts immediately as it fades in)
+            [
+              currentSlideImg,
+              { scale: [1, this.opts.transition.scale] },
+              { type: "tween", duration: this.opts.interval, ease: "linear", at: 0 },
             ],
           ]
 
@@ -212,6 +242,8 @@ export default class HeroSlider {
           animation.finished.then(() => {
             // Cleanup after animation completes
             set(this._previousSlide, { opacity: 0 })
+            set(this._currentSlide, { opacity: 1 })
+            set(previousSlideImg, { scale: 1 })
             this._nextSlide.style.zIndex = this.opts.zIndex.visible
             this._currentSlide.style.zIndex = this.opts.zIndex.regular
             this._previousSlide.style.zIndex = this.opts.zIndex.regular
@@ -225,29 +257,48 @@ export default class HeroSlider {
           // Setup: current slide behind previous slide
           set(this._currentSlide, {
             zIndex: this.opts.zIndex.next,
-            scale: 1.0,
             width: '100%',
+            opacity: 1, // Make sure it's visible underneath
           })
           set(this._previousSlide, { overflow: 'hidden' })
 
+          // Get the current slide's image to animate
+          const previousSlideImg = this._previousSlide.querySelector('.hero-slide-img')
+          const currentSlideImg = this._currentSlide.querySelector('.hero-slide-img')
+
+          // Explicitly set starting scale for current slide
+          set(currentSlideImg, { scale: 1 })
+
           // Build animation sequence
-          // Previous slide zooms, then width collapses
+          // Previous slide continues zooming at same rate during collapse
+          // Zoom rate: (scale - 1) / interval, so in transition.duration we zoom by that rate * duration
+          const zoomRate = (this.opts.transition.scale - 1) / this.opts.interval
+          const continueZoomAmount = zoomRate * this.opts.transition.duration
+          const continueZoomTarget = this.opts.transition.scale + continueZoomAmount
+
           const sequence = [
-            // Previous slide zoom (starts at 0s, runs for interval)
+            // Previous slide continues zooming during collapse at same rate
             [
-              this._previousSlide,
-              { scale: this.opts.transition.scale },
-              { duration: this.opts.interval, at: 0 },
+              previousSlideImg,
+              { scale: [this.opts.transition.scale, continueZoomTarget] },
+              { type: "tween", duration: this.opts.transition.duration, ease: "linear", at: 0 },
             ],
-            // Previous slide width collapse (starts at interval)
+            // Previous slide width collapse (starts immediately)
             [
               this._previousSlide,
               { width: 0 },
               {
+                type: "tween",
                 duration: this.opts.transition.duration,
-                easing: [0.895, 0.03, 0.685, 0.22], // power3.in bezier
-                at: this.opts.interval,
+                ease: [0.895, 0.03, 0.685, 0.22], // power3.in bezier
+                at: 0,
               },
+            ],
+            // Current slide image zoom (starts immediately as it's revealed)
+            [
+              currentSlideImg,
+              { scale: [1, this.opts.transition.scale] },
+              { type: "tween", duration: this.opts.interval, ease: "linear", at: 0 },
             ],
           ]
 
@@ -255,16 +306,19 @@ export default class HeroSlider {
 
           animation.finished.then(() => {
             // Cleanup and shuffle z-indexes
-            set(this._nextSlide, { zIndex: this.opts.zIndex.next })
+            set(this._nextSlide, { zIndex: this.opts.zIndex.next, opacity: 1 })
             set(this._currentSlide, {
               zIndex: this.opts.zIndex.visible,
               width: '100%',
+              opacity: 1,
             })
             set(this._previousSlide, {
               zIndex: this.opts.zIndex.regular,
-              scale: 1.0,
               width: '100%',
+              opacity: 0, // Hide previous slide
             })
+            // Reset previous slide image scale for next time
+            set(previousSlideImg, { scale: 1.0 })
             this.next()
           })
         }

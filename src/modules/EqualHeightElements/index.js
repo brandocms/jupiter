@@ -1,4 +1,4 @@
-import { set, clearProps } from '../../utils/motion-helpers'
+import { clearProps } from '../../utils/motion-helpers'
 import Dom from '../Dom'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import * as Events from '../../events'
@@ -59,9 +59,8 @@ export default class EqualHeightElements {
 
       if (actionables.length) {
         actionables.forEach((a) => {
-          set(a.elements, { minHeight: a.height })
-          // Set attribute manually (Motion doesn't support attr property)
           a.elements.forEach(el => {
+            el.style.minHeight = `${a.height}px`
             el.setAttribute('data-eq-height-elements-adjusted', 'true')
           })
         })

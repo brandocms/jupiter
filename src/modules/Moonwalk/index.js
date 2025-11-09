@@ -1,7 +1,7 @@
 /**
  * Vendor imports
  */
-import { gsap, CSSPlugin } from 'gsap/all'
+import { animate, stagger } from 'motion'
 import _defaultsDeep from 'lodash.defaultsdeep'
 
 /**
@@ -11,9 +11,8 @@ import * as Events from '../../events'
 import prefersReducedMotion from '../../utils/prefersReducedMotion'
 import imageIsLoaded from '../../utils/imageIsLoaded'
 import imagesAreLoaded from '../../utils/imagesAreLoaded'
+import { set, animateAutoAlpha, delayedCall } from '../../utils/motion-helpers'
 import Dom from '../Dom'
-
-gsap.registerPlugin(CSSPlugin)
 
 /**
  * @typedef {Object} MoonwalkTransition
@@ -388,16 +387,15 @@ export default class Moonwalk {
       this.addIndexes(section)
     }
 
-    const timeline = gsap.timeline({
-      autoRemoveChildren: false,
-      smoothChildTiming: false,
-    })
-
     return {
       id: Math.random().toString(36).substring(7),
       el: section,
       name: section.getAttribute('data-moonwalk-section') || null,
-      timeline,
+      animation: {
+        lastDelay: 0,
+        lastDuration: 0,
+        lastStartTime: null,
+      },
       observer: null,
       stage: {
         name: section.getAttribute('data-moonwalk-stage') || null,
@@ -490,7 +488,7 @@ export default class Moonwalk {
           }
         : sectionWalk.transition.from
 
-      gsap.set(section.children, fromTransition)
+      set(section.children, fromTransition)
     }
 
     if (section.stage.name) {
@@ -502,7 +500,7 @@ export default class Moonwalk {
           section.stage.name
         )
       } else {
-        gsap.set(section.el, stageTween.transition.from)
+        set(section.el, stageTween.transition.from)
       }
     }
 
@@ -532,12 +530,9 @@ export default class Moonwalk {
                 // run stage tween
                 const stageTween = walks[section.stage.name]
 
-                const to = {
-                  ...stageTween.transition.to,
+                animate(entry.target, stageTween.transition.to, {
                   duration: stageTween.duration,
-                }
-
-                section.timeline.to(entry.target, to, 0)
+                })
                 section.stage.firstTween = true
               }
             }
@@ -559,36 +554,30 @@ export default class Moonwalk {
               } else if (tween.alphaTween === true) {
                 tween.alphaTween = {
                   duration: tween.duration,
-                  ease: 'sine.in',
+                  ease: 'ease-in',
                 }
               }
 
-              if (tween.startDelay) {
-                tween.transition.to = {
-                  ...tween.transition.to,
-                  delay: tween.startDelay,
-                }
+              const animationOptions = {
+                duration: tween.duration,
+                delay: stagger(tween.interval, {
+                  startDelay: tween.startDelay || 0,
+                }),
               }
 
-              section.timeline.staggerTo(
-                section.children,
-                tween.duration,
-                tween.transition.to,
-                tween.interval,
-                0
-              )
+              animate(section.children, tween.transition.to, animationOptions)
 
               if (tween.alphaTween) {
-                section.timeline.staggerTo(
+                animate(
                   section.children,
-                  tween.alphaTween.duration,
+                  { opacity: 1 },
                   {
-                    opacity: 1,
-                    ease: tween.alphaTween.ease,
-                    delay: tween.startDelay || 0,
-                  },
-                  tween.interval,
-                  0
+                    duration: tween.alphaTween.duration,
+                    easing: tween.alphaTween.ease,
+                    delay: stagger(tween.interval, {
+                      startDelay: tween.startDelay || 0,
+                    }),
+                  }
                 )
               }
             }
@@ -629,6 +618,43 @@ export default class Moonwalk {
 
       return orderA - orderB
     })
+  }
+
+  /**
+   * Calculate the delay for the next animation in the section.
+   * This replaces GSAP's timeline.recent() logic.
+   *
+   * @param {*} section - The section object
+   * @param {*} duration - Duration of the animation to add
+   * @param {*} overlap - How much the animations should overlap
+   * @returns {number} The delay in seconds
+   */
+  calculateDelay(section, duration, overlap) {
+    if (!section.animation.lastStartTime) {
+      // First animation in section
+      return 0
+    }
+
+    const now = performance.now()
+    const elapsed = (now - section.animation.lastStartTime) / 1000
+    const idealNextStart =
+      section.animation.lastDelay + section.animation.lastDuration - overlap
+    const actualDelay = Math.max(0, idealNextStart - elapsed)
+
+    return actualDelay
+  }
+
+  /**
+   * Update the animation state after adding an animation.
+   *
+   * @param {*} section - The section object
+   * @param {*} delay - The delay that was used
+   * @param {*} duration - The duration of the animation
+   */
+  updateAnimationState(section, delay, duration) {
+    section.animation.lastDelay = delay
+    section.animation.lastDuration = duration
+    section.animation.lastStartTime = performance.now()
   }
 
   onReady() {
@@ -870,23 +896,32 @@ export default class Moonwalk {
               }
             }
 
-            const tween = transition ? this.tweenJS : this.tweenCSS
-
             const tweenFn = () => {
-              tween(
-                section,
-                entry.target,
-                duration,
-                interval,
-                transition,
-                overlap,
-                alphaTween
-              )
+              if (transition) {
+                this.tweenJS(
+                  section,
+                  entry.target,
+                  duration,
+                  interval,
+                  transition,
+                  overlap,
+                  alphaTween
+                )
+              } else {
+                this.tweenCSS(
+                  section,
+                  entry.target,
+                  duration,
+                  interval,
+                  transition,
+                  overlap
+                )
+              }
             }
 
             const wrappedTweenFn = () => {
               if (startDelay) {
-                gsap.delayedCall(startDelay, tweenFn)
+                delayedCall(startDelay, tweenFn)
               } else {
                 tweenFn()
               }
@@ -950,56 +985,53 @@ export default class Moonwalk {
     tweenOverlap,
     alphaTween
   ) {
-    let tweenPosition
-    const startingPoint = tweenDuration - tweenOverlap
-
     if (Dom.hasAttribute(target, 'data-moonwalked')) {
       return
     }
 
-    if (section.timeline.isActive() && section.timeline.recent()) {
-      const currentTime = section.timeline.time()
-      const lastTweenTime = section.timeline.recent().time()
-      const lastTweenEndTime = section.timeline.recent().endTime()
-      if (lastTweenTime > startingPoint) {
-        /* We're late for this tween if it was supposed to be sequential,
-        so insert at current time in timeline instead */
-        tweenPosition = () => section.timeline.time()
-      } else {
-        if (currentTime + tweenOverlap * -1 < lastTweenEndTime) {
-          /* Still time, add as normal overlap at the end */
-          tweenPosition = () => `>${tweenOverlap}`
-        } else {
-          /* Won't make it */
-          tweenPosition = () => section.timeline.time()
-        }
-      }
-    } else {
-      tweenPosition = () => '>'
-    }
+    // Calculate delay using our new helper method
+    const delay = this.calculateDelay(section, tweenDuration, tweenOverlap)
 
-    gsap.set(target, tweenTransition.from)
+    // Set initial state
+    set(target, tweenTransition.from)
 
-    const toTransition = {
-      ...tweenTransition.to,
+    // Extract ease from to values (GSAP format) and convert to Motion easing option
+    const { ease, ...toValues } = tweenTransition.to
+    const easingOption = ease || 'ease-out'
+
+    // Animate to final state
+    const animation = animate(target, toValues, {
       duration: tweenDuration,
-      onComplete: () => target.setAttribute('data-moonwalked', ''),
+      delay,
+      easing: easingOption,
+    })
+
+    // Use .finished promise for completion callback
+    if (animation && animation.finished) {
+      animation.finished
+        .then(() => {
+          target.setAttribute('data-moonwalked', '')
+        })
+        .catch(() => {
+          // Animation cancelled or failed, still mark as walked
+          target.setAttribute('data-moonwalked', '')
+        })
+    } else {
+      // No animation object returned, mark immediately
+      target.setAttribute('data-moonwalked', '')
     }
 
-    section.timeline.to(target, toTransition, tweenPosition())
-
+    // Optional separate alpha animation
     if (alphaTween) {
-      section.timeline.to(
-        target,
-        {
-          duration: alphaTween.duration,
-          opacity: 1,
-          ease: alphaTween.ease,
-          delay: alphaTween.delay ? alphaTween.delay : 0,
-        },
-        '<'
-      )
+      animate(target, { opacity: 1 }, {
+        duration: alphaTween.duration,
+        easing: alphaTween.ease || 'ease-in',
+        delay: delay + (alphaTween.delay || 0),
+      })
     }
+
+    // Update animation state for next element
+    this.updateAnimationState(section, delay, tweenDuration)
   }
 
   /**
@@ -1019,47 +1051,24 @@ export default class Moonwalk {
     tweenTransition,
     tweenOverlap
   ) {
-    let tweenPosition
-    const startingPoint = tweenDuration - tweenOverlap * -1
-
     if (Dom.hasAttribute(target, 'data-moonwalked')) {
       return
     }
 
-    if (section.timeline.isActive() && section.timeline.recent()) {
-      const currentTime = section.timeline.time()
-      const lastTweenTime = section.timeline.recent().time()
-      const lastTweenEndTime = section.timeline.recent().endTime()
-      if (lastTweenTime > startingPoint) {
-        /* We're late for this tween if it was supposed to be sequential,
-        so insert at current time in timeline instead */
-        tweenPosition = () => section.timeline.time()
-      } else {
-        if (currentTime + tweenOverlap * -1 < lastTweenEndTime) {
-          /* Still time, add as normal overlap at the end */
-          tweenPosition = () => `>${tweenOverlap}`
-        } else {
-          /* Won't make it */
-          tweenPosition = () => section.timeline.time()
-        }
-      }
-    } else {
-      tweenPosition = () => '>'
-    }
+    // Calculate delay using our new helper method
+    const calculatedDelay = this.calculateDelay(
+      section,
+      tweenDuration,
+      tweenOverlap
+    )
 
-    section.timeline
-      .to(
-        target,
-        {
-          css: {
-            className: target.className
-              ? `${target.className} moonwalked`
-              : 'moonwalked',
-          },
-          duration: tweenDuration,
-        },
-        tweenPosition()
-      )
-      .call(() => target.setAttribute('data-moonwalked', ''), null, '>')
+    // Add class after delay
+    delayedCall(calculatedDelay, () => {
+      target.classList.add('moonwalked')
+      target.setAttribute('data-moonwalked', '')
+    })
+
+    // Update animation state for next element
+    this.updateAnimationState(section, calculatedDelay, tweenDuration)
   }
 }

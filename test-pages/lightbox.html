@@ -40,6 +40,190 @@
         object-fit: cover;
         display: block;
       }
+
+      /* Lightbox Styles */
+      .lightbox-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.9);
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .lightbox-backdrop.active {
+        opacity: 1;
+      }
+
+      .lightbox-content {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .lightbox-image-wrapper {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 4rem 6rem;
+        box-sizing: border-box;
+      }
+
+      .lightbox-image {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        max-width: calc(100% - 12rem);
+        max-height: calc(100% - 8rem);
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        display: block;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .lightbox-image.active {
+        opacity: 1;
+      }
+
+      .lightbox-close {
+        position: fixed;
+        top: 2rem;
+        right: 2rem;
+        width: 3rem;
+        height: 3rem;
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        cursor: pointer;
+        z-index: 10001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        color: white;
+        font-size: 1.5rem;
+        font-weight: 300;
+        line-height: 1;
+        text-decoration: none;
+      }
+
+      .lightbox-close:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.5);
+        transform: scale(1.1);
+      }
+
+      .lightbox-prev,
+      .lightbox-next {
+        position: fixed;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 3rem;
+        height: 3rem;
+        background: rgba(255, 255, 255, 0.1);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        cursor: pointer;
+        z-index: 10001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        text-decoration: none;
+      }
+
+      .lightbox-prev {
+        left: 2rem;
+      }
+
+      .lightbox-next {
+        right: 2rem;
+      }
+
+      .lightbox-prev:hover,
+      .lightbox-next:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.5);
+        transform: translateY(-50%) scale(1.1);
+      }
+
+      .arrow-l,
+      .arrow-r {
+        color: white;
+        font-size: 1.5rem;
+        line-height: 1;
+        display: block;
+      }
+
+      .lightbox-dots {
+        position: fixed;
+        bottom: 2rem;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 0.75rem;
+        z-index: 10001;
+      }
+
+      .lightbox-dots a {
+        color: rgba(255, 255, 255, 0.3);
+        font-size: 1.5rem;
+        line-height: 1;
+        text-decoration: none;
+        transition: all 0.2s ease;
+      }
+
+      .lightbox-dots a.active {
+        color: white;
+        transform: scale(1.2);
+      }
+
+      .lightbox-dots a:hover {
+        color: rgba(255, 255, 255, 0.6);
+      }
+
+      .lightbox-numbers {
+        position: fixed;
+        bottom: 2rem;
+        left: 50%;
+        transform: translateX(-50%);
+        color: white;
+        font-size: 1rem;
+        z-index: 10001;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 0.5rem 1rem;
+        border-radius: 1rem;
+      }
+
+      .lightbox-caption {
+        position: fixed;
+        bottom: 4rem;
+        left: 50%;
+        transform: translateX(-50%);
+        color: white;
+        font-size: 1rem;
+        z-index: 10001;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 1rem 2rem;
+        border-radius: 0.5rem;
+        max-width: 80%;
+        text-align: center;
+      }
     </style>
   </head>
   <body>
@@ -49,31 +233,31 @@
     <section>
       <h2>Image Gallery</h2>
       <p>Click any image to open in lightbox</p>
-      <div class="gallery" data-lightbox-gallery="gallery1">
-        <div class="gallery-item" data-lightbox-trigger>
-          <img src="https://picsum.photos/400/300?random=1" alt="Image 1" data-lightbox-image />
+      <div class="gallery" data-testid="gallery">
+        <div class="gallery-item" data-lightbox="https://picsum.photos/id/10/1200/900" data-lightbox-section="gallery1" data-lightbox-trigger data-testid="gallery-item-1">
+          <img src="https://picsum.photos/id/10/400/300" alt="Mountain landscape" />
         </div>
-        <div class="gallery-item" data-lightbox-trigger>
-          <img src="https://picsum.photos/400/300?random=2" alt="Image 2" data-lightbox-image />
+        <div class="gallery-item" data-lightbox="https://picsum.photos/id/20/1200/900" data-lightbox-section="gallery1" data-lightbox-trigger data-testid="gallery-item-2">
+          <img src="https://picsum.photos/id/20/400/300" alt="Ocean view" />
         </div>
-        <div class="gallery-item" data-lightbox-trigger>
-          <img src="https://picsum.photos/400/300?random=3" alt="Image 3" data-lightbox-image />
+        <div class="gallery-item" data-lightbox="https://picsum.photos/id/30/1200/900" data-lightbox-section="gallery1" data-lightbox-trigger data-testid="gallery-item-3">
+          <img src="https://picsum.photos/id/30/400/300" alt="Forest path" />
         </div>
-        <div class="gallery-item" data-lightbox-trigger>
-          <img src="https://picsum.photos/400/300?random=4" alt="Image 4" data-lightbox-image />
+        <div class="gallery-item" data-lightbox="https://picsum.photos/id/40/1200/900" data-lightbox-section="gallery1" data-lightbox-trigger data-testid="gallery-item-4">
+          <img src="https://picsum.photos/id/40/400/300" alt="Urban scene" />
         </div>
-        <div class="gallery-item" data-lightbox-trigger>
-          <img src="https://picsum.photos/400/300?random=5" alt="Image 5" data-lightbox-image />
+        <div class="gallery-item" data-lightbox="https://picsum.photos/id/50/1200/900" data-lightbox-section="gallery1" data-lightbox-trigger data-testid="gallery-item-5">
+          <img src="https://picsum.photos/id/50/400/300" alt="Architecture" />
         </div>
-        <div class="gallery-item" data-lightbox-trigger>
-          <img src="https://picsum.photos/400/300?random=6" alt="Image 6" data-lightbox-image />
+        <div class="gallery-item" data-lightbox="https://picsum.photos/id/60/1200/900" data-lightbox-section="gallery1" data-lightbox-trigger data-testid="gallery-item-6">
+          <img src="https://picsum.photos/id/60/400/300" alt="Nature close-up" />
         </div>
       </div>
     </section>
     <script type="module">
       import { Application, Lightbox } from "../src/index.js";
       const app = new Application({ respectReducedMotion: false });
-      new Lightbox(app, { el: "[data-lightbox-gallery]" });
+      new Lightbox(app);
       app.initialize();
     </script>
   </body>

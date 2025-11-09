@@ -154,11 +154,12 @@ export default class HeroVideo {
     this.video.muted = true
 
     set(this.video, {
-      width: document.body.clientWidth,
+      width: '100%',
       height: '100%',
+      objectFit: 'cover',
+      position: 'absolute',
       top: 0,
       left: 0,
-      position: 'absolute',
     })
 
     if (this.cover) {
@@ -299,10 +300,7 @@ export default class HeroVideo {
   }
 
   _resize() {
-    animate(this.video, {
-      width: document.body.clientWidth,
-    }, {
-      duration: 0.15,
-    })
+    // Video uses object-fit: cover, so no manual sizing needed
+    // This method is kept for compatibility but does nothing
   }
 }

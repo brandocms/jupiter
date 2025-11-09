@@ -56,28 +56,29 @@
     </style>
   </head>
   <body>
-    <div class="page-fader" data-page-fader></div>
-    <header>
+    <div class="page-fader" data-page-fader data-testid="page-fader"></div>
+    <header data-testid="header">
       <h1>Jupiter Links Test</h1>
     </header>
-    <main data-main>
-      <section id="section1">
+    <main data-main data-testid="main">
+      <section id="section1" data-testid="section1">
         <h2>Section 1</h2>
         <p>Test smooth scrolling and page transitions</p>
-        <a href="#section2">Scroll to Section 2</a>
-        <a href="#section3">Scroll to Section 3</a>
+        <a href="#section2" data-testid="link-to-section2">Scroll to Section 2</a>
+        <a href="#section3" data-testid="link-to-section3">Scroll to Section 3</a>
+        <a href="https://example.com" data-testid="external-link" target="_blank">External Link</a>
       </section>
-      <section id="section2">
+      <section id="section2" data-testid="section2">
         <h2>Section 2</h2>
         <p>Testing anchor link scrolling with smooth animations</p>
-        <a href="#section1">Back to Section 1</a>
-        <a href="#section3">Go to Section 3</a>
+        <a href="#section1" data-testid="link-to-section1-from-2">Back to Section 1</a>
+        <a href="#section3" data-testid="link-to-section3-from-2">Go to Section 3</a>
       </section>
-      <section id="section3">
+      <section id="section3" data-testid="section3">
         <h2>Section 3</h2>
         <p>Final section to test scrolling behavior</p>
-        <a href="#section1">Back to Section 1</a>
-        <a href="#section2">Go to Section 2</a>
+        <a href="#section1" data-testid="link-to-section1-from-3">Back to Section 1</a>
+        <a href="#section2" data-testid="link-to-section2-from-3">Go to Section 2</a>
       </section>
     </main>
     <script type="module">

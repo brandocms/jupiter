@@ -14,6 +14,7 @@
       body {
         font-family: system-ui, sans-serif;
         line-height: 1.5;
+        background-color: #f5f5f5;
       }
 
       header {
@@ -30,64 +31,104 @@
         text-align: center;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
+        margin-bottom: 3rem;
       }
 
       .intro h2 {
         margin-bottom: 1rem;
       }
 
-      [data-stacked-section] {
-        position: relative;
+      .intro p {
+        max-width: 800px;
+        margin: 0 auto;
+        line-height: 1.8;
       }
 
-      [data-stacked-container] {
-        position: relative;
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 2rem;
       }
 
-      [data-stacked-item] {
-        min-height: 100vh;
+      /* Example 1: Quote + Image with Pull */
+      .quote-image-module {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-bottom: 4rem;
+        align-items: start;
+      }
+
+      .quote-box {
+        background: white;
+        padding: 3rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      }
+
+      .quote-box blockquote {
+        font-size: 1.5rem;
+        font-style: italic;
+        color: #333;
+        margin-bottom: 1rem;
+        line-height: 1.6;
+      }
+
+      .quote-box cite {
+        display: block;
+        font-size: 1rem;
+        color: #666;
+        font-style: normal;
+      }
+
+      .image-box {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+      }
+
+      .image-box img {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+
+      .image-placeholder {
+        width: 100%;
+        aspect-ratio: 4/3;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 3rem;
-        position: relative;
-      }
-
-      [data-stacked-item]:nth-child(1) {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      }
-
-      [data-stacked-item]:nth-child(2) {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-      }
-
-      [data-stacked-item]:nth-child(3) {
-        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-      }
-
-      [data-stacked-item]:nth-child(4) {
-        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-      }
-
-      [data-stacked-item]:nth-child(5) {
-        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-      }
-
-      .box-content {
-        max-width: 600px;
-        text-align: center;
         color: white;
+        font-size: 2rem;
       }
 
-      .box-content h2 {
-        font-size: 3rem;
+      /* Example 2: Text + Image with Different Pull */
+      .text-image-module {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-bottom: 4rem;
+        align-items: start;
+      }
+
+      .text-box {
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      }
+
+      .text-box h3 {
+        font-size: 2rem;
         margin-bottom: 1rem;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        color: #333;
       }
 
-      .box-content p {
-        font-size: 1.25rem;
-        opacity: 0.9;
+      .text-box p {
+        color: #666;
+        line-height: 1.8;
       }
 
       .outro {
@@ -95,6 +136,28 @@
         text-align: center;
         background-color: #333;
         color: white;
+        margin-top: 4rem;
+      }
+
+      .example-title {
+        text-align: center;
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+        color: #333;
+      }
+
+      .example-description {
+        text-align: center;
+        color: #666;
+        margin-bottom: 2rem;
+        font-style: italic;
+      }
+
+      @media (max-width: 768px) {
+        .quote-image-module,
+        .text-image-module {
+          grid-template-columns: 1fr;
+        }
       }
     </style>
   </head>
@@ -104,53 +167,89 @@
     </header>
 
     <section class="intro">
-      <h2>Scroll Down to See the Stacking Effect</h2>
-      <p>Each box will stack on top of the previous one as you scroll</p>
+      <h2>StackedBoxes Module</h2>
+      <p>
+        StackedBoxes is a layout helper that adjusts box positioning and sizing.
+        It can "pull" elements up by a fraction of their height (1/3, 1/2, or 2/3)
+        and match element heights dynamically.
+      </p>
     </section>
 
-    <!-- Stacked Boxes -->
-    <div data-stacked-section data-testid="stacked-section">
-      <div data-stacked-container>
-        <div data-stacked-item data-testid="stacked-item-1">
-          <div class="box-content">
-            <h2>Box 1</h2>
-            <p>First box with parallax stacking effect</p>
-          </div>
-        </div>
+    <div class="container">
+      <!-- Example 1: Pull 2/3 -->
+      <h2 class="example-title">Example 1: Pull 2/3</h2>
+      <p class="example-description">The image is pulled up by 2/3 of its height, overlapping the quote box</p>
 
-        <div data-stacked-item data-testid="stacked-item-2">
-          <div class="box-content">
-            <h2>Box 2</h2>
-            <p>Stacks on top of Box 1</p>
+      <div class="quote-image-module" data-boxes-stacked data-testid="example-1">
+        <aside data-boxes-stacked-size-target>
+          <div class="quote-box">
+            <blockquote>
+              "Design is not just what it looks like and feels like.
+              Design is how it works."
+            </blockquote>
+            <cite>Steve Jobs</cite>
           </div>
-        </div>
+        </aside>
+        <figure data-boxes-stacked-pull="2/3" data-boxes-stacked-size-src>
+          <div class="image-box">
+            <div class="image-placeholder">📷</div>
+          </div>
+        </figure>
+      </div>
 
-        <div data-stacked-item data-testid="stacked-item-3">
-          <div class="box-content">
-            <h2>Box 3</h2>
-            <p>Stacks on top of Box 2</p>
-          </div>
-        </div>
+      <!-- Example 2: Pull 1/2 -->
+      <h2 class="example-title">Example 2: Pull 1/2</h2>
+      <p class="example-description">The image is pulled up by 1/2 of its height</p>
 
-        <div data-stacked-item data-testid="stacked-item-4">
-          <div class="box-content">
-            <h2>Box 4</h2>
-            <p>Stacks on top of Box 3</p>
+      <div class="text-image-module" data-boxes-stacked data-testid="example-2">
+        <aside data-boxes-stacked-size-target>
+          <div class="text-box">
+            <h3>Modern Design</h3>
+            <p>
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+              Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+              Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
+            </p>
           </div>
-        </div>
+        </aside>
+        <figure data-boxes-stacked-pull="1/2" data-boxes-stacked-size-src>
+          <div class="image-box" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <div class="image-placeholder">🎨</div>
+          </div>
+        </figure>
+      </div>
 
-        <div data-stacked-item data-testid="stacked-item-5">
-          <div class="box-content">
-            <h2>Box 5</h2>
-            <p>Final stacked box</p>
+      <!-- Example 3: Pull 1/3 -->
+      <h2 class="example-title">Example 3: Pull 1/3</h2>
+      <p class="example-description">The image is pulled up by 1/3 of its height</p>
+
+      <div class="text-image-module" data-boxes-stacked data-testid="example-3">
+        <aside data-boxes-stacked-size-target>
+          <div class="text-box">
+            <h3>Creative Solutions</h3>
+            <p>
+              Duis aute irure dolor in reprehenderit in voluptate velit esse
+              cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat
+              cupidatat non proident, sunt in culpa qui officia deserunt mollit anim.
+            </p>
           </div>
-        </div>
+        </aside>
+        <figure data-boxes-stacked-pull="1/3" data-boxes-stacked-size-src>
+          <div class="image-box" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <div class="image-placeholder">✨</div>
+          </div>
+        </figure>
       </div>
     </div>
 
     <section class="outro">
-      <h2>✓ Stacking Complete!</h2>
-      <p>All boxes should have stacked smoothly as you scrolled.</p>
+      <h2>How It Works</h2>
+      <p>
+        Each module uses <code>data-boxes-stacked</code> as the container.<br>
+        The <code>data-boxes-stacked-pull</code> attribute moves elements up by the specified fraction.<br>
+        Size matching keeps the left column's height synced with the right column using
+        <code>data-boxes-stacked-size-target</code> and <code>data-boxes-stacked-size-src</code>.
+      </p>
     </section>
 
     <script type="module">

@@ -14,13 +14,15 @@
         right: 0;
         background: white;
         border-bottom: 1px solid #ddd;
-        z-index: 1000;
+        z-index: 1001;
       }
       .header-inner {
         display: flex;
         justify-content: space-between;
         align-items: center;
         padding: 1rem 2rem;
+        position: relative;
+        z-index: 1000;
       }
       figure.brand {
         font-size: 1.5rem;
@@ -34,19 +36,43 @@
         width: 30px;
         height: 20px;
         position: relative;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
+        display: inline-block;
+      }
+      .hamburger-inner {
+        display: block;
+        top: 50%;
+        margin-top: -1.5px;
       }
       .hamburger-inner, .hamburger-inner:before, .hamburger-inner:after {
         width: 100%;
         height: 3px;
         background: #333;
         border-radius: 2px;
-        transition: 0.3s;
+        position: absolute;
+        transition: all 0.3s ease;
+      }
+      .hamburger-inner:before, .hamburger-inner:after {
+        content: "";
+        display: block;
+      }
+      .hamburger-inner:before {
+        top: -8px;
+      }
+      .hamburger-inner:after {
+        top: 8px;
       }
       .hamburger.is-active .hamburger-inner {
         transform: rotate(45deg);
+        background: white;
+      }
+      .hamburger.is-active .hamburger-inner:before {
+        top: 0;
+        transform: rotate(90deg);
+        background: white;
+      }
+      .hamburger.is-active .hamburger-inner:after {
+        top: 0;
+        opacity: 0;
       }
       .mobile-bg {
         position: fixed;
@@ -55,8 +81,9 @@
         width: 100%;
         height: 100%;
         background: rgba(0,0,0,0.95);
-        display: none;
-        z-index: 999;
+        opacity: 0;
+        pointer-events: none;
+        z-index: 998;
       }
       nav {
         position: fixed;
@@ -64,10 +91,13 @@
         left: 0;
         width: 100%;
         height: 100%;
-        z-index: 998;
+        z-index: 999;
         display: grid;
         grid-template-rows: auto;
         pointer-events: none;
+      }
+      body.open-menu nav {
+        pointer-events: auto;
       }
       nav section {
         display: none;
@@ -81,6 +111,17 @@
         font-size: 2rem;
         color: white;
         opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+      nav a {
+        color: white;
+        text-decoration: none;
+        display: inline-block;
+        transition: transform 0.2s ease, opacity 0.2s ease;
+      }
+      nav a:hover {
+        transform: translateX(10px);
+        opacity: 0.7;
       }
       main {
         margin-top: 80px;
@@ -92,28 +133,28 @@
     </style>
   </head>
   <body>
-    <header>
-      <div class="mobile-bg"></div>
+    <header data-testid="header">
+      <div class="mobile-bg" data-testid="mobile-bg"></div>
       <div class="header-inner">
-        <figure class="brand">
+        <figure class="brand" data-testid="logo">
           <svg width="100" height="30" viewBox="0 0 100 30">
             <path d="M10,10 L10,20 M15,10 L15,20 M20,10 L20,20" stroke="#333" stroke-width="2" fill="none"/>
           </svg>
         </figure>
-        <figure class="menu-button">
-          <div class="hamburger">
-            <div class="hamburger-inner"></div>
+        <figure class="menu-button" data-testid="menu-button">
+          <div class="hamburger" data-testid="hamburger">
+            <span class="hamburger-inner"></span>
           </div>
         </figure>
       </div>
-      <nav>
-        <section>
+      <nav data-testid="nav">
+        <section data-testid="menu-content">
           <ul>
-            <li>Home</li>
-            <li>About</li>
-            <li>Services</li>
-            <li>Portfolio</li>
-            <li>Contact</li>
+            <li data-testid="menu-item-1"><a href="#home">Home</a></li>
+            <li data-testid="menu-item-2"><a href="#about">About</a></li>
+            <li data-testid="menu-item-3"><a href="#services">Services</a></li>
+            <li data-testid="menu-item-4"><a href="#portfolio">Portfolio</a></li>
+            <li data-testid="menu-item-5"><a href="#contact">Contact</a></li>
           </ul>
         </section>
       </nav>

@@ -27,5 +27,5 @@
 ## Tier 3 - Complex
 
 - [ ] 19-Application
-- [ ] 20-Moonwalk
+- [x] **20-Moonwalk** ✅ 2025-11-09
 - [ ] 21-Parallax

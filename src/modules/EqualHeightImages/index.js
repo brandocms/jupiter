@@ -1,4 +1,3 @@
-import { set } from '../../utils/motion-helpers'
 import Dom from '../Dom'
 import * as Events from '../../events'
 import imagesAreLoaded from '../../utils/imagesAreLoaded'
@@ -29,6 +28,10 @@ export default class EqualHeightImages {
       let elements = []
       let height = 0
       const imgs = Dom.all(canvas, 'img')
+
+      if (imgs.length === 0) {
+        return
+      }
 
       imagesAreLoaded(imgs, false).then(() => {
         imgs.forEach((el) => {
@@ -63,7 +66,9 @@ export default class EqualHeightImages {
 
         if (actionables.length) {
           actionables.forEach((a) => {
-            set(a.elements, { minHeight: a.height })
+            a.elements.forEach((el) => {
+              el.style.minHeight = `${a.height}px`
+            })
           })
         }
       })

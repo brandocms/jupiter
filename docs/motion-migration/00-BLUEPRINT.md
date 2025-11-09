@@ -54,6 +54,10 @@
 **Special cases discovered**:
 - `attr` property (GSAP): Motion doesn't support, set manually with `element.setAttribute()`
 - `clearProps` (GSAP): Use our `clearProps()` helper
+- `minHeight`, `minWidth`, `maxHeight`, `maxWidth` (CSS sizing): Motion's `animate()` doesn't support these properties
+  - Solution: Set directly via `element.style.minHeight = '100px'` instead of using `set()` helper
+  - Discovered in: EqualHeightImages, EqualHeightElements modules
+  - Why: Motion focuses on transform/opacity animations; layout properties must be set manually
 
 **Completed**: All Tier 1 (5/5) ✅
 
