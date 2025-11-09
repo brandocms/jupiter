@@ -3,16 +3,6 @@
  * @module jupiter
  */
 
-import {
-  CSSPlugin,
-  Draggable,
-  ScrollToPlugin,
-  ScrollTrigger,
-  SplitText,
-  InertiaPlugin,
-  gsap,
-} from 'gsap/all'
-
 import { animate, scroll, stagger } from 'motion'
 
 import _defaultsDeep from 'lodash.defaultsdeep'
@@ -59,7 +49,6 @@ export {
   CoverOverlay,
   Dataloader,
   Dom,
-  Draggable,
   Dropdown,
   EqualHeightElements,
   EqualHeightImages,
@@ -91,16 +80,7 @@ export {
   rafCallback,
   _defaultsDeep,
 
-  // Export some of the libs we use,
-  // that can also be used in the main frontend.
-  gsap,
-  CSSPlugin,
-  ScrollToPlugin,
-  ScrollTrigger,
-  SplitText,
-  InertiaPlugin,
-
-  // Export Motion functions for animation (replacing GSAP)
+  // Export Motion functions for animation
   animate,
   scroll,
   stagger,
