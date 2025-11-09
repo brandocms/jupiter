@@ -51,7 +51,7 @@ const DEFAULT_OPTIONS = {
             ],
             opacity: [0, 1]
           },
-          { duration: 0.3, easing: [0.4, 0, 0.2, 1] }
+          { duration: 0.3, ease: [0.4, 0, 0.2, 1] }
         )
       })
   },

@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jupiter Application Test</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: system-ui, -apple-system, sans-serif;
+        line-height: 1.6;
+        margin: 0;
+        padding: 0;
+        background: #f5f5f5;
+      }
+
+      html.js body.unloaded {
+        opacity: 0;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+
+      h1 {
+        color: #333;
+        margin-bottom: 0.5rem;
+      }
+
+      h2 {
+        color: #555;
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #ddd;
+      }
+
+      section {
+        background: white;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+
+      .intro {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 3rem 1.5rem;
+      }
+
+      .intro h1 {
+        color: white;
+        font-size: 2.5rem;
+        margin: 0 0 0.5rem 0;
+      }
+
+      .intro p {
+        font-size: 1.2rem;
+        opacity: 0.9;
+        margin: 0;
+      }
+
+      button {
+        background: #667eea;
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1rem;
+        margin: 0.25rem;
+        transition: background 0.2s;
+      }
+
+      button:hover {
+        background: #5568d3;
+      }
+
+      button:active {
+        transform: scale(0.98);
+      }
+
+      button.secondary {
+        background: #48bb78;
+      }
+
+      button.secondary:hover {
+        background: #38a169;
+      }
+
+      button.danger {
+        background: #f56565;
+      }
+
+      button.danger:hover {
+        background: #e53e3e;
+      }
+
+      .button-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin: 1rem 0;
+      }
+
+      .status-box {
+        background: #f7fafc;
+        border: 2px solid #e2e8f0;
+        border-radius: 4px;
+        padding: 1rem;
+        margin: 1rem 0;
+        font-family: 'Monaco', 'Courier New', monospace;
+        font-size: 0.9rem;
+      }
+
+      .status-box strong {
+        color: #667eea;
+      }
+
+      .event-log {
+        background: #1a202c;
+        color: #e2e8f0;
+        padding: 1rem;
+        border-radius: 4px;
+        height: 300px;
+        overflow-y: auto;
+        font-family: 'Monaco', 'Courier New', monospace;
+        font-size: 0.85rem;
+        line-height: 1.4;
+      }
+
+      .event-log .event {
+        margin: 0.25rem 0;
+        padding: 0.25rem 0;
+      }
+
+      .event-log .event-name {
+        color: #48bb78;
+        font-weight: bold;
+      }
+
+      .event-log .event-time {
+        color: #a0aec0;
+        font-size: 0.8rem;
+      }
+
+      .scroll-target {
+        min-height: 400px;
+        padding: 2rem;
+        margin: 2rem 0;
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        font-weight: bold;
+      }
+
+      .scroll-target:nth-child(odd) {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      }
+
+      .kbd {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        background: #2d3748;
+        color: white;
+        border-radius: 3px;
+        font-family: monospace;
+        font-size: 0.9rem;
+      }
+
+      .highlight {
+        background: #fef3c7;
+        padding: 0.125rem 0.25rem;
+        border-radius: 2px;
+      }
+
+      #fader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: white;
+        opacity: 1;
+        z-index: 10000;
+        pointer-events: none;
+      }
+
+      /* Debug Grid Styles */
+      .dbg-grid {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 9999;
+        display: none;
+      }
+
+      .dbg-grid.visible {
+        display: block;
+      }
+
+      .dbg-grid b {
+        position: absolute;
+        top: 0;
+        height: 100%;
+        background: rgba(255, 0, 0, 0.1);
+        border-left: 1px solid rgba(255, 0, 0, 0.3);
+        border-right: 1px solid rgba(255, 0, 0, 0.3);
+      }
+
+      /* Debug Breakpoints Overlay */
+      .dbg-breakpoints {
+        position: fixed;
+        bottom: 1rem;
+        right: 1rem;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        font-size: 0.875rem;
+        font-family: monospace;
+        cursor: pointer;
+        z-index: 9998;
+      }
+
+      .dbg-breakpoints .breakpoint,
+      .dbg-breakpoints .user-agent {
+        margin-left: 0.5rem;
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          padding: 1rem;
+        }
+
+        .intro h1 {
+          font-size: 1.75rem;
+        }
+
+        .intro p {
+          font-size: 1rem;
+        }
+      }
+    </style>
+  </head>
+  <body class="unloaded" data-script="application-test">
+    <!-- Fader for page load animation -->
+    <div id="fader"></div>
+
+    <!-- Debug Grid (activated with Ctrl+G) -->
+    <div class="dbg-grid">
+      <b style="left: 8.333%; width: 8.333%;"></b>
+      <b style="left: 16.666%; width: 8.333%;"></b>
+      <b style="left: 25%; width: 8.333%;"></b>
+      <b style="left: 33.333%; width: 8.333%;"></b>
+      <b style="left: 41.666%; width: 8.333%;"></b>
+      <b style="left: 50%; width: 8.333%;"></b>
+      <b style="left: 58.333%; width: 8.333%;"></b>
+      <b style="left: 66.666%; width: 8.333%;"></b>
+      <b style="left: 75%; width: 8.333%;"></b>
+      <b style="left: 83.333%; width: 8.333%;"></b>
+    </div>
+
+    <!-- Debug Breakpoints Overlay (click to toggle) -->
+    <div class="dbg-breakpoints">
+      <span>Jupiter</span>
+      <span class="breakpoint">Current: <span id="current-bp">-</span></span>
+      <span class="user-agent"></span>
+    </div>
+
+    <div class="container">
+      <!-- Intro Section -->
+      <section class="intro">
+        <h1>🚀 Application Module Test</h1>
+        <p>Testing core Application features after GSAP → Motion migration</p>
+      </section>
+
+      <!-- Fader Animation -->
+      <section>
+        <h2>1. Fader Animation</h2>
+        <p>The page should fade in on load. The white overlay (#fader) animates from opacity 1 → 0.</p>
+        <div class="status-box">
+          <strong>Status:</strong> <span id="fader-status">Waiting...</span><br>
+          <strong>Body Class:</strong> <span id="body-class">-</span>
+        </div>
+      </section>
+
+      <!-- ScrollTo Tests -->
+      <section>
+        <h2>2. ScrollTo Functionality</h2>
+        <p>Test different scroll targets and methods. Check the status box for scroll position updates.</p>
+
+        <div class="button-group">
+          <button onclick="scrollToPixel()">Scroll to 500px</button>
+          <button onclick="scrollToSection1()">Scroll to Section 1</button>
+          <button onclick="scrollToSection2()">Scroll to Section 2</button>
+          <button onclick="scrollToSection3()">Scroll to Section 3</button>
+          <button onclick="scrollToSection2WithOffset()">Section 2 + 50px Offset</button>
+          <button class="secondary" onclick="scrollToTop()">Scroll to Top</button>
+          <button class="danger" onclick="hardScrollToTop()">Hard Scroll (No Animation)</button>
+        </div>
+
+        <div class="status-box">
+          <strong>Scroll Y:</strong> <span id="scroll-y">0</span>px<br>
+          <strong>Direction:</strong> <span id="scroll-direction">-</span><br>
+          <strong>Forced Scroll:</strong> <span id="forced-scroll">false</span><br>
+          <strong>Last Scroll Event:</strong> <span id="last-scroll-time">-</span>
+        </div>
+      </section>
+
+      <!-- Scroll Locking -->
+      <section>
+        <h2>3. Scroll Locking</h2>
+        <p>Lock scrolling to prevent user interaction (useful for modals/overlays).</p>
+
+        <div class="button-group">
+          <button onclick="lockScroll()">Lock Scroll</button>
+          <button onclick="releaseScroll()">Release Scroll</button>
+        </div>
+
+        <div class="status-box">
+          <strong>Scroll Locked:</strong> <span id="scroll-locked">false</span><br>
+          <strong>Body Overflow:</strong> <span id="body-overflow">scroll</span><br>
+          <strong>Scrollbar Width:</strong> <span id="scrollbar-width">-</span>px
+        </div>
+      </section>
+
+      <!-- Debug Grid -->
+      <section>
+        <h2>4. Debug Grid (Ctrl+G)</h2>
+        <p>Press <span class="kbd">Ctrl</span> + <span class="kbd">G</span> to toggle the debug grid overlay.</p>
+        <p>The grid shows 12 columns with a <span class="highlight">stagger animation</span> (Motion's built-in stagger function).</p>
+        <div class="status-box">
+          <strong>Shortcut:</strong> Ctrl+G<br>
+          <strong>Animation:</strong> Motion stagger (0.02s delay per column)<br>
+          <strong>Easing:</strong> ease-in-out
+        </div>
+      </section>
+
+      <!-- Debug Overlay -->
+      <section>
+        <h2>5. Debug Overlay Toggle</h2>
+        <p>Click the <span class="highlight">Jupiter indicator</span> in the bottom-right corner to cycle through states:</p>
+        <ul>
+          <li><strong>State 0:</strong> Hidden (only "Jupiter" visible)</li>
+          <li><strong>State 1:</strong> Show current breakpoint</li>
+          <li><strong>State 2:</strong> Show user agent (click "KOPIER" to copy)</li>
+        </ul>
+        <p>Animations use Motion's <span class="highlight">sequential promises</span> with .finished.then()</p>
+      </section>
+
+      <!-- Event Monitoring -->
+      <section>
+        <h2>6. Application Events</h2>
+        <p>All Application events are logged below in real-time:</p>
+        <div class="event-log" id="event-log"></div>
+        <button onclick="clearEventLog()" class="secondary">Clear Log</button>
+      </section>
+
+      <!-- Viewport Info -->
+      <section>
+        <h2>7. Viewport Information</h2>
+        <div class="status-box">
+          <strong>Window Size:</strong> <span id="window-size">-</span><br>
+          <strong>Initial Inner Height:</strong> <span id="initial-inner-height">-</span>px<br>
+          <strong>Device Pixel Ratio:</strong> <span id="device-pixel-ratio">-</span><br>
+          <strong>Zoom Level:</strong> <span id="zoom-level">-</span><br>
+          <strong>Prefers Reduced Motion:</strong> <span id="prefers-reduced-motion">-</span>
+        </div>
+      </section>
+
+      <!-- Scroll Targets -->
+      <section>
+        <h2>8. Scroll Targets</h2>
+        <p>These sections are targets for the ScrollTo tests above.</p>
+      </section>
+
+      <div class="scroll-target" id="section-1">
+        📍 Section 1
+      </div>
+
+      <div class="scroll-target" id="section-2">
+        📍 Section 2
+      </div>
+
+      <div class="scroll-target" id="section-3">
+        📍 Section 3
+      </div>
+
+      <!-- Footer -->
+      <section style="margin-top: 4rem; text-align: center; color: #888;">
+        <p>Jupiter Application Module Test Page</p>
+        <p><small>Testing Motion migration features</small></p>
+      </section>
+    </div>
+
+    <script type="module">
+      import { Application, Events } from '../src/index.js'
+
+      // Initialize Application
+      const app = window.app = new Application({
+        bindScroll: true,
+        bindResize: true,
+      })
+
+      // Event logging
+      const eventLog = document.getElementById('event-log')
+      const events = [
+        Events.APPLICATION_PRELUDIUM,
+        Events.APPLICATION_INITIALIZED,
+        Events.APPLICATION_READY,
+        Events.APPLICATION_REVEALED,
+        Events.APPLICATION_SCROLL,
+        Events.APPLICATION_RESIZE,
+        Events.APPLICATION_FORCED_SCROLL_START,
+        Events.APPLICATION_FORCED_SCROLL_END,
+        Events.APPLICATION_SCROLL_LOCKED,
+        Events.APPLICATION_SCROLL_RELEASED,
+        Events.BREAKPOINT_CHANGE,
+      ]
+
+      function logEvent(eventName, detail = null) {
+        const time = new Date().toLocaleTimeString()
+        const eventDiv = document.createElement('div')
+        eventDiv.className = 'event'
+        eventDiv.innerHTML = `<span class="event-time">[${time}]</span> <span class="event-name">${eventName}</span>${detail ? `: ${JSON.stringify(detail)}` : ''}`
+        eventLog.appendChild(eventDiv)
+        eventLog.scrollTop = eventLog.scrollHeight
+      }
+
+      events.forEach(event => {
+        window.addEventListener(event, (e) => {
+          logEvent(event, e.detail || null)
+        })
+      })
+
+      // Update status displays
+      function updateStatus() {
+        // Fader status
+        const fader = document.querySelector('#fader')
+        document.getElementById('fader-status').textContent =
+          fader && fader.style.display !== 'none' ? 'Visible' : 'Hidden'
+        document.getElementById('body-class').textContent =
+          document.body.classList.contains('unloaded') ? 'unloaded' : 'loaded'
+
+        // Scroll status
+        document.getElementById('scroll-y').textContent = Math.round(window.pageYOffset)
+        document.getElementById('scroll-direction').textContent = app.state.scrollDirection || '-'
+        document.getElementById('forced-scroll').textContent = app.state.forcedScroll
+
+        // Scroll lock status
+        document.getElementById('scroll-locked').textContent = app.SCROLL_LOCKED
+        document.getElementById('body-overflow').textContent =
+          getComputedStyle(document.body).overflow
+        document.getElementById('scrollbar-width').textContent = app.SCROLLBAR_WIDTH || '-'
+
+        // Viewport info
+        document.getElementById('window-size').textContent =
+          `${app.size.width} × ${app.size.height}`
+        document.getElementById('initial-inner-height').textContent =
+          app.size.initialInnerHeight
+        document.getElementById('device-pixel-ratio').textContent =
+          app.size.devicePixelRatio
+        document.getElementById('zoom-level').textContent =
+          app.size.zoom.toFixed(2)
+        document.getElementById('prefers-reduced-motion').textContent =
+          app.PREFERS_REDUCED_MOTION
+
+        // Breakpoint
+        document.getElementById('current-bp').textContent =
+          app.breakpoints ? app.breakpoints.current : '-'
+      }
+
+      // Scroll event updates
+      window.addEventListener(Events.APPLICATION_SCROLL, () => {
+        document.getElementById('last-scroll-time').textContent =
+          new Date().toLocaleTimeString()
+        updateStatus()
+      })
+
+      // Resize event updates
+      window.addEventListener(Events.APPLICATION_RESIZE, updateStatus)
+
+      // Initial status update
+      window.addEventListener(Events.APPLICATION_READY, () => {
+        updateStatus()
+        setInterval(updateStatus, 100)  // Update every 100ms
+      })
+
+      // Initialize app
+      app.initialize()
+
+      // Scroll functions
+      window.scrollToPixel = () => {
+        app.scrollTo(500, 0.8)
+      }
+
+      window.scrollToSection1 = () => {
+        app.scrollTo('#section-1', 0.8)
+      }
+
+      window.scrollToSection2 = () => {
+        app.scrollTo(document.getElementById('section-2'), 0.8)
+      }
+
+      window.scrollToSection3 = () => {
+        app.scrollTo('#section-3', 0.8)
+      }
+
+      window.scrollToSection2WithOffset = () => {
+        app.scrollTo({ y: '#section-2', offsetY: -50 }, 0.8)
+      }
+
+      window.scrollToTop = () => {
+        app.scrollTo(0, 0.8)
+      }
+
+      window.hardScrollToTop = () => {
+        app.hardScrollToTop()
+      }
+
+      // Scroll lock functions
+      window.lockScroll = () => {
+        app.scrollLock()
+        updateStatus()
+      }
+
+      window.releaseScroll = () => {
+        app.scrollRelease()
+        updateStatus()
+      }
+
+      // Event log
+      window.clearEventLog = () => {
+        eventLog.innerHTML = ''
+      }
+    </script>
+  </body>
+</html>

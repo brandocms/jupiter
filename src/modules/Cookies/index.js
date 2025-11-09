@@ -23,8 +23,8 @@ const DEFAULT_OPTIONS = {
     c.opts.setCookies(c)
 
     const timeline = [
-      [c.cc, { y: '120%' }, { duration: 0.35, easing: 'ease-in', at: 0 }],
-      [c.inner, { opacity: 0 }, { duration: 0.3, easing: 'ease-in', at: 0 }]
+      [c.cc, { y: '120%' }, { duration: 0.35, ease: 'easeIn', at: 0 }],
+      [c.inner, { opacity: 0 }, { duration: 0.3, ease: 'easeIn', at: 0 }]
     ]
 
     animate(timeline).finished.then(() => {
@@ -39,8 +39,8 @@ const DEFAULT_OPTIONS = {
     c.setCookie('COOKIES_CONSENT_STATUS', 0, oneYearFromNow, '/')
 
     const timeline = [
-      [c.cc, { y: '120%' }, { duration: 0.35, easing: 'ease-in', at: 0 }],
-      [c.inner, { opacity: 0 }, { duration: 0.3, easing: 'ease-in', at: 0 }]
+      [c.cc, { y: '120%' }, { duration: 0.35, ease: 'easeIn', at: 0 }],
+      [c.inner, { opacity: 0 }, { duration: 0.3, ease: 'easeIn', at: 0 }]
     ]
 
     animate(timeline).finished.then(() => {
@@ -78,9 +78,9 @@ const DEFAULT_OPTIONS = {
     // - c.text: starts at 1.15s (0.15s after cc starts), duration 0.7s, ends at 1.85s
     // - c.btns: starts at 1.5s (when cc finishes), duration 0.7s
     const timeline = [
-      [c.cc, { y: ['120%', '0%'] }, { duration: 0.5, easing: 'ease-out', at: 1 }],
-      [c.text, { opacity: [0, 1] }, { duration: 0.7, easing: 'ease-out', at: 1.15 }],
-      [c.btns, { opacity: [0, 1] }, { duration: 0.7, easing: 'ease-out', at: 1.5 }]
+      [c.cc, { y: ['120%', '0%'] }, { duration: 0.5, ease: 'easeOut', at: 1 }],
+      [c.text, { opacity: [0, 1] }, { duration: 0.7, ease: 'easeOut', at: 1.15 }],
+      [c.btns, { opacity: [0, 1] }, { duration: 0.7, ease: 'easeOut', at: 1.5 }]
     ]
 
     animate(timeline)

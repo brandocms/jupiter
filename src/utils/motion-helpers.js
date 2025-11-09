@@ -2,14 +2,67 @@ import { animate, delay } from 'motion'
 
 /**
  * Set properties immediately (like gsap.set)
- * Mimics GSAP's set() by using animate with duration: 0
+ * Uses direct DOM manipulation for synchronous style application
  *
- * @param {Element|string} target - Element or selector
+ * @param {Element|string|NodeList|Array} target - Element(s) or selector
  * @param {Object} values - Properties to set
- * @returns {Object} Animation object
  */
 export function set(target, values) {
-  return animate(target, values, { duration: 0 })
+  // Get elements as array
+  let elements
+  if (typeof target === 'string') {
+    elements = Array.from(document.querySelectorAll(target))
+  } else if (target instanceof NodeList) {
+    elements = Array.from(target)
+  } else if (Array.isArray(target)) {
+    elements = target
+  } else {
+    elements = [target]
+  }
+
+  elements.forEach((element) => {
+    if (!element) return
+
+    // Build transform string from transform properties
+    const transformProps = []
+    const styleProps = {}
+
+    Object.entries(values).forEach(([key, value]) => {
+      // Handle transform properties
+      if (key === 'x') {
+        transformProps.push(`translateX(${typeof value === 'number' ? value + 'px' : value})`)
+      } else if (key === 'y') {
+        transformProps.push(`translateY(${typeof value === 'number' ? value + 'px' : value})`)
+      } else if (key === 'scale') {
+        transformProps.push(`scale(${value})`)
+      } else if (key === 'scaleX') {
+        transformProps.push(`scaleX(${value})`)
+      } else if (key === 'scaleY') {
+        transformProps.push(`scaleY(${value})`)
+      } else if (key === 'rotate') {
+        transformProps.push(`rotate(${typeof value === 'number' ? value + 'deg' : value})`)
+      } else if (key === 'rotateX') {
+        transformProps.push(`rotateX(${typeof value === 'number' ? value + 'deg' : value})`)
+      } else if (key === 'rotateY') {
+        transformProps.push(`rotateY(${typeof value === 'number' ? value + 'deg' : value})`)
+      } else if (key === 'rotateZ') {
+        transformProps.push(`rotateZ(${typeof value === 'number' ? value + 'deg' : value})`)
+      } else {
+        // Regular CSS property
+        styleProps[key] = value
+      }
+    })
+
+    // Apply transform
+    if (transformProps.length > 0) {
+      element.style.transform = transformProps.join(' ')
+    }
+
+    // Apply other styles
+    Object.entries(styleProps).forEach(([key, value]) => {
+      element.style[key] = value
+    })
+  })
 }
 
 /**
@@ -46,22 +99,34 @@ export function animateAutoAlpha(target, value, options = {}) {
  * Clear inline styles
  * Mimics GSAP's clearProps
  *
- * @param {Element|string} target - Element or selector
+ * @param {Element|string|NodeList|Array} target - Element(s) or selector
  * @param {string|Array} props - Properties to clear or 'all'
  */
 export function clearProps(target, props = 'all') {
-  const element = typeof target === 'string'
-    ? document.querySelector(target)
-    : target
-
-  if (props === 'all') {
-    element.removeAttribute('style')
+  // Get elements as array
+  let elements
+  if (typeof target === 'string') {
+    elements = Array.from(document.querySelectorAll(target))
+  } else if (target instanceof NodeList) {
+    elements = Array.from(target)
+  } else if (Array.isArray(target)) {
+    elements = target
   } else {
-    const properties = Array.isArray(props) ? props : [props]
-    properties.forEach(prop => {
-      element.style.removeProperty(prop)
-    })
+    elements = [target]
   }
+
+  elements.forEach(element => {
+    if (!element) return
+
+    if (props === 'all') {
+      element.removeAttribute('style')
+    } else {
+      const properties = Array.isArray(props) ? props : [props]
+      properties.forEach(prop => {
+        element.style.removeProperty(prop)
+      })
+    }
+  })
 }
 
 /**
@@ -148,4 +213,118 @@ export class PausedTimeline {
       }
     }
   }
+}
+
+/**
+ * Convert GSAP easing strings to Motion.js compatible easings
+ * Handles common GSAP easing types and returns valid Motion.js easing
+ *
+ * @param {string|Array} easing - GSAP easing string or bezier array
+ * @returns {string|Array} Motion.js compatible easing
+ *
+ * Valid Motion.js easings:
+ * - "linear"
+ * - "easeIn"
+ * - "easeInOut"
+ * - "easeOut"
+ * - "circIn"
+ * - "circInOut"
+ * - "circOut"
+ * - "backIn"
+ * - "backInOut"
+ * - "backOut"
+ * - "anticipate"
+ * - Bezier arrays: [x1, y1, x2, y2]
+ */
+export function convertEasing(easing) {
+  // If already an array (bezier), return as-is
+  if (Array.isArray(easing)) {
+    return easing
+  }
+
+  // If not a string, return default
+  if (typeof easing !== 'string') {
+    return 'easeOut'
+  }
+
+  // Already a valid Motion.js easing
+  const validMotionEasings = [
+    'linear',
+    'easeIn',
+    'easeInOut',
+    'easeOut',
+    'circIn',
+    'circInOut',
+    'circOut',
+    'backIn',
+    'backInOut',
+    'backOut',
+    'anticipate',
+  ]
+
+  if (validMotionEasings.includes(easing)) {
+    return easing
+  }
+
+  // Convert GSAP easings to Motion.js equivalents
+  const easingMap = {
+    // Power easings (most common)
+    'power1.in': 'easeIn',
+    'power1.out': 'easeOut',
+    'power1.inOut': 'easeInOut',
+    'power2.in': 'easeIn',
+    'power2.out': 'easeOut',
+    'power2.inOut': 'easeInOut',
+    'power3.in': 'easeIn',
+    'power3.out': 'easeOut',
+    'power3.inOut': 'easeInOut',
+    'power4.in': 'easeIn',
+    'power4.out': 'easeOut',
+    'power4.inOut': 'easeInOut',
+
+    // Sine easings
+    'sine.in': 'easeIn',
+    'sine.out': 'easeOut',
+    'sine.inOut': 'easeInOut',
+
+    // Expo easings
+    'expo.in': 'easeIn',
+    'expo.out': 'easeOut',
+    'expo.inOut': 'easeInOut',
+
+    // Circ easings (Motion.js has these!)
+    'circ.in': 'circIn',
+    'circ.out': 'circOut',
+    'circ.inOut': 'circInOut',
+
+    // Back easings (Motion.js has these!)
+    'back.in': 'backIn',
+    'back.out': 'backOut',
+    'back.inOut': 'backInOut',
+
+    // Elastic and bounce - no direct equivalent, use anticipate or backOut
+    'elastic.in': 'backIn',
+    'elastic.out': 'backOut',
+    'elastic.inOut': 'backInOut',
+    'bounce.in': 'backIn',
+    'bounce.out': 'anticipate',
+    'bounce.inOut': 'backInOut',
+
+    // Common aliases
+    none: 'linear',
+    'linear': 'linear',
+  }
+
+  // Try to find a mapping
+  const converted = easingMap[easing.toLowerCase()]
+
+  if (converted) {
+    return converted
+  }
+
+  // If no mapping found, log warning and return default
+  console.warn(
+    `[Motion Helpers] Unknown easing type "${easing}", using "easeOut" as fallback`
+  )
+  return 'easeOut'
 }

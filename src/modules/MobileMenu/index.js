@@ -33,9 +33,9 @@ const DEFAULT_OPTIONS = {
 
     // Parallel animations at start (0-0.35s)
     const timeline = [
-      [m.bg, { opacity: 1 }, { duration: 0.35, easing: 'ease-in', at: 0 }],
-      [m.logo, { opacity: 0 }, { duration: 0.35, easing: 'ease-out', at: 0 }],
-      [m.header, { backgroundColor: 'transparent' }, { duration: 0.55, easing: 'ease-out', at: 0 }]
+      [m.bg, { opacity: 1 }, { duration: 0.35, ease: 'easeIn', at: 0 }],
+      [m.logo, { opacity: 0 }, { duration: 0.35, ease: 'easeOut', at: 0 }],
+      [m.header, { backgroundColor: 'transparent' }, { duration: 0.55, ease: 'easeOut', at: 0 }]
     ]
 
     await animate(timeline).finished
@@ -51,13 +51,13 @@ const DEFAULT_OPTIONS = {
     const lisAnimation = animate(
       m.lis,
       { opacity: [0, 1], x: [20, 0] },
-      { duration: 1, easing: 'ease-out', delay: stagger(0.05) }
+      { duration: 1, ease: 'easeOut', delay: stagger(0.05) }
     )
 
     const logoAnimation = animate(
       m.logo,
       { opacity: 1, x: ['3%', '0%'] },
-      { duration: 0.55, easing: 'ease-in-out', at: 0.15 }
+      { duration: 0.55, ease: 'easeInOut', at: 0.15 }
     )
 
     await Promise.all([lisAnimation.finished, logoAnimation.finished])
@@ -70,7 +70,7 @@ const DEFAULT_OPTIONS = {
     m.hamburger.classList.toggle('is-active')
 
     // Fade out logo
-    await animate(m.logo, { opacity: 0, x: '5%' }, { duration: 0.2, easing: 'ease-out' }).finished
+    await animate(m.logo, { opacity: 0, x: '5%' }, { duration: 0.2, ease: 'easeOut' }).finished
 
     // Clear logo fill
     Array.from(m.logoPath).forEach(path => path.removeAttribute('fill'))
@@ -79,13 +79,13 @@ const DEFAULT_OPTIONS = {
     const lisAnimation = animate(
       m.lis,
       { opacity: 0, x: 20 },
-      { duration: 0.5, easing: 'ease-out', delay: stagger(0.04) }
+      { duration: 0.5, ease: 'easeOut', delay: stagger(0.04) }
     )
 
     // bg animation starts 0.3s before lis finish
     // lis duration is 0.5s + last stagger delay, so starts around 0.2s
     setTimeout(() => {
-      animate(m.bg, { x: '100%' }, { duration: 0.25, easing: 'ease-in' })
+      animate(m.bg, { x: '100%' }, { duration: 0.25, ease: 'easeIn' })
     }, 200)
 
     await lisAnimation.finished
@@ -98,7 +98,7 @@ const DEFAULT_OPTIONS = {
     Array.from(m.lis).forEach(li => clearProps(li, 'opacity'))
 
     // Fade logo back in
-    await animate(m.logo, { opacity: 1 }, { duration: 0.35, easing: 'ease-in' }).finished
+    await animate(m.logo, { opacity: 1 }, { duration: 0.35, ease: 'easeIn' }).finished
   },
 }
 

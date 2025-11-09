@@ -102,7 +102,7 @@ export default class Toggler {
 
         animations.push(
           animate(el, { height: [0, targetHeight + 'px'] }, {
-            easing: 'ease-in-out',
+            ease: 'easeInOut',
             delay: index * 0.1
           })
         )
@@ -144,7 +144,7 @@ export default class Toggler {
         animations.push(
           animate(el, { height: 0 }, {
             duration: 0.25,
-            easing: 'ease-out',
+            ease: 'easeOut',
             delay: index * 0.1
           })
         )
@@ -204,7 +204,7 @@ export default class Toggler {
           animations.push(
             animate(el, { height: 0 }, {
               duration: 0.25,
-              easing: 'ease-out',
+              ease: 'easeOut',
               delay: index * 0.1
             })
           )

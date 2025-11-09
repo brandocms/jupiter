@@ -12,7 +12,7 @@ const DEFAULT_OPTIONS = {
   spacer: '<span>&nbsp;&mdash;&nbsp;</span>',
 
   onReveal: marqueeEl => {
-    animate(marqueeEl, { opacity: 1 }, { easing: 'linear' })
+    animate(marqueeEl, { opacity: 1 }, { ease: 'linear' })
   }
 }
 
@@ -109,7 +109,7 @@ export default class Marquee {
     this.timeline = animate(
       $allHolders,
       { transform: ['translateX(0) translateZ(0)', 'translateX(-100%) translateZ(0)'] },
-      { duration: this.duration, easing: 'linear', repeat: Infinity }
+      { duration: this.duration, ease: 'linear', repeat: Infinity }
     )
     this.timeline.pause()
 
@@ -136,7 +136,7 @@ export default class Marquee {
         { speed: 1 },
         {
           duration: 0.8,
-          easing: 'ease-in',
+          ease: 'easeIn',
           onUpdate: () => {
             this.timeline.speed = state.speed
           }
@@ -179,7 +179,7 @@ export default class Marquee {
       { speed: 0.5 },
       {
         duration: 0.3,
-        easing: [0.4, 0, 0.2, 1], // ease-out
+        ease: [0.4, 0, 0.2, 1], // ease-out
         onUpdate: () => {
           this.timeline.speed = state.speed
         }
@@ -197,7 +197,7 @@ export default class Marquee {
       { speed: 1 },
       {
         duration: 0.3,
-        easing: [0.4, 0, 0.2, 1], // ease-out
+        ease: [0.4, 0, 0.2, 1], // ease-out
         onUpdate: () => {
           this.timeline.speed = state.speed
         }

@@ -189,7 +189,7 @@ export default class Popover {
           left: Math.max(0, position.left)
         }, {
           duration: this.opts.followSpeed,
-          easing: 'ease-out'
+          ease: 'easeOut'
         })
       } else if (!shouldAnimate) {
         this.popover.style.top = `${Math.max(0, position.top)}px`
@@ -205,7 +205,7 @@ export default class Popover {
           left: Math.max(0, positions.bottom.left)
         }, {
           duration: this.opts.followSpeed,
-          easing: 'ease-out'
+          ease: 'easeOut'
         })
       } else if (!shouldAnimate) {
         this.popover.style.top = `${Math.max(0, positions.bottom.top)}px`

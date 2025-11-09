@@ -51,7 +51,7 @@ const DEFAULT_EVENTS = {
       yPercent: '0'
     }, {
       duration: 0.35,
-      easing: 'ease-out'
+      ease: 'easeOut'
     })
   },
 
@@ -61,7 +61,7 @@ const DEFAULT_EVENTS = {
       yPercent: '-100'
     }, {
       duration: 0.25,
-      easing: 'ease-in'
+      ease: 'easeIn'
     }).finished.then(() => {
       h._hiding = false
     })
@@ -93,7 +93,7 @@ const DEFAULT_OPTIONS = {
       }, {
         duration: 1,
         delay: h.opts.enterDelay,
-        easing: 'ease-out'
+        ease: 'easeOut'
       })
 
       // Menu items fade in with stagger (starts at same time: '-=1' means 1s overlap)
@@ -102,7 +102,7 @@ const DEFAULT_OPTIONS = {
       }, {
         duration: 0.8,
         delay: stagger(0.1, { startDelay: h.opts.enterDelay }),
-        easing: 'ease-in'
+        ease: 'easeIn'
       })
     },
     enterDelay: 1.2,

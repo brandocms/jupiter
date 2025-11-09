@@ -36,9 +36,9 @@ export default class CoverOverlay {
 
       btn.addEventListener('click', () => {
         const timeline = [
-          [btn, { opacity: 0 }, { duration: 0.5, easing: 'ease-in', at: 0 }],
-          [overlay, { opacity: 0 }, { duration: 1, easing: 'ease-in', at: 0 }],
-          [iframe, { opacity: 1 }, { duration: 0.5, easing: 'ease-out', at: 0.5 }],
+          [btn, { opacity: 0 }, { duration: 0.5, ease: 'easeIn', at: 0 }],
+          [overlay, { opacity: 0 }, { duration: 1, ease: 'easeIn', at: 0 }],
+          [iframe, { opacity: 1 }, { duration: 0.5, ease: 'easeOut', at: 0.5 }],
           [overlay, { display: 'none' }, { duration: 0, at: 1 }]
         ]
 

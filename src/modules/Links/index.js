@@ -44,7 +44,7 @@ const DEFAULT_OPTIONS = {
       set(fader, { display: 'block', opacity: 0 })
 
       if (main) {
-        animate(main, { y: 25 }, { duration: 0.8, easing: 'ease-out' })
+        animate(main, { y: 25 }, { duration: 0.8, ease: 'easeOut' })
         animate(main, { opacity: 0 }, { duration: 0.2 })
       }
 
@@ -61,7 +61,7 @@ const DEFAULT_OPTIONS = {
       })
     } else {
       if (main) {
-        animate(main, { y: 25 }, { duration: 0.8, easing: 'ease-out' })
+        animate(main, { y: 25 }, { duration: 0.8, ease: 'easeOut' })
         animate(main, { opacity: 0 }, { duration: 0.2 })
       }
 

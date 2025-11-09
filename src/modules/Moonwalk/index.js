@@ -11,8 +11,28 @@ import * as Events from '../../events'
 import prefersReducedMotion from '../../utils/prefersReducedMotion'
 import imageIsLoaded from '../../utils/imageIsLoaded'
 import imagesAreLoaded from '../../utils/imagesAreLoaded'
-import { set, animateAutoAlpha, delayedCall } from '../../utils/motion-helpers'
+import { set, animateAutoAlpha, delayedCall, convertEasing } from '../../utils/motion-helpers'
 import Dom from '../Dom'
+
+/**
+ * Debug logging
+ */
+const DEBUG = false
+
+function logMoonwalk(category, message, data = {}) {
+  if (DEBUG) {
+    console.log(`[Moonwalk:${category}]`, message, data)
+  }
+}
+
+function logComputedStyle(element, props = ['opacity', 'transform']) {
+  if (DEBUG && element) {
+    const computed = window.getComputedStyle(element)
+    const values = {}
+    props.forEach((prop) => (values[prop] = computed[prop]))
+    console.log('[Moonwalk:ComputedStyle]', element, values)
+  }
+}
 
 /**
  * @typedef {Object} MoonwalkTransition
@@ -481,14 +501,32 @@ export default class Moonwalk {
         section.children = this.orderChildren(section.el.children)
       }
 
-      const fromTransition = sectionWalk.alphaTween
-        ? {
-            ...sectionWalk.transition.from,
-            opacity: 0,
-          }
-        : sectionWalk.transition.from
+      // Only set initial states for JS animations (transition !== null)
+      if (sectionWalk.transition) {
+        const fromTransition = sectionWalk.alphaTween
+          ? {
+              ...sectionWalk.transition.from,
+              opacity: 0,
+            }
+          : sectionWalk.transition.from
 
-      set(section.children, fromTransition)
+        logMoonwalk('InitialState', 'Setting initial state for named section', {
+          section: section.name,
+          childCount: section.children.length,
+          fromTransition,
+        })
+        set(section.children, fromTransition)
+
+        // Check if styles were actually applied
+        if (section.children.length > 0) {
+          logComputedStyle(section.children[0])
+        }
+      } else {
+        logMoonwalk('InitialState', 'Skipping initial state for CSS-only section', {
+          section: section.name,
+          childCount: section.children.length,
+        })
+      }
     }
 
     if (section.stage.name) {
@@ -500,7 +538,12 @@ export default class Moonwalk {
           section.stage.name
         )
       } else {
+        logMoonwalk('InitialState', 'Setting stage initial state', {
+          stage: section.stage.name,
+          from: stageTween.transition.from,
+        })
         set(section.el, stageTween.transition.from)
+        logComputedStyle(section.el)
       }
     }
 
@@ -547,38 +590,75 @@ export default class Moonwalk {
                 )
               }
 
-              if (typeof tween.alphaTween === 'object') {
-                tween.alphaTween.duration = tween.alphaTween.duration
-                  ? tween.alphaTween.duration
-                  : tween.duration
-              } else if (tween.alphaTween === true) {
-                tween.alphaTween = {
-                  duration: tween.duration,
-                  ease: 'ease-in',
-                }
-              }
-
-              const animationOptions = {
+              logMoonwalk('SectionObserver', 'Named section triggered', {
+                sectionName: section.name,
+                childCount: section.children.length,
+                interval: tween.interval,
                 duration: tween.duration,
-                delay: stagger(tween.interval, {
-                  startDelay: tween.startDelay || 0,
-                }),
-              }
+                hasAlphaTween: !!tween.alphaTween,
+                isCssOnly: !tween.transition,
+              })
 
-              animate(section.children, tween.transition.to, animationOptions)
+              // Check if this is CSS-only animation (transition: null)
+              if (!tween.transition) {
+                // CSS-only mode - stagger adding the data-moonwalked attribute
+                logMoonwalk('SectionObserver', 'Using CSS-only mode', {
+                  sectionName: section.name,
+                })
 
-              if (tween.alphaTween) {
-                animate(
-                  section.children,
-                  { opacity: 1 },
-                  {
-                    duration: tween.alphaTween.duration,
-                    easing: tween.alphaTween.ease,
-                    delay: stagger(tween.interval, {
-                      startDelay: tween.startDelay || 0,
-                    }),
+                section.children.forEach((child, index) => {
+                  const delay = (tween.startDelay || 0) + index * tween.interval
+                  delayedCall(delay, () => {
+                    child.setAttribute('data-moonwalked', '')
+                  })
+                })
+              } else {
+                // JS animation mode
+                if (typeof tween.alphaTween === 'object') {
+                  tween.alphaTween.duration = tween.alphaTween.duration
+                    ? tween.alphaTween.duration
+                    : tween.duration
+                } else if (tween.alphaTween === true) {
+                  tween.alphaTween = {
+                    duration: tween.duration,
+                    ease: 'easeIn',
                   }
-                )
+                }
+
+                // Extract ease from to values and convert for Motion.js
+                const { ease: tweenEase, ...toValues } = tween.transition.to
+                const convertedEase = convertEasing(tweenEase || 'easeOut')
+
+                const animationOptions = {
+                  duration: tween.duration,
+                  ease: convertedEase,
+                  delay: stagger(tween.interval, {
+                    startDelay: tween.startDelay || 0,
+                  }),
+                }
+
+                logMoonwalk('SectionObserver', 'Starting stagger animation', {
+                  sectionName: section.name,
+                  to: toValues,
+                  ease: convertedEase,
+                  options: animationOptions,
+                })
+
+                animate(section.children, toValues, animationOptions)
+
+                if (tween.alphaTween) {
+                  animate(
+                    section.children,
+                    { opacity: 1 },
+                    {
+                      duration: tween.alphaTween.duration,
+                      ease: convertEasing(tween.alphaTween.ease || 'easeIn'),
+                      delay: stagger(tween.interval, {
+                        startDelay: tween.startDelay || 0,
+                      }),
+                    }
+                  )
+                }
               }
             }
 
@@ -632,14 +712,26 @@ export default class Moonwalk {
   calculateDelay(section, duration, overlap) {
     if (!section.animation.lastStartTime) {
       // First animation in section
+      logMoonwalk('DelayCalc', 'First animation in section', { delay: 0 })
       return 0
     }
 
     const now = performance.now()
     const elapsed = (now - section.animation.lastStartTime) / 1000
+    // overlap is negative when animations should stagger (start before previous ends)
+    // So we ADD overlap (which is negative) to get the correct next start time
     const idealNextStart =
-      section.animation.lastDelay + section.animation.lastDuration - overlap
+      section.animation.lastDelay + section.animation.lastDuration + overlap
     const actualDelay = Math.max(0, idealNextStart - elapsed)
+
+    logMoonwalk('DelayCalc', 'Calculating delay', {
+      elapsed: elapsed.toFixed(3),
+      lastDelay: section.animation.lastDelay,
+      lastDuration: section.animation.lastDuration,
+      overlap,
+      idealNextStart,
+      actualDelay: actualDelay.toFixed(3),
+    })
 
     return actualDelay
   }
@@ -652,9 +744,18 @@ export default class Moonwalk {
    * @param {*} duration - The duration of the animation
    */
   updateAnimationState(section, delay, duration) {
+    const previousState = { ...section.animation }
+
     section.animation.lastDelay = delay
     section.animation.lastDuration = duration
     section.animation.lastStartTime = performance.now()
+
+    logMoonwalk('StateUpdate', 'Updating animation state', {
+      delay,
+      duration,
+      previousState,
+      newState: { ...section.animation },
+    })
   }
 
   onReady() {
@@ -724,7 +825,29 @@ export default class Moonwalk {
       }
 
       section.elements = section.el.querySelectorAll('[data-moonwalk]')
-      section.elements.forEach((box) => section.observer.observe(box))
+
+      // Only set initial states and observe individual elements for unnamed sections
+      // Named sections are observed at the section level via sectionObserver
+      if (!section.name) {
+        // Set initial states for tweenJS elements BEFORE observing
+        section.elements.forEach((element) => {
+          const walkName = element.getAttribute('data-moonwalk')
+          const cfg = !walkName.length
+            ? opts.walks.default
+            : opts.walks[walkName]
+
+          // Only set initial state if this uses tweenJS (has transition property)
+          if (cfg && cfg.transition) {
+            logMoonwalk('InitialState', 'Setting initial state for individual element', {
+              walkName: walkName || 'default',
+              from: cfg.transition.from,
+            })
+            set(element, cfg.transition.from)
+          }
+        })
+
+        section.elements.forEach((box) => section.observer.observe(box))
+      }
     }
   }
 
@@ -866,16 +989,25 @@ export default class Moonwalk {
           if (entry.isIntersecting || entry.intersectionRatio > 0) {
             section.running = true
 
-            if (entry.target.dataset.moonwalkId) {
-              console.debug('-- intersecting', entry.target.dataset.moonwalkId)
-            }
-
             const walkName = entry.target.getAttribute('data-moonwalk')
+            const targetId =
+              entry.target.getAttribute('data-testid') ||
+              walkName ||
+              entry.target.className
+
+            logMoonwalk('Observer', 'Element entered viewport', {
+              target: targetId,
+              walkName,
+              isIntersecting: entry.isIntersecting,
+              intersectionRatio: entry.intersectionRatio,
+            })
             const cfg = !walkName.length
               ? opts.walks.default
               : opts.walks[walkName]
 
-            const { duration, transition, interval, startDelay } = cfg
+            const { duration, transition, startDelay } = cfg
+            // Default interval to 0.15 if not specified (same as default walk)
+            const interval = cfg.interval !== undefined ? cfg.interval : 0.15
 
             let { alphaTween } = cfg
             let overlap = (duration - interval) * -1 // flip it
@@ -892,7 +1024,7 @@ export default class Moonwalk {
             } else if (alphaTween === true) {
               alphaTween = {
                 duration,
-                ease: 'sine.in',
+                ease: 'easeIn',
               }
             }
 
@@ -985,47 +1117,84 @@ export default class Moonwalk {
     tweenOverlap,
     alphaTween
   ) {
+    const targetId =
+      target.getAttribute('data-testid') ||
+      target.getAttribute('data-moonwalk') ||
+      target.className
+
+    logMoonwalk('TweenJS', 'Starting tweenJS', {
+      target: targetId,
+      duration: tweenDuration,
+      overlap: tweenOverlap,
+      hasAlphaTween: !!alphaTween,
+    })
+
     if (Dom.hasAttribute(target, 'data-moonwalked')) {
+      logMoonwalk('TweenJS', 'Already moonwalked, skipping', { target: targetId })
       return
     }
 
     // Calculate delay using our new helper method
     const delay = this.calculateDelay(section, tweenDuration, tweenOverlap)
 
-    // Set initial state
-    set(target, tweenTransition.from)
+    // Initial state should already be set during ready()
+    // Only log for debugging
+    logMoonwalk('TweenJS', 'Element should already have initial state', {
+      target: targetId,
+      expectedFrom: tweenTransition.from,
+    })
+    logComputedStyle(target, ['opacity', 'transform', 'x', 'y'])
 
     // Extract ease from to values (GSAP format) and convert to Motion easing option
     const { ease, ...toValues } = tweenTransition.to
-    const easingOption = ease || 'ease-out'
+    const easingOption = convertEasing(ease || 'easeOut')
+
+    logMoonwalk('TweenJS', 'Starting animation', {
+      target: targetId,
+      toValues,
+      duration: tweenDuration,
+      delay: delay.toFixed(3),
+      ease: easingOption,
+    })
 
     // Animate to final state
     const animation = animate(target, toValues, {
       duration: tweenDuration,
       delay,
-      easing: easingOption,
+      ease: easingOption,
     })
 
     // Use .finished promise for completion callback
     if (animation && animation.finished) {
       animation.finished
         .then(() => {
+          logMoonwalk('TweenJS', 'Animation completed', { target: targetId })
           target.setAttribute('data-moonwalked', '')
         })
-        .catch(() => {
+        .catch((err) => {
           // Animation cancelled or failed, still mark as walked
+          logMoonwalk('TweenJS', 'Animation failed/cancelled', {
+            target: targetId,
+            error: err,
+          })
           target.setAttribute('data-moonwalked', '')
         })
     } else {
       // No animation object returned, mark immediately
+      logMoonwalk('TweenJS', 'No animation object returned', { target: targetId })
       target.setAttribute('data-moonwalked', '')
     }
 
     // Optional separate alpha animation
     if (alphaTween) {
+      logMoonwalk('TweenJS', 'Adding alpha tween', {
+        target: targetId,
+        duration: alphaTween.duration,
+        delay: (delay + (alphaTween.delay || 0)).toFixed(3),
+      })
       animate(target, { opacity: 1 }, {
         duration: alphaTween.duration,
-        easing: alphaTween.ease || 'ease-in',
+        ease: convertEasing(alphaTween.ease || 'easeIn'),
         delay: delay + (alphaTween.delay || 0),
       })
     }
@@ -1055,20 +1224,31 @@ export default class Moonwalk {
       return
     }
 
-    // Calculate delay using our new helper method
+    // Calculate delay using our helper method for stagger effect
     const calculatedDelay = this.calculateDelay(
       section,
       tweenDuration,
       tweenOverlap
     )
 
-    // Add class after delay
+    const targetId = target.getAttribute('data-testid') || target.className
+
+    logMoonwalk('TweenCSS', 'Scheduling CSS animation', {
+      target: targetId,
+      delay: calculatedDelay.toFixed(3),
+      duration: tweenDuration,
+    })
+
+    // Add class after delay to trigger CSS transition
     delayedCall(calculatedDelay, () => {
+      logMoonwalk('TweenCSS', 'Adding moonwalked attribute', {
+        target: targetId,
+      })
       target.classList.add('moonwalked')
       target.setAttribute('data-moonwalked', '')
     })
 
-    // Update animation state for next element
+    // Update animation state for next element in section
     this.updateAnimationState(section, calculatedDelay, tweenDuration)
   }
 }
