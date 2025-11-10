@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ScrollSpy Test - Jupiter</title>
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          Oxygen, Ubuntu, Cantarell, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background: #f5f5f5;
+      }
+
+      /* Fixed header */
+      .header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        background: white;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        z-index: 100;
+        padding: 1rem 2rem;
+      }
+
+      .header h1 {
+        font-size: 1.5rem;
+        color: #2c3e50;
+      }
+
+      .header .subtitle {
+        color: #7f8c8d;
+        font-size: 0.9rem;
+      }
+
+      /* Main layout */
+      .main-content {
+        display: flex;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding-top: 80px; /* Header height offset */
+      }
+
+      /* Sticky navigation sidebar */
+      .nav-sidebar {
+        position: sticky;
+        top: 100px;
+        width: 280px;
+        height: fit-content;
+        padding: 2rem;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        margin: 2rem 0 2rem 2rem;
+      }
+
+      .nav-title {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #7f8c8d;
+        margin-bottom: 1rem;
+        font-weight: 600;
+      }
+
+      .nav-list {
+        list-style: none;
+      }
+
+      .nav-item {
+        margin-bottom: 0.5rem;
+      }
+
+      .nav-link {
+        display: block;
+        padding: 0.75rem 1rem;
+        color: #34495e;
+        text-decoration: none;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+        border-left: 3px solid transparent;
+        cursor: pointer;
+      }
+
+      .nav-link:hover {
+        background: #ecf0f1;
+        color: #2c3e50;
+      }
+
+      .nav-link[data-scrollspy-active] {
+        background: #e3f2fd;
+        color: #1976d2;
+        border-left-color: #1976d2;
+        font-weight: 600;
+      }
+
+      /* Content sections */
+      .content-area {
+        flex: 1;
+        padding: 2rem;
+      }
+
+      .content-section {
+        background: white;
+        padding: 3rem;
+        margin-bottom: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        min-height: 600px;
+      }
+
+      .content-section h2 {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        color: #2c3e50;
+        border-bottom: 3px solid #3498db;
+        padding-bottom: 0.5rem;
+      }
+
+      .content-section p {
+        margin-bottom: 1rem;
+        color: #555;
+        font-size: 1.1rem;
+      }
+
+      .content-section ul {
+        margin-left: 2rem;
+        margin-bottom: 1rem;
+      }
+
+      .content-section li {
+        margin-bottom: 0.5rem;
+        color: #555;
+      }
+
+      /* Status display */
+      .status-box {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        background: white;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        z-index: 200;
+        max-width: 400px;
+      }
+
+      .status-title {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #7f8c8d;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+      }
+
+      .status-content {
+        font-family: monospace;
+        font-size: 0.9rem;
+        color: #2c3e50;
+        background: #ecf0f1;
+        padding: 0.5rem;
+        border-radius: 4px;
+      }
+
+      .highlight {
+        background: #fef5e7;
+        padding: 1.5rem;
+        border-left: 4px solid #f39c12;
+        border-radius: 4px;
+        margin: 1.5rem 0;
+      }
+
+      .code-block {
+        background: #2c3e50;
+        color: #ecf0f1;
+        padding: 1rem;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 0.9rem;
+        overflow-x: auto;
+        margin: 1rem 0;
+      }
+
+      @media (max-width: 1024px) {
+        .main-content {
+          flex-direction: column;
+        }
+
+        .nav-sidebar {
+          position: relative;
+          top: 0;
+          width: 100%;
+          margin: 2rem;
+        }
+
+        .content-area {
+          padding: 1rem;
+        }
+
+        .status-box {
+          position: static;
+          margin: 2rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Fixed Header -->
+    <div class="header">
+      <h1>ScrollSpy Module Test</h1>
+      <p class="subtitle">
+        Automatic navigation highlighting based on scroll position
+      </p>
+    </div>
+
+    <!-- Main Content Layout -->
+    <div class="main-content">
+      <!-- Sticky Navigation Sidebar -->
+      <nav class="nav-sidebar">
+        <div class="nav-title">On This Page</div>
+        <ul class="nav-list">
+          <li class="nav-item">
+            <a
+              href="#introduction"
+              class="nav-link"
+              data-scrollspy-target="introduction"
+              data-testid="nav-introduction"
+            >
+              Introduction
+            </a>
+          </li>
+          <li class="nav-item">
+            <a
+              href="#features"
+              class="nav-link"
+              data-scrollspy-target="features"
+              data-testid="nav-features"
+            >
+              Features
+            </a>
+          </li>
+          <li class="nav-item">
+            <a
+              href="#usage"
+              class="nav-link"
+              data-scrollspy-target="usage"
+              data-testid="nav-usage"
+            >
+              Usage
+            </a>
+          </li>
+          <li class="nav-item">
+            <a
+              href="#configuration"
+              class="nav-link"
+              data-scrollspy-target="configuration"
+              data-testid="nav-configuration"
+            >
+              Configuration
+            </a>
+          </li>
+          <li class="nav-item">
+            <a
+              href="#examples"
+              class="nav-link"
+              data-scrollspy-target="examples"
+              data-testid="nav-examples"
+            >
+              Examples
+            </a>
+          </li>
+          <li class="nav-item">
+            <a
+              href="#api"
+              class="nav-link"
+              data-scrollspy-target="api"
+              data-testid="nav-api"
+            >
+              API Reference
+            </a>
+          </li>
+          <li class="nav-item">
+            <a
+              href="#conclusion"
+              class="nav-link"
+              data-scrollspy-target="conclusion"
+              data-testid="nav-conclusion"
+            >
+              Conclusion
+            </a>
+          </li>
+        </ul>
+      </nav>
+
+      <!-- Content Area -->
+      <div class="content-area">
+        <!-- Section 1 -->
+        <section
+          id="introduction"
+          class="content-section"
+          data-scrollspy-trigger="introduction"
+          data-testid="section-introduction"
+        >
+          <h2>Introduction</h2>
+          <p>
+            The ScrollSpy module is a powerful tool for creating interactive navigation
+            experiences that respond to the user's scroll position. It automatically
+            highlights navigation items as their corresponding content sections come into view.
+          </p>
+          <div class="highlight">
+            <strong>Key Benefit:</strong> ScrollSpy uses the modern IntersectionObserver API
+            for efficient, performant scroll tracking without relying on scroll event listeners.
+          </div>
+          <p>
+            This approach provides better performance than traditional scroll listeners,
+            especially on pages with many elements or complex layouts. The module handles
+            all the complexity of tracking multiple sections and updating navigation states.
+          </p>
+          <p>
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor
+            incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis
+            nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+          </p>
+        </section>
+
+        <!-- Section 2 -->
+        <section
+          id="features"
+          class="content-section"
+          data-scrollspy-trigger="features"
+          data-testid="section-features"
+        >
+          <h2>Features</h2>
+          <p>
+            ScrollSpy comes packed with features designed to make navigation tracking
+            simple and efficient:
+          </p>
+          <ul>
+            <li><strong>Automatic Highlighting:</strong> Navigation items are automatically highlighted when their corresponding sections enter the viewport</li>
+            <li><strong>IntersectionObserver API:</strong> Uses modern browser APIs for optimal performance</li>
+            <li><strong>Customizable Margins:</strong> Configure viewport margins to account for fixed headers or other UI elements</li>
+            <li><strong>Callback Support:</strong> Execute custom code when sections become active</li>
+            <li><strong>Single Active State:</strong> Only one navigation item is active at a time</li>
+            <li><strong>Smooth Scroll Integration:</strong> Works seamlessly with smooth scrolling</li>
+          </ul>
+          <div class="highlight">
+            The default rootMargin is set to '-55px 0px -85%' which accounts for typical
+            fixed header heights and ensures sections become active when they're prominently
+            visible in the viewport.
+          </div>
+          <p>
+            These features combine to create a robust navigation system that enhances
+            user experience by providing clear visual feedback about the current page
+            position. The module is designed to work out of the box with minimal configuration.
+          </p>
+        </section>
+
+        <!-- Section 3 -->
+        <section
+          id="usage"
+          class="content-section"
+          data-scrollspy-trigger="usage"
+          data-testid="section-usage"
+        >
+          <h2>Usage</h2>
+          <p>
+            Getting started with ScrollSpy is straightforward. Here's a basic example:
+          </p>
+          <div class="code-block">
+import { Application, ScrollSpy } from 'jupiter'
+
+const app = new Application()
+
+const scrollSpy = new ScrollSpy(app, {
+  onIntersect: (target, trigger) => {
+    console.log('Section active:', target.id)
+  }
+})
+          </div>
+          <p>
+            The HTML structure requires two data attributes:
+          </p>
+          <ul>
+            <li><code>data-scrollspy-trigger</code> - Applied to content sections you want to track</li>
+            <li><code>data-scrollspy-target</code> - Applied to navigation links that should be highlighted</li>
+          </ul>
+          <div class="code-block">
+&lt;!-- Navigation link --&gt;
+&lt;a href="#section1" data-scrollspy-target="section1"&gt;
+  Section 1
+&lt;/a&gt;
+
+&lt;!-- Content section --&gt;
+&lt;section id="section1" data-scrollspy-trigger="section1"&gt;
+  &lt;h2&gt;Section 1&lt;/h2&gt;
+  &lt;p&gt;Content here...&lt;/p&gt;
+&lt;/section&gt;
+          </div>
+          <p>
+            The module automatically manages the 'active' class on navigation items
+            as you scroll through the page. You can customize this behavior through
+            CSS by styling the .active class according to your design needs.
+          </p>
+        </section>
+
+        <!-- Section 4 -->
+        <section
+          id="configuration"
+          class="content-section"
+          data-scrollspy-trigger="configuration"
+          data-testid="section-configuration"
+        >
+          <h2>Configuration</h2>
+          <p>
+            ScrollSpy accepts configuration options to customize its behavior:
+          </p>
+          <div class="code-block">
+new ScrollSpy(app, {
+  // Callback executed when a section becomes active
+  onIntersect: (target, trigger) => {
+    // target: the content section element
+    // trigger: the navigation link element
+    console.log('Active section:', target.id)
+  }
+})
+          </div>
+          <div class="highlight">
+            <strong>IntersectionObserver Configuration:</strong> The module uses a rootMargin
+            of '-55px 0px -85%' by default. This means:
+            <ul style="margin-top: 0.5rem;">
+              <li>Top margin: -55px (accounts for fixed header)</li>
+              <li>Bottom margin: -85% (triggers when section is in upper portion of viewport)</li>
+            </ul>
+          </div>
+          <p>
+            The rootMargin values can be adjusted by modifying the module source if you
+            need different trigger points. The current configuration works well for most
+            single-column layouts with fixed headers around 50-60px tall.
+          </p>
+          <p>
+            The onIntersect callback receives two parameters: the target element (content section)
+            and the trigger element (navigation link). This allows you to implement custom
+            behavior like analytics tracking, URL updates, or additional UI changes.
+          </p>
+        </section>
+
+        <!-- Section 5 -->
+        <section
+          id="examples"
+          class="content-section"
+          data-scrollspy-trigger="examples"
+          data-testid="section-examples"
+        >
+          <h2>Examples</h2>
+          <p>
+            Here are some practical examples of ScrollSpy in action:
+          </p>
+
+          <h3 style="margin-top: 2rem; margin-bottom: 1rem; color: #34495e;">
+            Example 1: Documentation Pages
+          </h3>
+          <p>
+            Perfect for documentation sites where users need to navigate through multiple
+            sections. The highlighted navigation item shows exactly where they are in the
+            document.
+          </p>
+
+          <h3 style="margin-top: 2rem; margin-bottom: 1rem; color: #34495e;">
+            Example 2: Landing Pages
+          </h3>
+          <p>
+            Long-form landing pages benefit from ScrollSpy by providing visual feedback
+            as users scroll through features, testimonials, pricing, and other sections.
+          </p>
+
+          <h3 style="margin-top: 2rem; margin-bottom: 1rem; color: #34495e;">
+            Example 3: Educational Content
+          </h3>
+          <p>
+            Tutorial pages and educational content with multiple steps or chapters can
+            use ScrollSpy to show progress and current position.
+          </p>
+
+          <div class="highlight">
+            <strong>Pro Tip:</strong> Combine ScrollSpy with smooth scrolling for an even
+            better user experience. Click any navigation item on this page to see it in action!
+          </div>
+
+          <p>
+            The module works seamlessly with any CSS framework or custom styling. Simply
+            define how you want the .active class to appear, and ScrollSpy handles the rest.
+          </p>
+        </section>
+
+        <!-- Section 6 -->
+        <section
+          id="api"
+          class="content-section"
+          data-scrollspy-trigger="api"
+          data-testid="section-api"
+        >
+          <h2>API Reference</h2>
+          <p>
+            Complete API documentation for the ScrollSpy module:
+          </p>
+
+          <h3 style="margin-top: 2rem; margin-bottom: 1rem; color: #34495e;">
+            Constructor
+          </h3>
+          <div class="code-block">
+new ScrollSpy(app, options)
+          </div>
+          <ul>
+            <li><strong>app</strong> (Application) - Jupiter Application instance</li>
+            <li><strong>options</strong> (Object) - Configuration options</li>
+            <li><strong>options.onIntersect</strong> (Function) - Callback when section becomes active</li>
+          </ul>
+
+          <h3 style="margin-top: 2rem; margin-bottom: 1rem; color: #34495e;">
+            Data Attributes
+          </h3>
+          <div class="code-block">
+data-scrollspy-trigger="unique-id"  // On content sections
+data-scrollspy-target="unique-id"   // On navigation links
+          </div>
+
+          <h3 style="margin-top: 2rem; margin-bottom: 1rem; color: #34495e;">
+            CSS Classes
+          </h3>
+          <ul>
+            <li><strong>.active</strong> - Applied to navigation items when their section is visible</li>
+          </ul>
+
+          <h3 style="margin-top: 2rem; margin-bottom: 1rem; color: #34495e;">
+            Methods
+          </h3>
+          <p>
+            The module is initialized once and handles all updates automatically through
+            the IntersectionObserver. No manual method calls are required during normal usage.
+          </p>
+        </section>
+
+        <!-- Section 7 -->
+        <section
+          id="conclusion"
+          class="content-section"
+          data-scrollspy-trigger="conclusion"
+          data-testid="section-conclusion"
+        >
+          <h2>Conclusion</h2>
+          <p>
+            ScrollSpy is an essential tool for creating modern, user-friendly navigation
+            experiences. By automatically highlighting the current section, it helps users
+            understand where they are in your content at all times.
+          </p>
+          <div class="highlight">
+            <strong>Key Takeaways:</strong>
+            <ul style="margin-top: 0.5rem;">
+              <li>Uses IntersectionObserver for excellent performance</li>
+              <li>Minimal configuration required</li>
+              <li>Works with any CSS framework</li>
+              <li>Provides callback support for custom behavior</li>
+            </ul>
+          </div>
+          <p>
+            Whether you're building documentation, landing pages, or educational content,
+            ScrollSpy provides the navigation feedback your users need. The module is
+            lightweight, performant, and easy to integrate into any Jupiter-based project.
+          </p>
+          <p>
+            Try scrolling back to the top and watching the navigation update automatically.
+            Notice how the active state smoothly transitions as you move between sections.
+            This is ScrollSpy in action!
+          </p>
+          <p>
+            For more information about Jupiter and its other modules, check out the
+            official documentation and examples.
+          </p>
+        </section>
+      </div>
+    </div>
+
+    <!-- Status Display -->
+    <div class="status-box" data-testid="status-box">
+      <div class="status-title">Active Section</div>
+      <div class="status-content" data-testid="active-section">
+        None
+      </div>
+    </div>
+
+    <script type="module">
+      import { Application, ScrollSpy } from "../src/index.js";
+
+      document.addEventListener("DOMContentLoaded", () => {
+        // Initialize Application
+        const app = new Application({
+          respectReducedMotion: false,
+        });
+
+        // Initialize ScrollSpy
+        const scrollSpy = new ScrollSpy(app, {
+          onIntersect: (target, trigger) => {
+            console.log('ScrollSpy: Section active', {
+              sectionId: target.id,
+              triggerId: trigger.dataset.scrollspyTarget
+            });
+
+            // Update status box
+            const statusEl = document.querySelector('[data-testid="active-section"]');
+            if (statusEl) {
+              statusEl.textContent = `#${target.id}`;
+            }
+          }
+        });
+
+        console.log('ScrollSpy initialized');
+        console.log('Scroll the page to see navigation items highlight automatically');
+
+        // Make instances available for debugging
+        window.app = app;
+        window.scrollSpy = scrollSpy;
+      });
+    </script>
+  </body>
+</html>

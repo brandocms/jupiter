@@ -33,13 +33,11 @@ export default defineConfig({
     },
     // Roll-up specific options
     rollupOptions: {
-      // Make sure external dependencies aren't bundled
-      external: ['gsap'],
+      // Bundle all dependencies
+      external: [],
       output: {
         // Global variable name to use in UMD builds
-        globals: {
-          gsap: 'gsap',
-        },
+        globals: {},
       },
     },
   },

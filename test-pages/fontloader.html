@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fontloader Test - Jupiter</title>
+
+    <!-- Load custom fonts from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@400;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+          Oxygen, Ubuntu, Cantarell, sans-serif;
+        line-height: 1.6;
+        color: #333;
+        background: #f5f5f5;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+
+      header {
+        background: white;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      h1 {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+        color: #2c3e50;
+      }
+
+      .subtitle {
+        color: #7f8c8d;
+        font-size: 1.1rem;
+      }
+
+      section {
+        background: white;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      h2 {
+        font-size: 1.8rem;
+        margin-bottom: 1rem;
+        color: #34495e;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 0.5rem;
+      }
+
+      .description {
+        color: #7f8c8d;
+        margin-bottom: 1.5rem;
+        font-size: 0.95rem;
+      }
+
+      /* Loading indicator */
+      .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.95);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        transition: opacity 0.3s ease;
+      }
+
+      .loading-overlay.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid #e0e0e0;
+        border-top-color: #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      .loading-text {
+        margin-top: 1rem;
+        font-size: 1.2rem;
+        color: #34495e;
+      }
+
+      /* Status display */
+      .status {
+        padding: 1rem;
+        background: #ecf0f1;
+        border-radius: 4px;
+        margin-bottom: 1.5rem;
+        font-family: 'Fira Code', monospace;
+        font-size: 0.9rem;
+      }
+
+      .status.ready {
+        background: #d5f4e6;
+        color: #27ae60;
+      }
+
+      .status.loading {
+        background: #fef5e7;
+        color: #f39c12;
+      }
+
+      /* Font samples */
+      .font-sample {
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background: #fafafa;
+        border-radius: 4px;
+        border-left: 4px solid #3498db;
+      }
+
+      .font-name {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #7f8c8d;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+      }
+
+      .sample-text {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        line-height: 1.4;
+      }
+
+      .sample-text.small {
+        font-size: 1rem;
+      }
+
+      .font-playfair {
+        font-family: 'Playfair Display', serif;
+      }
+
+      .font-inter {
+        font-family: 'Inter', sans-serif;
+      }
+
+      .font-fira {
+        font-family: 'Fira Code', monospace;
+      }
+
+      .weight-normal {
+        font-weight: 400;
+      }
+
+      .weight-semibold {
+        font-weight: 600;
+      }
+
+      .weight-bold {
+        font-weight: 700;
+      }
+
+      /* Comparison section */
+      .comparison {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .comparison-item {
+        padding: 1.5rem;
+        background: #fafafa;
+        border-radius: 4px;
+      }
+
+      .comparison-label {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #7f8c8d;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+      }
+
+      .fallback-font {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+
+      .code-block {
+        background: #2c3e50;
+        color: #ecf0f1;
+        padding: 1rem;
+        border-radius: 4px;
+        font-family: 'Fira Code', monospace;
+        font-size: 0.9rem;
+        overflow-x: auto;
+        margin-top: 1rem;
+      }
+
+      @media (max-width: 768px) {
+        .comparison {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="loading-overlay" data-testid="loading-overlay">
+      <div class="spinner"></div>
+      <div class="loading-text">Loading fonts...</div>
+    </div>
+
+    <div class="container">
+      <header>
+        <h1>Fontloader Module Test</h1>
+        <p class="subtitle">
+          Testing Promise-based font loading with visual feedback
+        </p>
+      </header>
+
+      <!-- Status Section -->
+      <section>
+        <h2>Font Loading Status</h2>
+        <div class="status loading" data-testid="status">
+          <strong>Status:</strong> <span data-testid="status-text">Loading fonts...</span>
+        </div>
+        <div class="description">
+          The Fontloader module uses the FontFace API to ensure fonts are fully loaded before displaying content.
+          If FontFace is not supported, it uses an 800ms timeout fallback.
+        </div>
+        <div data-testid="timing-info"></div>
+      </section>
+
+      <!-- Font Samples -->
+      <section>
+        <h2>Font Families</h2>
+        <p class="description">
+          Different custom fonts demonstrating the loading behavior.
+        </p>
+
+        <div class="font-sample">
+          <div class="font-name">Playfair Display (Serif)</div>
+          <div class="sample-text font-playfair weight-normal" data-testid="playfair-normal">
+            The quick brown fox jumps over the lazy dog
+          </div>
+          <div class="sample-text font-playfair weight-bold" data-testid="playfair-bold">
+            The quick brown fox jumps over the lazy dog
+          </div>
+          <div class="sample-text small font-playfair">
+            ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz 0123456789
+          </div>
+        </div>
+
+        <div class="font-sample">
+          <div class="font-name">Inter (Sans-serif)</div>
+          <div class="sample-text font-inter weight-normal" data-testid="inter-normal">
+            The quick brown fox jumps over the lazy dog
+          </div>
+          <div class="sample-text font-inter weight-semibold">
+            The quick brown fox jumps over the lazy dog
+          </div>
+          <div class="sample-text font-inter weight-bold" data-testid="inter-bold">
+            The quick brown fox jumps over the lazy dog
+          </div>
+          <div class="sample-text small font-inter">
+            ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz 0123456789
+          </div>
+        </div>
+
+        <div class="font-sample">
+          <div class="font-name">Fira Code (Monospace)</div>
+          <div class="sample-text font-fira weight-normal" data-testid="fira-normal">
+            The quick brown fox jumps over the lazy dog
+          </div>
+          <div class="sample-text font-fira weight-bold">
+            The quick brown fox jumps over the lazy dog
+          </div>
+          <div class="sample-text small font-fira">
+            ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz 0123456789
+          </div>
+          <div class="code-block">
+            function loadFonts() {
+              return new Promise((resolve) => {
+                if (!document.fonts) {
+                  setTimeout(resolve, 800)
+                } else {
+                  document.fonts.ready.then(resolve)
+                }
+              })
+            }
+          </div>
+        </div>
+      </section>
+
+      <!-- Comparison -->
+      <section>
+        <h2>Fallback vs Custom Font Comparison</h2>
+        <p class="description">
+          Compare system fallback fonts (left) with loaded custom fonts (right).
+        </p>
+
+        <div class="comparison">
+          <div class="comparison-item">
+            <div class="comparison-label">System Fallback</div>
+            <div class="sample-text fallback-font">
+              Beautiful Typography Matters
+            </div>
+            <p class="small fallback-font">
+              This uses the system font stack. The text appears immediately but may look different across operating systems.
+            </p>
+          </div>
+          <div class="comparison-item">
+            <div class="comparison-label">Custom Font (Playfair Display)</div>
+            <div class="sample-text font-playfair">
+              Beautiful Typography Matters
+            </div>
+            <p class="small font-inter">
+              This uses custom fonts loaded via Fontloader. The text is consistent across all platforms.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- API Information -->
+      <section>
+        <h2>Module Usage</h2>
+        <p class="description">
+          How to use the Fontloader module in your application.
+        </p>
+        <div class="code-block">
+import { Application, Fontloader } from 'jupiter'
+
+const app = new Application()
+const fontloader = new Fontloader(app)
+
+fontloader.loadFonts().then(() => {
+  console.log('Fonts are ready!')
+  // Your code here
+})
+        </div>
+      </section>
+    </div>
+
+    <script type="module">
+      import { Application } from "../src/index.js";
+      import Fontloader from "../src/modules/Fontloader";
+
+      document.addEventListener("DOMContentLoaded", async () => {
+        const startTime = performance.now();
+
+        // Initialize Application
+        const app = new Application({
+          respectReducedMotion: false,
+        });
+
+        // Initialize Fontloader
+        const fontloader = new Fontloader(app);
+
+        console.log('Fontloader: Starting font load...');
+
+        try {
+          await fontloader.loadFonts();
+          const endTime = performance.now();
+          const loadTime = (endTime - startTime).toFixed(2);
+
+          console.log(`Fontloader: Fonts loaded successfully in ${loadTime}ms`);
+
+          // Update status
+          const statusEl = document.querySelector('[data-testid="status"]');
+          const statusText = document.querySelector('[data-testid="status-text"]');
+
+          statusEl.classList.remove('loading');
+          statusEl.classList.add('ready');
+          statusText.textContent = `Fonts loaded successfully! (${loadTime}ms)`;
+
+          // Add timing info
+          const timingInfo = document.querySelector('[data-testid="timing-info"]');
+          timingInfo.innerHTML = `
+            <div class="code-block">
+              Load Time: ${loadTime}ms<br>
+              FontFace API Support: ${document.fonts ? 'Yes' : 'No (using 800ms fallback)'}
+            </div>
+          `;
+
+          // Hide loading overlay
+          const overlay = document.querySelector('[data-testid="loading-overlay"]');
+          overlay.classList.add('hidden');
+
+        } catch (error) {
+          console.error('Fontloader: Error loading fonts', error);
+
+          const statusEl = document.querySelector('[data-testid="status"]');
+          const statusText = document.querySelector('[data-testid="status-text"]');
+
+          statusEl.style.background = '#f8d7da';
+          statusEl.style.color = '#721c24';
+          statusText.textContent = `Error loading fonts: ${error.message}`;
+        }
+
+        // Make instances available for debugging
+        window.app = app;
+        window.fontloader = fontloader;
+      });
+    </script>
+  </body>
+</html>
