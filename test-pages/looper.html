@@ -70,6 +70,10 @@
       /* No transition on transform - it conflicts with JS-driven looping */
     }
 
+    [data-looper-item]:last-of-type {
+      border: 2px solid red;
+    }
+
     [data-looper-item]:hover {
       /* Use filter for hover effect instead of transform to avoid conflicting with looping */
       filter: brightness(1.15);
@@ -314,7 +318,7 @@
       snap: false, // Override with data-looper-snap attribute
       speed: {
         sm: 0.1,
-        lg: 0.35,
+        lg: 8,
       },
     })
 
