@@ -154,7 +154,7 @@
   </section>
 
   <!-- Example 2: Reversed Loop -->
-  <!-- <section class="section">
+  <section class="section">
     <h2 class="section-title">2. Reversed Direction</h2>
     <div class="info">
       <strong>Features:</strong> Scrolls from right to left (reversed)
@@ -172,7 +172,7 @@
         </div>
       </div>
     </div>
-  </section> -->
+  </section>
 
   <!-- Example 3: Snap to Item -->
   <!--
@@ -283,7 +283,7 @@
     // Initialize Looper with custom options
     const looper = new Looper(app, {
       selector: '[data-moonwalk-run="loop"]',
-      crawl: false,
+      crawl: true,
       loop: true,
       draggable: true,
       snap: false, // Override with data-looper-snap attribute

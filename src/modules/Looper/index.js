@@ -358,11 +358,14 @@ function horizontalLoop(app, items, config) {
         // In reset zone but item doesn't need reset → keep current offset
         newOffset = itemWrapOffsets[i]
       } else if (itemLeft < -(widths[i] + containerWidth * 0.5)) {
-        // Item exited left edge → move to END (after all clones + gap)
-        newOffset = wrapOffset
+        // Item exited LEFT edge
+        // Forward drag (low boundedPos): wrap to END
+        // Backward drag (high boundedPos): don't wrap, clones fill in from right
+        newOffset = boundedPos < originalItemsWidth / 2 ? wrapOffset : 0
       } else if (itemLeft > containerWidth + containerWidth * 0.5) {
-        // Item entered from right (reverse direction) → move to START
-        newOffset = -wrapOffset
+        // Item exited RIGHT edge
+        // This shouldn't happen much, but handle it
+        newOffset = 0
       } else {
         // Keep current offset
         newOffset = itemWrapOffsets[i]
@@ -508,21 +511,34 @@ function horizontalLoop(app, items, config) {
         boundedPos.set(bounded)
       })
 
-      // Detect when boundedPos wraps (crosses boundary) and reset all items
-      // This prevents stuck items during fast drags
+      // Detect when boundedPos wraps (makes large jump) and reset all items
+      // This prevents stuck items during fast drags in either direction
       const boundedPosUnsubscribe = boundedPos.on('change', (latest) => {
-        const wrappedForward = lastBoundedValue > originalItemsWidth / 2 && latest < originalItemsWidth / 2
-        const wrappedBackward = lastBoundedValue < originalItemsWidth / 2 && latest > originalItemsWidth / 2
+        const delta = Math.abs(latest - lastBoundedValue)
 
-        if (wrappedForward || wrappedBackward) {
-          console.log('[Looper:boundedPos] 🔄 Boundary crossed, resetting all items', {
+        // If boundedPos jumped by more than 40% of the width, it wrapped
+        // Using 40% instead of 50% to catch edge cases
+        const didWrap = delta > originalItemsWidth * 0.4
+
+        if (didWrap) {
+          const direction = latest > lastBoundedValue ? 'backward (drag right)' : 'forward (drag left)'
+
+          // Count how many items have non-zero offset before reset
+          const itemsWithOffset = items.filter((item, i) =>
+            !item.hasAttribute('data-looper-clone') && itemWrapOffsets[i] !== 0
+          ).length
+
+          console.log('[Looper:boundedPos] 🔄 Boundary crossed', {
             lastValue: lastBoundedValue.toFixed(2),
             newValue: latest.toFixed(2),
-            direction: wrappedForward ? 'forward' : 'backward',
+            delta: delta.toFixed(2),
+            direction,
+            itemsToReset: itemsWithOffset,
           })
-          // Reset all original items immediately to prevent stuck state
+
+          // Reset ALL original items to 0 (both positive and negative offsets)
           items.forEach((item, i) => {
-            if (!item.hasAttribute('data-looper-clone')) {
+            if (!item.hasAttribute('data-looper-clone') && itemWrapOffsets[i] !== 0) {
               item.style.transform = 'none'
               itemWrapOffsets[i] = 0
             }
@@ -737,8 +753,11 @@ function horizontalLoop(app, items, config) {
         speedRampAnimation = null
       }
 
-      // Change cursor
+      // Change cursor and disable hover effects during drag
       container.style.cursor = 'grabbing'
+      items.forEach(item => {
+        item.style.pointerEvents = 'none'
+      })
 
       // Prevent text selection
       e.preventDefault()
@@ -798,8 +817,11 @@ function horizontalLoop(app, items, config) {
       window.removeEventListener('pointerup', onPointerUp)
       window.removeEventListener('pointercancel', onPointerUp)
 
-      // Reset cursor
+      // Reset cursor and re-enable hover effects
       container.style.cursor = 'grab'
+      items.forEach(item => {
+        item.style.pointerEvents = ''
+      })
 
       // Calculate final velocity
       const velocity = getVelocity()
