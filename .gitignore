@@ -6,3 +6,5 @@ node_modules
 /playwright/.cache/
 /coverage/
 /TODO_4_0.md
+/docs/motion-migration/ticker.js
+/LOOPER_MIGRATION_LOG.md

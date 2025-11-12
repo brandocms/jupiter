@@ -3,7 +3,7 @@
  * @module jupiter
  */
 
-import { animate, scroll, stagger } from 'motion'
+import { animate, scroll, stagger, motionValue } from 'motion'
 
 import _defaultsDeep from 'lodash.defaultsdeep'
 
@@ -86,4 +86,5 @@ export {
   animate,
   scroll,
   stagger,
+  motionValue,
 }
