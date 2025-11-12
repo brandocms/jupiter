@@ -75,6 +75,8 @@ function horizontalLoop(app, items, config) {
   let pixelsPerSecond = (config.speed || 1) * 100
   let animation = null
   let position = motionValue(0) // Source of truth for position
+  let boundedPos = motionValue(0) // Bounded position (0 to originalItemsWidth)
+  let lastBoundedValue = 0 // Track last value to detect wraps
   let originalItemCount = 0 // Track count of ORIGINAL items (before clones)
 
   // Cached measurements
@@ -256,7 +258,7 @@ function horizontalLoop(app, items, config) {
     // Calculate width of ONLY original items (for wrapping distance)
     // This is the distance from first item to first clone
     if (originalItemCount > 0 && items.length > originalItemCount) {
-      originalItemsWidth = items[originalItemCount].offsetLeft - items[0].offsetLeft + gap
+      originalItemsWidth = items[originalItemCount].offsetLeft - items[0].offsetLeft // + gap
       console.log('[Looper:populateWidths]    → Original items width:', originalItemsWidth, 'px')
     } else {
       // No clones yet, use totalWidth
@@ -499,37 +501,75 @@ function horizontalLoop(app, items, config) {
 
       const containerElement = items[0].parentElement
 
+      // Set up boundedPos motionValue to automatically sync with position
+      // This calculates the bounded position (0 to originalItemsWidth)
+      const positionUnsubscribe = position.on('change', (latest) => {
+        const bounded = ((latest % originalItemsWidth) + originalItemsWidth) % originalItemsWidth
+        boundedPos.set(bounded)
+      })
+
+      // Detect when boundedPos wraps (crosses boundary) and reset all items
+      // This prevents stuck items during fast drags
+      const boundedPosUnsubscribe = boundedPos.on('change', (latest) => {
+        const wrappedForward = lastBoundedValue > originalItemsWidth / 2 && latest < originalItemsWidth / 2
+        const wrappedBackward = lastBoundedValue < originalItemsWidth / 2 && latest > originalItemsWidth / 2
+
+        if (wrappedForward || wrappedBackward) {
+          console.log('[Looper:boundedPos] 🔄 Boundary crossed, resetting all items', {
+            lastValue: lastBoundedValue.toFixed(2),
+            newValue: latest.toFixed(2),
+            direction: wrappedForward ? 'forward' : 'backward',
+          })
+          // Reset all original items immediately to prevent stuck state
+          items.forEach((item, i) => {
+            if (!item.hasAttribute('data-looper-clone')) {
+              item.style.transform = 'none'
+              itemWrapOffsets[i] = 0
+            }
+          })
+        }
+
+        lastBoundedValue = latest
+      })
+
       let frameCount = 0
       renderUnsubscribe = frame.render(() => {
-        // Read position from motionValue (single source of truth)
-        const pos = position.get()
-
-        // Keep container bounded within 0 to originalItemsWidth (not totalWidth!)
-        // This matches the item wrapping distance
-        const boundedPos = ((pos % originalItemsWidth) + originalItemsWidth) % originalItemsWidth
+        // Read bounded position from motionValue
+        const currentBoundedPos = boundedPos.get()
 
         // Debug logging every 60 frames (~1 second)
         if (frameCount % 60 === 0) {
           console.log('[Looper:frame]', {
-            rawPos: pos.toFixed(2),
-            boundedPos: boundedPos.toFixed(2),
+            rawPos: position.get().toFixed(2),
+            boundedPos: currentBoundedPos.toFixed(2),
             originalItemsWidth,
             totalWidth,
-            containerTransform: `-${boundedPos.toFixed(2)}px`,
+            containerTransform: `-${currentBoundedPos.toFixed(2)}px`,
           })
         }
         frameCount++
 
         // Apply bounded transform to container
-        containerElement.style.transform = `translateX(${-boundedPos}px)`
+        containerElement.style.transform = `translateX(${-currentBoundedPos}px)`
 
         // Wrap items based on bounded position
-        updateItemPositions(boundedPos)
+        updateItemPositions(currentBoundedPos)
       }, true) // true = keep alive
+
+      // Store unsubscribe functions for cleanup
+      renderUnsubscribe.positionUnsubscribe = positionUnsubscribe
+      renderUnsubscribe.boundedPosUnsubscribe = boundedPosUnsubscribe
     }
 
     function stopRenderLoop() {
       if (renderUnsubscribe) {
+        // Unsubscribe from motionValue listeners
+        if (renderUnsubscribe.positionUnsubscribe) {
+          renderUnsubscribe.positionUnsubscribe()
+        }
+        if (renderUnsubscribe.boundedPosUnsubscribe) {
+          renderUnsubscribe.boundedPosUnsubscribe()
+        }
         cancelFrame(renderUnsubscribe)
         renderUnsubscribe = null
       }
