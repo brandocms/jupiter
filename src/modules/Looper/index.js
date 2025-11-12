@@ -1,4 +1,4 @@
-import { animate, motionValue } from 'motion'
+import { animate, motionValue, frame, cancelFrame } from 'motion'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import Dom from '../Dom'
 
@@ -91,7 +91,7 @@ function horizontalLoop(app, items, config) {
   let speedRampAnimation = null // Track speed ramp animation
   let inertiaAnimation = null // Track inertia animation
   let positionUnsubscribe = null // Track position listener for cleanup
-  let rafId = null // Track RAF loop for cleanup
+  let renderUnsubscribe = null // Track frame.render loop for cleanup
 
   /**
    * Measure total width of all items as currently laid out
@@ -437,66 +437,83 @@ function horizontalLoop(app, items, config) {
     console.log('[Looper:init]    → Initialized container at position 0')
 
     // Set up RAF loop to check item positions for wrapping
-    // Container is animated directly, this just checks and wraps items
+    // Frame.render loop to apply bounded position to DOM
+    // This is Motion's optimized render loop - prevents layout thrashing
     let frameCount = 0
     let lastFpsCheck = performance.now()
     let framesInLastSecond = 0
 
-    function checkItemWrapping() {
-      if (!shouldLoop) return
+    function startRenderLoop() {
+      if (renderUnsubscribe) return // Already running
 
       const containerElement = items[0].parentElement
 
-      // Read current container transform to determine position
-      const transform = window.getComputedStyle(containerElement).transform
-      let currentX = 0
-      if (transform && transform !== 'none') {
-        const matrix = new DOMMatrix(transform)
-        currentX = matrix.m41 // This is the X translation
-      }
+      renderUnsubscribe = frame.render(() => {
+        // Read position from motionValue (single source of truth)
+        const pos = position.get()
 
-      // Convert to positive position value (container moves negative)
-      const pos = Math.abs(currentX)
+        // Defensive check - position should be a number
+        if (typeof pos !== 'number' || isNaN(pos)) {
+          console.error('[Looper:render] ⚠️ Invalid position:', pos, 'typeof:', typeof pos)
+          console.error('[Looper:render]    → position:', position)
+          console.error('[Looper:render]    → position.get:', position.get)
+          console.error('[Looper:render]    → typeof position.get():', typeof position.get())
+          return
+        }
 
-      // Check and wrap items
-      updateItemPositions(pos)
+        // Keep container bounded within 0 to totalWidth
+        const boundedPos = ((pos % totalWidth) + totalWidth) % totalWidth
 
-      // FPS tracking
-      frameCount++
-      framesInLastSecond++
-      const now = performance.now()
-      const elapsed = now - lastFpsCheck
+        // Apply bounded transform to container
+        containerElement.style.transform = `translateX(${-boundedPos}px)`
 
-      if (elapsed >= 1000) {
-        const fps = (framesInLastSecond / elapsed * 1000).toFixed(1)
-        console.log('[Looper:FPS]', fps, 'fps | Container X:', currentX.toFixed(2), 'px')
-        framesInLastSecond = 0
-        lastFpsCheck = now
-      }
+        // Wrap items based on bounded position
+        updateItemPositions(boundedPos)
 
-      // Continue loop
-      rafId = requestAnimationFrame(checkItemWrapping)
+        // FPS tracking
+        frameCount++
+        framesInLastSecond++
+        const now = performance.now()
+        const elapsed = now - lastFpsCheck
+
+        if (elapsed >= 1000) {
+          const fps = (framesInLastSecond / elapsed * 1000).toFixed(1)
+          console.log('[Looper:FPS]', fps, 'fps | Position:', pos.toFixed(2), 'px | Bounded:', boundedPos.toFixed(2), 'px')
+          framesInLastSecond = 0
+          lastFpsCheck = now
+        }
+      }, true) // true = keep alive
+
+      console.log('[Looper:init]    → Started frame.render loop')
     }
 
-    // Start the RAF loop for item wrapping checks
-    if (shouldLoop && config.crawl) {
-      rafId = requestAnimationFrame(checkItemWrapping)
-      console.log('[Looper:init]    → Started RAF loop for item wrapping checks')
+    function stopRenderLoop() {
+      if (renderUnsubscribe) {
+        cancelFrame(renderUnsubscribe)
+        renderUnsubscribe = null
+        console.log('[Looper:cleanup] Stopped frame.render loop')
+      }
+    }
+
+    // Start the frame.render loop
+    if (shouldLoop) {
+      startRenderLoop()
     }
 
     // Function to create and start the animation loop
-    // Animates the CONTAINER directly (ONE animate call!)
+    // Animates the position motionValue (frame.render loop applies to DOM)
     function startLoopAnimation() {
       if (!shouldLoop || !config.crawl) return null
 
-      const containerElement = items[0].parentElement
       const duration = totalWidth / pixelsPerSecond
+      const currentPos = position.get()
+      const target = currentPos + totalWidth
 
-      // CRITICAL: Animate the CONTAINER directly, not the position motionValue
-      // This is the Ticker pattern - ONE animate() call that repeats infinitely
+      // Animate the position motionValue
+      // frame.render loop will apply bounded position to DOM
       animation = animate(
-        containerElement,
-        { x: config.reversed ? 0 : -totalWidth },
+        position,
+        target,
         {
           duration,
           repeat: Infinity,
@@ -504,7 +521,8 @@ function horizontalLoop(app, items, config) {
         }
       )
 
-      console.log('[Looper:loop] 🎬 Container animation started (ONE animate call, repeat: Infinity)')
+      console.log('[Looper:loop] 🎬 Position animation started (motionValue, repeat: Infinity)')
+      console.log('[Looper:loop]    → From:', currentPos, 'to:', target, 'duration:', duration, 's')
 
       return animation
     }
@@ -591,12 +609,17 @@ function horizontalLoop(app, items, config) {
      * @returns {number} Velocity in pixels per second
      */
     function getVelocity() {
-      if (velocityTracker.length < 2) return 0
+      if (velocityTracker.length < 2) {
+        console.log('[Looper:velocity] Not enough data points:', velocityTracker.length)
+        return 0
+      }
 
       // Use last 5 movements for smoothing
       const recent = velocityTracker.slice(-5)
       let totalVelocity = 0
       let totalWeight = 0
+
+      console.log('[Looper:velocity] Calculating from', recent.length, 'points')
 
       for (let i = 1; i < recent.length; i++) {
         const prev = recent[i - 1]
@@ -608,12 +631,16 @@ function horizontalLoop(app, items, config) {
         if (deltaTime > 0) {
           // Weight more recent movements higher
           const weight = i / recent.length
-          totalVelocity += (deltaX / deltaTime) * 1000 * weight // Convert to px/second
+          const velocity = (deltaX / deltaTime) * 1000 // Convert to px/second
+          console.log(`[Looper:velocity]   [${i}] deltaX: ${deltaX.toFixed(2)}, deltaTime: ${deltaTime}ms, velocity: ${velocity.toFixed(2)} px/s, weight: ${weight.toFixed(2)}`)
+          totalVelocity += velocity * weight
           totalWeight += weight
         }
       }
 
-      return totalWeight > 0 ? totalVelocity / totalWeight : 0
+      const finalVelocity = totalWeight > 0 ? totalVelocity / totalWeight : 0
+      console.log('[Looper:velocity] Final velocity:', finalVelocity.toFixed(2), 'px/s')
+      return finalVelocity
     }
 
     /**
@@ -631,7 +658,17 @@ function horizontalLoop(app, items, config) {
       isDragging = true
       startX = e.clientX
       lastX = e.clientX
-      startPosition = position.get() // Store starting position
+
+      // Read current position from motionValue
+      startPosition = position.get()
+
+      // Defensive check
+      if (typeof startPosition !== 'number' || isNaN(startPosition)) {
+        console.error('[Looper:drag] ⚠️ Invalid start position:', startPosition, 'typeof:', typeof startPosition)
+        console.error('[Looper:drag]    → position motionValue:', position)
+        return
+      }
+
       lastTime = Date.now()
       velocityTracker = [{ x: e.clientX, time: lastTime }]
 
@@ -645,11 +682,11 @@ function horizontalLoop(app, items, config) {
         console.log('[Looper:drag]    → Stopped inertia animation')
       }
 
-      // STOP main animation completely (not just pause)
-      // This prevents it from fighting with our position.set() calls
+      // STOP main animation completely (RAF loop continues for item wrapping)
       if (animation) {
         animation.stop()
-        console.log('[Looper:drag]    → STOPPED animation (not paused)')
+        animation = null
+        console.log('[Looper:drag]    → STOPPED animation (RAF continues)')
       }
 
       // Stop any speed ramp animation
@@ -694,19 +731,29 @@ function horizontalLoop(app, items, config) {
       // Calculate drag delta in pixels
       const deltaX = startX - currentX
 
-      // Update position directly - position listener will update DOM
+      // Calculate new position
       const newPosition = startPosition + deltaX
 
-      // For looping, wrap the position
+      // Defensive check
+      if (typeof newPosition !== 'number' || isNaN(newPosition)) {
+        console.error('[Looper:drag] ⚠️ Invalid newPosition:', newPosition)
+        console.error('[Looper:drag]    → startPosition:', startPosition, 'deltaX:', deltaX)
+        return
+      }
+
+      // Update position motionValue
+      // frame.render loop will apply bounded transform to DOM
       if (shouldLoop) {
-        const wrappedPos = ((newPosition % totalWidth) + totalWidth) % totalWidth
-        position.set(wrappedPos)
+        // For looping, allow unbounded position (frame.render will bound it)
+        position.set(newPosition)
       } else {
-        // For non-looping, clamp
+        // For non-looping, clamp position
         const maxPos = Math.max(0, totalWidth - container.offsetWidth)
         const clampedPos = Math.max(0, Math.min(maxPos, newPosition))
         position.set(clampedPos)
       }
+
+      // frame.render loop will apply position to DOM and wrap items
 
       lastX = currentX
       lastTime = currentTime
@@ -727,13 +774,17 @@ function horizontalLoop(app, items, config) {
       window.removeEventListener('pointercancel', onPointerUp)
       console.log('[Looper:drag]    → Removed move/up listeners')
 
-      // Position is already updated from last pointer move
-      console.log('[Looper:drag]    → Final position:', position.get(), 'px')
+      // Read final position from container transform
+      const containerElement = items[0].parentElement
+      const transform = window.getComputedStyle(containerElement).transform
+      let currentX = 0
+      if (transform && transform !== 'none') {
+        const matrix = new DOMMatrix(transform)
+        currentX = matrix.m41
+      }
+      const finalPosition = Math.abs(currentX)
 
-      // Update current index to track where we actually are after drag
-      // This ensures navigation buttons know the correct position
-      closestIndex(true)
-      console.log('[Looper:drag]    → Updated curIndex to:', curIndex)
+      console.log('[Looper:drag]    → Final position:', finalPosition, 'px')
 
       // Reset cursor
       container.style.cursor = 'grab'
@@ -742,6 +793,7 @@ function horizontalLoop(app, items, config) {
       const velocity = getVelocity()
       console.log('[Looper:drag]    → Final velocity:', velocity, 'px/s')
       console.log('[Looper:drag]    → Velocity threshold: 1 px/s')
+      console.log('[Looper:drag]    → Velocity tracker:', velocityTracker.map(v => `${v.x.toFixed(1)}px @ ${v.time}`).join(', '))
 
       // Start inertia if we have velocity (lowered threshold from 10 to 1)
       if (Math.abs(velocity) > 1) {
@@ -751,9 +803,9 @@ function horizontalLoop(app, items, config) {
         console.log('[Looper:drag]    → Snapping to nearest (low velocity)')
         // Snap to nearest if snap enabled
         snapToNearest()
-      } else if (config.crawl && animation) {
+      } else if (config.crawl) {
         console.log('[Looper:drag]    → Resuming crawl (low velocity)')
-        // Resume crawl with ramp-up
+        // Resume crawl
         resumeCrawl()
       } else {
         console.log('[Looper:drag]    → No action (velocity too low:', velocity, 'px/s)')
@@ -766,72 +818,68 @@ function horizontalLoop(app, items, config) {
      * @param {number} velocity - Initial velocity in pixels per second
      */
     function startInertia(velocity) {
+      // Read current position from motionValue
       const currentPos = position.get()
 
       // Calculate inertia velocity accounting for direction
-      // Drag direction is opposite to scroll, AND reversed loops need another inversion
-      const inertiaVelocity = config.reversed ? velocity : -velocity
+      // Cursor velocity and position velocity are OPPOSITE:
+      // - Drag left (cursor decreases) = scroll right (position increases)
+      // - Drag right (cursor increases) = scroll left (position decreases)
+      const motionVelocity = config.reversed ? velocity : -velocity
 
-      console.log('[Looper:inertia] 💨 Starting with velocity:', velocity, '→ inertia velocity:', inertiaVelocity)
-      console.log('[Looper:inertia]    → Current position:', currentPos)
+      console.log('[Looper:inertia] 💨 Starting with velocity:', velocity, 'px/s')
+      console.log('[Looper:inertia]    → config.reversed:', config.reversed)
+      console.log('[Looper:inertia]    → motionVelocity (for animate):', motionVelocity, 'px/s')
+      console.log('[Looper:inertia]    → Current position:', currentPos, 'px')
 
-      // Calculate a target position in the direction of motion
-      // Motion will override this with physics calculation, but we need a valid target
-      const estimatedTarget = currentPos + (inertiaVelocity * 0.5) // Rough estimate
+      // Calculate estimated target based on inertia physics
+      // Using formula: distance = velocity * timeConstant * (1 - e^(-power))
+      // Simplified: distance ≈ velocity * timeConstant * 0.5 for typical values
+      const power = 0.8
+      const timeConstant = 325 / 1000 // Convert to seconds
+      const estimatedDistance = motionVelocity * timeConstant * 0.5
+      const targetPos = currentPos + estimatedDistance
 
-      // Calculate inertia options
-      const inertiaOptions = {
-        type: 'inertia',
-        velocity: inertiaVelocity,
-        power: 0.8,
-        timeConstant: 325, // Use timeConstant instead of decay for Motion.js
-        restSpeed: 10,
-        restDelta: 0.5,
-      }
+      console.log('[Looper:inertia]    → Estimated distance:', estimatedDistance, 'px')
+      console.log('[Looper:inertia]    → Target position:', targetPos, 'px')
 
-      console.log('[Looper:inertia]    → Estimated target:', estimatedTarget)
-
-      // Add boundaries for non-looping mode
-      if (!shouldLoop) {
-        const maxPos = Math.max(0, totalWidth - container.offsetWidth)
-        inertiaOptions.min = 0
-        inertiaOptions.max = maxPos
-        inertiaOptions.bounceStiffness = 300
-        inertiaOptions.bounceDamping = 30
-        console.log('[Looper:inertia]    → Boundaries: min=0, max=', maxPos)
-      }
-
-      // Add snap modification if snap enabled
-      if (config.snap) {
-        inertiaOptions.modifyTarget = (target) => {
-          const snapTarget = findNearestSnapPoint(target)
-          console.log('[Looper:inertia]    → Snap: ', target, '→', snapTarget)
-          return snapTarget
-        }
-      }
-
-      // Start inertia animation - use estimatedTarget as hint
+      // Animate position motionValue with inertia
       inertiaAnimation = animate(
         position,
-        estimatedTarget,
-        inertiaOptions
+        targetPos,
+        {
+          type: 'inertia',
+          velocity: motionVelocity,
+          power,
+          timeConstant: 325,
+          restSpeed: 10,
+          restDelta: 0.5,
+          // For non-looping, add boundaries
+          ...(shouldLoop ? {} : {
+            min: 0,
+            max: Math.max(0, totalWidth - container.offsetWidth),
+            bounceStiffness: 300,
+            bounceDamping: 30,
+          })
+        }
       )
 
-      console.log('[Looper:inertia]    → Animation started and stored')
+      console.log('[Looper:inertia]    → Animation started on position motionValue')
+      if (!shouldLoop) {
+        const maxPos = Math.max(0, totalWidth - container.offsetWidth)
+        console.log('[Looper:inertia]    → Boundaries: min=0, max=', maxPos)
+      } else {
+        console.log('[Looper:inertia]    → Looping mode: no boundaries')
+      }
 
       // When inertia completes
-      inertiaAnimation.finished.then(() => {
-        console.log('[Looper:inertia]    ✅ Inertia complete at position:', position.get())
-
-        // Clear the reference since it's done
+      inertiaAnimation.then(() => {
+        console.log('[Looper:inertia]    ✅ Inertia complete')
         inertiaAnimation = null
 
-        // If snap is enabled and we didn't use modifyTarget, snap now
-        if (config.snap && !inertiaOptions.modifyTarget) {
-          snapToNearest()
-        } else if (config.crawl && animation) {
-          // Resume crawl animation
-          console.log('[Looper:inertia]    → Will resume crawl')
+        // Resume crawl animation
+        if (config.crawl) {
+          console.log('[Looper:inertia]    → Resuming crawl')
           resumeCrawl()
         }
       }).catch(err => {
@@ -921,8 +969,8 @@ function horizontalLoop(app, items, config) {
     }
 
     /**
-     * Resume crawl animation with smooth speed ramp-up
-     * Since we STOP the animation during drag, we need to recreate it
+     * Resume crawl animation after drag/inertia
+     * Reads current position and resumes infinite loop
      */
     function resumeCrawl() {
       console.log('[Looper:resumeCrawl] 🔄 Resuming animation')
@@ -932,61 +980,49 @@ function horizontalLoop(app, items, config) {
         return
       }
 
-      // CRITICAL: Stop any existing animation before creating new one
-      // This prevents animation accumulation!
+      // Stop any existing animations
       if (animation) {
         animation.stop()
         console.log('[Looper:resumeCrawl]    → Stopped old animation')
       }
 
-      // CRITICAL: Stop any existing speed ramp before creating new one
       if (speedRampAnimation) {
         speedRampAnimation.stop()
         speedRampAnimation = null
         console.log('[Looper:resumeCrawl]    → Stopped old speed ramp')
       }
 
-      // Recreate the animation from current position using startLoopAnimation
+      // Read current position from motionValue
       const currentPos = position.get()
-      console.log('[Looper:resumeCrawl]    → Current position:', currentPos)
-      console.log('[Looper:resumeCrawl]    → Direction: reversed =', config.reversed)
+      console.log('[Looper:resumeCrawl]    → Current position:', currentPos, 'px')
 
-      // Use startLoopAnimation to create bounded animation with auto-restart
-      animation = startLoopAnimation()
+      // Calculate position within current cycle
+      const cyclePos = currentPos % totalWidth
+      const remainingDist = totalWidth - cyclePos
+      const remainingDuration = remainingDist / pixelsPerSecond
 
-      if (!animation) {
-        console.log('[Looper:resumeCrawl]    ⚠️ Failed to create animation')
-        return
-      }
+      console.log('[Looper:resumeCrawl]    → Position in cycle:', cyclePos, 'px')
+      console.log('[Looper:resumeCrawl]    → Remaining distance:', remainingDist, 'px')
+      console.log('[Looper:resumeCrawl]    → Remaining duration:', remainingDuration, 's')
 
-      // Start with slow speed and ramp up
-      animation.speed = 0.1
-      console.log('[Looper:resumeCrawl]    → Created new animation, starting at speed 0.1')
-
-      // Animate speed from 0.1 to 1.0
-      const state = { speed: 0.1 }
-      const speedAnim = animate(
-        state,
-        { speed: 1 },
-        {
-          duration: 2,
-          ease: 'easeOut',
-          onUpdate: () => {
-            if (animation) {
-              animation.speed = state.speed
-            }
-          }
-        }
-      )
-
-      speedAnim.finished.then(() => {
-        console.log('[Looper:resumeCrawl]    ✅ Speed ramp complete, now at speed:', animation?.speed)
-      }).catch(() => {
-        // Speed ramp was stopped - this is fine
+      // Animate position to complete this cycle
+      const targetPos = currentPos + remainingDist
+      animation = animate(position, targetPos, {
+        duration: remainingDuration,
+        ease: 'linear'
       })
 
-      // Store reference for cleanup
-      speedRampAnimation = speedAnim
+      // When cycle completes, restart infinite loop
+      animation.then(() => {
+        console.log('[Looper:resumeCrawl]    → Cycle complete, restarting infinite loop')
+        // Position will be at targetPos, which is fine
+        // startLoopAnimation will continue from there
+        animation = startLoopAnimation()
+      }).catch(() => {
+        // Animation stopped - this is fine
+      })
+
+      console.log('[Looper:resumeCrawl]    ✅ Resume animation started')
     }
 
     // Set up touch-action CSS for proper touch handling
@@ -1199,12 +1235,8 @@ function horizontalLoop(app, items, config) {
         console.log('[Looper:destroy]    → Stopped animation')
       }
 
-      // Cancel RAF loop
-      if (rafId) {
-        cancelAnimationFrame(rafId)
-        rafId = null
-        console.log('[Looper:destroy]    → Cancelled RAF loop')
-      }
+      // Stop frame.render loop
+      stopRenderLoop()
 
       // Cleanup position listener
       if (positionUnsubscribe) {
