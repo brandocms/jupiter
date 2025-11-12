@@ -154,8 +154,7 @@
   </section>
 
   <!-- Example 2: Reversed Loop -->
-  <!--
-  <section class="section">
+  <!-- <section class="section">
     <h2 class="section-title">2. Reversed Direction</h2>
     <div class="info">
       <strong>Features:</strong> Scrolls from right to left (reversed)
@@ -173,8 +172,7 @@
         </div>
       </div>
     </div>
-  </section>
-  -->
+  </section> -->
 
   <!-- Example 3: Snap to Item -->
   <!--
@@ -270,33 +268,6 @@
   </section>
   -->
 
-  <!-- Isolated Performance Test -->
-  <section class="section" style="margin-top: 100px; border-top: 3px solid #666; padding-top: 60px;">
-    <h2 class="section-title">Performance Test: Simple animate(x) call</h2>
-    <div class="info">
-      <strong>Control Test:</strong> Just 10 items with a single animate() call on the container at 60fps.
-      <br>
-      No wrapping, no clones, no complex logic. Just pure Motion.js x animation to isolate performance.
-      <br>
-      <strong>If this is smooth:</strong> The issue is in our looper logic.
-      <strong>If this lags:</strong> Motion.js animate() itself may be the bottleneck.
-    </div>
-    <div style="position: relative; overflow: hidden; margin: 0 -20px;">
-      <div id="test-container" style="display: flex; gap: 20px; padding: 0 20px; will-change: transform;">
-        <div style="flex-shrink: 0; width: 300px; height: 200px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 48px; font-weight: 700; color: white;">1</div>
-        <div style="flex-shrink: 0; width: 300px; height: 200px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 48px; font-weight: 700; color: white;">2</div>
-        <div style="flex-shrink: 0; width: 300px; height: 200px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 48px; font-weight: 700; color: white;">3</div>
-        <div style="flex-shrink: 0; width: 300px; height: 200px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 48px; font-weight: 700; color: white;">4</div>
-        <div style="flex-shrink: 0; width: 300px; height: 200px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 48px; font-weight: 700; color: white;">5</div>
-        <div style="flex-shrink: 0; width: 300px; height: 200px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 48px; font-weight: 700; color: white;">6</div>
-        <div style="flex-shrink: 0; width: 300px; height: 200px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 48px; font-weight: 700; color: white;">7</div>
-        <div style="flex-shrink: 0; width: 300px; height: 200px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 48px; font-weight: 700; color: white;">8</div>
-        <div style="flex-shrink: 0; width: 300px; height: 200px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 48px; font-weight: 700; color: white;">9</div>
-        <div style="flex-shrink: 0; width: 300px; height: 200px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 48px; font-weight: 700; color: white;">10</div>
-      </div>
-    </div>
-  </section>
-
   <div style="text-align: center; padding: 60px 0; color: #666;">
     <p>✨ Looper Module - Built with Motion.js</p>
     <p style="margin-top: 10px;">Drag any looper to scrub, release for momentum</p>
@@ -312,13 +283,13 @@
     // Initialize Looper with custom options
     const looper = new Looper(app, {
       selector: '[data-moonwalk-run="loop"]',
-      crawl: true,
+      crawl: false,
       loop: true,
       draggable: true,
       snap: false, // Override with data-looper-snap attribute
       speed: {
         sm: 0.1,
-        lg: 8,
+        lg: 1,
       },
     })
 
@@ -348,52 +319,6 @@
 
     // IMPORTANT: Call fadeIn() to trigger APPLICATION:REVEALED event
     app.fadeIn()
-  </script>
-
-  <!-- Isolated Performance Test Script -->
-  <script type="module">
-    import { animate, motionValue } from '../src/index.js'
-
-    const testContainer = document.getElementById('test-container')
-    const totalWidth = 3200 // 10 items × 300px + 9 gaps × 20px
-    const pixelsPerSecond = 35
-    const duration = totalWidth / pixelsPerSecond
-
-    const position = motionValue(0)
-
-    let frameCount = 0
-    let lastFpsCheck = performance.now()
-    let framesInLastSecond = 0
-
-    // Simple position listener that just calls animate() with x
-    // position.on('change', (latest) => {
-    //   const boundedPos = latest % totalWidth
-    //   animate(testContainer, { x: -boundedPos }, { duration: 0 })
-
-    //   // FPS tracking
-    //   frameCount++
-    //   framesInLastSecond++
-    //   const now = performance.now()
-    //   const elapsed = now - lastFpsCheck
-
-    //   if (elapsed >= 1000) {
-    //     const fps = (framesInLastSecond / elapsed * 1000).toFixed(1)
-    //     console.log('[Test] FPS:', fps, '| Position:', latest.toFixed(2), '| Bounded:', boundedPos.toFixed(2))
-    //     framesInLastSecond = 0
-    //     lastFpsCheck = now
-    //   }
-    // })
-
-    // Start animating position
-    // const testAnimation = animate(position, totalWidth, {
-    //   duration,
-    //   repeat: Infinity,
-    //   easing: 'linear'
-    // })
-
-    const testAnimation = animate(testContainer, { x: -totalWidth }, { duration: 10, repeat: 2, type: 'tween', repeatType: 'loop', ease: 'linear' })
-
-    console.log('[Test] 🧪 Simple animate(x) test started - watch for performance')
   </script>
 </body>
 </html>

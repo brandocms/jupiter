@@ -71,6 +71,7 @@ function horizontalLoop(app, items, config) {
   // State
   let curIndex = 0
   let totalWidth = 0
+  let originalItemsWidth = 0 // Width of ONLY original items (for wrapping)
   let pixelsPerSecond = (config.speed || 1) * 100
   let animation = null
   let position = motionValue(0) // Source of truth for position
@@ -251,6 +252,16 @@ function horizontalLoop(app, items, config) {
     startX = items[0].offsetLeft
     containerWidth = container.offsetWidth // Cache once here instead of reading every frame
     totalWidth = getTotalWidthOfItems()
+
+    // Calculate width of ONLY original items (for wrapping distance)
+    // This is the distance from first item to first clone
+    if (originalItemCount > 0 && items.length > originalItemCount) {
+      originalItemsWidth = items[originalItemCount].offsetLeft - items[0].offsetLeft + gap
+      console.log('[Looper:populateWidths]    → Original items width:', originalItemsWidth, 'px')
+    } else {
+      // No clones yet, use totalWidth
+      originalItemsWidth = totalWidth
+    }
   }
 
   /**
@@ -300,7 +311,8 @@ function horizontalLoop(app, items, config) {
     }
 
     // Calculate bounded position for checking item wrap points
-    const boundedPos = pos % totalWidth
+    // Use same wrapping formula as frame.render to handle negative positions (reversed mode)
+    const boundedPos = ((pos % originalItemsWidth) + originalItemsWidth) % originalItemsWidth
 
     // Initialize wrap offsets cache if needed
     if (itemWrapOffsets.length === 0) {
@@ -318,20 +330,52 @@ function horizontalLoop(app, items, config) {
       // Calculate where this ORIGINAL item is on screen (relative to bounded container)
       const itemLeft = offsetLefts[i] - boundedPos
 
-      // Original items only ever have -totalWidth, 0, or +totalWidth offset (never accumulating!)
+      // Original items only ever have -totalWidth, 0, or +totalWidth offset
+      // This positions them AFTER all clones (not just after wrapping area)
       let newOffset = 0
 
-      // Wrap by fixed amount (totalWidth already includes gaps)
-      if (itemLeft < -(widths[i] + containerWidth * 0.5)) {
-        newOffset = totalWidth // Wrap to right
+      // Ticker boundary pattern: Check if item should be at the END or at the START
+      // When container cycles (boundedPos wraps from ~originalItemsWidth to ~0),
+      // items with large offsets get reset back to 0
+
+      // Wrap distance includes the trailing gap for seamless cycling
+      const wrapOffset = totalWidth + gap
+
+      // Check if we're in the "reset zone" near wrap boundaries
+      const nearForwardWrap = boundedPos > originalItemsWidth - gap
+      const nearReverseWrap = boundedPos < gap
+
+      // RESET: When in reset zone, reset items and SKIP wrap checks to avoid fighting
+      if (nearForwardWrap && itemWrapOffsets[i] === wrapOffset) {
+        // Container about to wrap (forward), reset items at END back to START
+        newOffset = 0
+      } else if (nearReverseWrap && itemWrapOffsets[i] === -wrapOffset) {
+        // Container about to wrap (reverse), reset items at START back to END
+        newOffset = 0
+      } else if (nearForwardWrap || nearReverseWrap) {
+        // In reset zone but item doesn't need reset → keep current offset
+        newOffset = itemWrapOffsets[i]
+      } else if (itemLeft < -(widths[i] + containerWidth * 0.5)) {
+        // Item exited left edge → move to END (after all clones + gap)
+        newOffset = wrapOffset
       } else if (itemLeft > containerWidth + containerWidth * 0.5) {
-        newOffset = -totalWidth // Wrap to left
+        // Item entered from right (reverse direction) → move to START
+        newOffset = -wrapOffset
+      } else {
+        // Keep current offset
+        newOffset = itemWrapOffsets[i]
       }
 
       // ONLY update transform if the offset has changed!
       if (newOffset !== itemWrapOffsets[i]) {
         item.style.transform = newOffset !== 0 ? `translateX(${newOffset}px)` : 'none'
         itemWrapOffsets[i] = newOffset
+        console.log(`[Looper:wrap] ✅ Item #${i + 1} offset changed to ${newOffset}px`, {
+          boundedPos: boundedPos.toFixed(2),
+          itemLeft: itemLeft.toFixed(2),
+          offsetLeft: offsetLefts[i],
+          transform: newOffset !== 0 ? `translateX(${newOffset}px)` : 'none',
+        })
       }
     })
   }
@@ -455,12 +499,26 @@ function horizontalLoop(app, items, config) {
 
       const containerElement = items[0].parentElement
 
+      let frameCount = 0
       renderUnsubscribe = frame.render(() => {
         // Read position from motionValue (single source of truth)
         const pos = position.get()
 
-        // Keep container bounded within 0 to totalWidth
-        const boundedPos = ((pos % totalWidth) + totalWidth) % totalWidth
+        // Keep container bounded within 0 to originalItemsWidth (not totalWidth!)
+        // This matches the item wrapping distance
+        const boundedPos = ((pos % originalItemsWidth) + originalItemsWidth) % originalItemsWidth
+
+        // Debug logging every 60 frames (~1 second)
+        if (frameCount % 60 === 0) {
+          console.log('[Looper:frame]', {
+            rawPos: pos.toFixed(2),
+            boundedPos: boundedPos.toFixed(2),
+            originalItemsWidth,
+            totalWidth,
+            containerTransform: `-${boundedPos.toFixed(2)}px`,
+          })
+        }
+        frameCount++
 
         // Apply bounded transform to container
         containerElement.style.transform = `translateX(${-boundedPos}px)`
@@ -487,9 +545,12 @@ function horizontalLoop(app, items, config) {
     function startLoopAnimation() {
       if (!shouldLoop || !config.crawl) return null
 
-      const duration = totalWidth / pixelsPerSecond
+      const duration = originalItemsWidth / pixelsPerSecond
       const currentPos = position.get()
-      const target = currentPos + totalWidth
+      // Reversed: crawl backwards (right-to-left), Normal: crawl forward (left-to-right)
+      const target = config.reversed
+        ? currentPos - originalItemsWidth
+        : currentPos + originalItemsWidth
 
       // Animate the position motionValue
       // frame.render loop will apply bounded position to DOM
@@ -516,8 +577,10 @@ function horizontalLoop(app, items, config) {
       // Non-looping: animate to max scroll distance
       const maxScroll = Math.max(0, totalWidth - container.offsetWidth)
       const duration = maxScroll / pixelsPerSecond
+      // Reversed: negative target, Normal: positive target
+      const target = config.reversed ? -maxScroll : maxScroll
 
-      animation = animate(position, maxScroll, {
+      animation = animate(position, target, {
         duration,
         ease: 'linear',
       })
@@ -526,7 +589,9 @@ function horizontalLoop(app, items, config) {
       console.log(
         '[Looper:init]    → Created non-looping animation (maxScroll:',
         maxScroll,
-        'px)'
+        'px, reversed:',
+        config.reversed,
+        ')'
       )
     }
 
@@ -857,13 +922,14 @@ function horizontalLoop(app, items, config) {
       // Read current position from motionValue
       const currentPos = position.get()
 
-      // Calculate position within current cycle
-      const cyclePos = currentPos % totalWidth
-      const remainingDist = totalWidth - cyclePos
+      // Calculate position within current cycle (using originalItemsWidth)
+      const cyclePos = currentPos % originalItemsWidth
+      const remainingDist = originalItemsWidth - cyclePos
       const remainingDuration = remainingDist / pixelsPerSecond
 
       // Animate position to complete this cycle
-      const targetPos = currentPos + remainingDist
+      // Reversed: move backwards, Normal: move forward
+      const targetPos = config.reversed ? currentPos - remainingDist : currentPos + remainingDist
       animation = animate(position, targetPos, {
         duration: remainingDuration,
         ease: 'linear',
@@ -872,7 +938,9 @@ function horizontalLoop(app, items, config) {
       // When cycle completes, restart infinite loop
       animation
         .then(() => {
-          console.log('[Looper:resumeCrawl] → Remaining distance complete, restarting infinite loop')
+          console.log(
+            '[Looper:resumeCrawl] → Remaining distance complete, restarting infinite loop'
+          )
 
           // Capture current speed before replacing animation
           const currentSpeed = animation.speed
@@ -880,16 +948,22 @@ function horizontalLoop(app, items, config) {
 
           // Create new infinite loop animation
           const currentPos = position.get()
-          const target = currentPos + totalWidth
+          // Reversed: crawl backwards, Normal: crawl forward
+          const target = config.reversed
+            ? currentPos - originalItemsWidth
+            : currentPos + originalItemsWidth
           animation = animate(position, target, {
-            duration: totalWidth / pixelsPerSecond,
+            duration: originalItemsWidth / pixelsPerSecond,
             repeat: Infinity,
             ease: 'linear',
           })
 
           // Inherit the current speed from the ramp
           animation.speed = currentSpeed
-          console.log('[Looper:resumeCrawl] → New animation created with inherited speed:', currentSpeed)
+          console.log(
+            '[Looper:resumeCrawl] → New animation created with inherited speed:',
+            currentSpeed
+          )
 
           // If speed ramp is still running, re-target it to continue ramping the new animation
           if (speedRampAnimation) {
@@ -898,11 +972,21 @@ function horizontalLoop(app, items, config) {
             // speed goes from 0.001 to 1.0, so progress = (currentSpeed - 0.001) / (1.0 - 0.001)
             const rampProgress = (currentSpeed - 0.001) / 0.999
             const remainingRampDuration = 2 * (1 - rampProgress)
-            console.log('[Looper:resumeCrawl] → Continuing speed ramp from', currentSpeed, 'for', remainingRampDuration, 's')
-            speedRampAnimation = animate(animation, { speed: 1 }, { duration: remainingRampDuration, ease: 'easeIn' })
+            console.log(
+              '[Looper:resumeCrawl] → Continuing speed ramp from',
+              currentSpeed,
+              'for',
+              remainingRampDuration,
+              's'
+            )
+            speedRampAnimation = animate(
+              animation,
+              { speed: 1 },
+              { duration: remainingRampDuration, ease: 'easeIn' }
+            )
           }
         })
-        .catch((err) => {
+        .catch(err => {
           console.log('[Looper:resumeCrawl] → Animation stopped/cancelled:', err)
         })
 
