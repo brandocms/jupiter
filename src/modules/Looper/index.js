@@ -1022,7 +1022,16 @@ function horizontalLoop(app, items, config) {
         // Animation stopped - this is fine
       })
 
-      console.log('[Looper:resumeCrawl]    ✅ Resume animation started')
+      // Start at nearly-stopped speed and ramp up to full speed
+      // Use 0.001 instead of 0 to keep animation running (speed = 0 completely pauses)
+      animation.speed = 0.001
+      speedRampAnimation = animate(
+        animation,
+        { speed: 1 },
+        { duration: 0.75, ease: 'easeOut' }
+      )
+
+      console.log('[Looper:resumeCrawl]    ✅ Resume animation started with speed ramp 0.001 → 1')
     }
 
     // Set up touch-action CSS for proper touch handling
