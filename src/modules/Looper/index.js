@@ -849,7 +849,9 @@ function horizontalLoop(app, items, config) {
       // Cursor velocity and position velocity are OPPOSITE:
       // - Drag left (cursor decreases) = scroll right (position increases)
       // - Drag right (cursor increases) = scroll left (position decreases)
-      const motionVelocity = config.reversed ? velocity : -velocity
+      // Note: This is ALWAYS opposite, regardless of reversed setting
+      // (reversed only affects auto-crawl, not drag)
+      const motionVelocity = -velocity
 
       // Calculate estimated target based on inertia physics
       const power = 0.8
