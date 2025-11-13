@@ -23,6 +23,14 @@ const DEFAULT_OPTIONS = {
   loop: true, // Infinite looping (false for linear scrolling)
   draggable: true, // Enable drag interaction
 
+  // Inertia/throw configuration (when dragging and releasing)
+  throwResistance: 325, // Time constant for deceleration (lower = more resistance/faster stop, higher = less resistance/longer glide)
+  throwPower: 0.8, // Deceleration curve (0-1, higher = more gradual slowdown)
+
+  // Snap animation configuration (when snap: true)
+  snapDuration: 0.5, // Duration of snap animation in seconds (0.3-1.0, lower = faster/snappier)
+  snapBounce: 0.15, // Spring bounce amount (0-1, 0 = no bounce, higher = more bouncy)
+
   speed: {
     sm: 0.1, // Speed for mobile (multiplier)
     lg: 0.35, // Speed for desktop (multiplier)
@@ -94,6 +102,7 @@ function horizontalLoop(app, items, config) {
   let isDragging = false // Track if user is actively dragging
   let speedRampAnimation = null // Track speed ramp animation
   let inertiaAnimation = null // Track inertia animation
+  let snapAnimation = null // Track snap animation
   let positionUnsubscribe = null // Track position listener for cleanup
   let renderUnsubscribe = null // Track frame.render loop for cleanup
 
@@ -548,22 +557,9 @@ function horizontalLoop(app, items, config) {
         lastBoundedValue = latest
       })
 
-      let frameCount = 0
       renderUnsubscribe = frame.render(() => {
         // Read bounded position from motionValue
         const currentBoundedPos = boundedPos.get()
-
-        // Debug logging every 60 frames (~1 second)
-        if (frameCount % 60 === 0) {
-          console.log('[Looper:frame]', {
-            rawPos: position.get().toFixed(2),
-            boundedPos: currentBoundedPos.toFixed(2),
-            originalItemsWidth,
-            totalWidth,
-            containerTransform: `-${currentBoundedPos.toFixed(2)}px`,
-          })
-        }
-        frameCount++
 
         // Apply bounded transform to container
         containerElement.style.transform = `translateX(${-currentBoundedPos}px)`
@@ -744,6 +740,10 @@ function horizontalLoop(app, items, config) {
         inertiaAnimation.stop()
         inertiaAnimation = null
       }
+      if (snapAnimation) {
+        snapAnimation.stop()
+        snapAnimation = null
+      }
       if (animation) {
         animation.stop()
         animation = null
@@ -805,6 +805,21 @@ function horizontalLoop(app, items, config) {
     }
 
     /**
+     * Calculate where inertia would land based on velocity
+     * Uses same physics as startInertia to predict landing position
+     * @param {number} velocity - Cursor velocity in pixels per second
+     * @returns {number} Predicted landing position
+     */
+    function calculateInertiaTarget(velocity) {
+      const currentPos = position.get()
+      const motionVelocity = -velocity
+      const power = config.throwPower
+      const timeConstant = config.throwResistance / 1000
+      const estimatedDistance = motionVelocity * timeConstant * 0.5
+      return currentPos + estimatedDistance
+    }
+
+    /**
      * Handle pointer up - end drag and start inertia
      */
     function onPointerUp(e) {
@@ -826,12 +841,19 @@ function horizontalLoop(app, items, config) {
       // Calculate final velocity
       const velocity = getVelocity()
 
-      // Start inertia if we have velocity
-      if (Math.abs(velocity) > 1) {
+      console.log('[Looper:onPointerUp] Velocity:', velocity, 'px/s')
+      console.log('[Looper:onPointerUp] Snap enabled:', config.snap)
+
+      // If snap is enabled, always use it (GSAP-style: snap modifies inertia target)
+      // Otherwise use old logic: inertia if velocity, or resume crawl
+      if (config.snap) {
+        console.log('[Looper:onPointerUp] → Using snap (with velocity-based target)')
+        snapToNearest(velocity)
+      } else if (Math.abs(velocity) > 1) {
+        console.log('[Looper:onPointerUp] → Starting inertia (no snap)')
         startInertia(velocity)
-      } else if (config.snap) {
-        snapToNearest()
       } else if (config.crawl) {
+        console.log('[Looper:onPointerUp] → Resuming crawl')
         resumeCrawl()
       }
     }
@@ -854,8 +876,8 @@ function horizontalLoop(app, items, config) {
       const motionVelocity = -velocity
 
       // Calculate estimated target based on inertia physics
-      const power = 0.8
-      const timeConstant = 325 / 1000 // Convert to seconds
+      const power = config.throwPower
+      const timeConstant = config.throwResistance / 1000 // Convert to seconds
       const estimatedDistance = motionVelocity * timeConstant * 0.5
       const targetPos = currentPos + estimatedDistance
 
@@ -864,7 +886,7 @@ function horizontalLoop(app, items, config) {
         type: 'inertia',
         velocity: motionVelocity,
         power,
-        timeConstant: 325,
+        timeConstant: config.throwResistance,
         restSpeed: 10,
         restDelta: 0.5,
         // For non-looping, add boundaries
@@ -897,74 +919,119 @@ function horizontalLoop(app, items, config) {
      * @returns {number} The snap position
      */
     function findNearestSnapPoint(targetPos) {
-      if (!times || times.length === 0) {
+      if (!times || times.length === 0 || originalItemCount === 0) {
         return targetPos
       }
 
-      // Convert position to time
-      const targetTime = targetPos / pixelsPerSecond
+      console.log('[Looper:findNearestSnapPoint] Finding nearest snap for targetPos:', targetPos)
+      console.log('[Looper:findNearestSnapPoint] originalItemsWidth:', originalItemsWidth)
+      console.log('[Looper:findNearestSnapPoint] times:', times.slice(0, originalItemCount))
 
-      // Find closest snap time
+      // Find closest snap point by checking each original item at different cycle offsets
       let closestIndex = 0
+      let closestSnapPos = 0
       let closestDist = Infinity
 
-      times.forEach((time, i) => {
-        let dist = Math.abs(time - targetTime)
+      // Calculate which cycle the target is in to determine which cycles to check
+      const targetCycle = Math.floor(targetPos / originalItemsWidth)
 
-        // For looping, also check wrapped distance
+      // Only iterate over original items
+      for (let i = 0; i < originalItemCount; i++) {
+        const snapTime = times[i]
+        const baseSnapPos = snapTime * pixelsPerSecond
+
+        // For looping, check this snap point at multiple cycle offsets relative to target
         if (shouldLoop) {
-          const duration = totalWidth / pixelsPerSecond
-          const wrappedDist = Math.min(
-            Math.abs(time + duration - targetTime),
-            Math.abs(time - duration - targetTime)
-          )
-          dist = Math.min(dist, wrappedDist)
-        }
+          // Check previous cycle, target cycle, and next cycle relative to where target is
+          for (let cycleOffset = -1; cycleOffset <= 1; cycleOffset++) {
+            const candidatePos = baseSnapPos + ((targetCycle + cycleOffset) * originalItemsWidth)
+            const dist = Math.abs(candidatePos - targetPos)
 
-        if (dist < closestDist) {
-          closestDist = dist
-          closestIndex = i
-        }
-      })
+            console.log(`  [item ${i}, cycle ${targetCycle + cycleOffset}] pos: ${candidatePos}, dist: ${dist}`)
 
-      // Convert back to position
-      const snapTime = times[closestIndex]
-      const snapPos = snapTime * pixelsPerSecond
+            if (dist < closestDist) {
+              closestDist = dist
+              closestIndex = i
+              closestSnapPos = candidatePos
+            }
+          }
+        } else {
+          // Non-looping: just use base position
+          const dist = Math.abs(baseSnapPos - targetPos)
+          if (dist < closestDist) {
+            closestDist = dist
+            closestIndex = i
+            closestSnapPos = baseSnapPos
+          }
+        }
+      }
+
+      console.log('[Looper:findNearestSnapPoint] Closest snap:', closestSnapPos, 'at index:', closestIndex, 'dist:', closestDist)
 
       // Update current index
       curIndex = closestIndex
 
-      return snapPos
+      return closestSnapPos
     }
 
     /**
-     * Snap to nearest item with spring animation
+     * Snap to nearest item with animation
+     * If velocity is provided, calculates inertia target first (GSAP-style)
+     * @param {number} velocity - Optional cursor velocity for inertia-based snapping
      */
-    function snapToNearest() {
+    function snapToNearest(velocity = 0) {
       const currentPos = position.get()
-      const snapPos = findNearestSnapPoint(currentPos)
+
+      // If we have velocity, calculate where inertia would land and snap to nearest from there
+      // This is the GSAP approach: snap modifies the inertia target
+      let targetForSnap = currentPos
+      if (Math.abs(velocity) > 0) {
+        targetForSnap = calculateInertiaTarget(velocity)
+        console.log('[Looper:snapToNearest] Using inertia-based snap (GSAP style)')
+        console.log('[Looper:snapToNearest] Velocity:', velocity, 'px/s')
+        console.log('[Looper:snapToNearest] Inertia would land at:', targetForSnap)
+      }
+
+      const snapPos = findNearestSnapPoint(targetForSnap)
+
+      console.log('[Looper:snapToNearest] Current position:', currentPos)
+      console.log('[Looper:snapToNearest] Snap position:', snapPos)
+      console.log('[Looper:snapToNearest] Distance to snap:', Math.abs(snapPos - currentPos))
 
       // Don't snap if we're already there
       if (Math.abs(snapPos - currentPos) < 1) {
+        console.log('[Looper:snapToNearest] Already at snap position, skipping')
         if (config.crawl && animation) {
           resumeCrawl()
         }
         return
       }
 
-      // Animate to snap position with spring
-      const snapAnimation = animate(position, snapPos, {
+      // Always use spring animation for snap to ensure precise landing
+      // Use configured duration and bounce for consistent feel
+      const duration = config.snapDuration
+      const bounce = config.snapBounce
+
+      console.log('[Looper:snapToNearest] Animating with spring (duration:', duration, 's, bounce:', bounce, ')')
+
+      snapAnimation = animate(position, snapPos, {
         type: 'spring',
-        bounce: 0.2,
-        duration: 0.5,
+        bounce,
+        duration,
       })
 
       // Resume crawl after snap
-      snapAnimation.then(() => {
-        if (config.crawl && animation) {
-          resumeCrawl()
-        }
-      })
+      snapAnimation
+        .then(() => {
+          console.log('[Looper:snapToNearest] Snap animation complete')
+          snapAnimation = null
+          if (config.crawl && animation) {
+            resumeCrawl()
+          }
+        })
+        .catch(() => {
+          snapAnimation = null
+        })
     }
 
     /**
@@ -1382,6 +1449,10 @@ export default class Looper {
           loop: this.opts.loop,
           crawl: this.opts.crawl,
           ease: this.opts.ease,
+          throwResistance: this.opts.throwResistance,
+          throwPower: this.opts.throwPower,
+          snapDuration: this.opts.snapDuration,
+          snapBounce: this.opts.snapBounce,
         },
       })
       console.log(
