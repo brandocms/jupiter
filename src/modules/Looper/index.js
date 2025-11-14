@@ -552,6 +552,16 @@ function horizontalLoop(app, items, config) {
               itemWrapOffsets[i] = 0
             }
           })
+
+          // CRITICAL: Sync unbounded position with bounded position to prevent
+          // inertia calculation bugs when dragging RIGHT across boundaries
+          // BUT only do this when NOT animating snap, otherwise it interferes
+          if (!snapAnimation) {
+            position.set(latest)
+            console.log('[Looper:boundedPos] ✅ Synced unbounded position to:', latest.toFixed(2))
+          } else {
+            console.log('[Looper:boundedPos] ⏸️ Skipped sync (snap animation active)')
+          }
         }
 
         lastBoundedValue = latest
@@ -841,8 +851,12 @@ function horizontalLoop(app, items, config) {
       // Calculate final velocity
       const velocity = getVelocity()
 
+      console.log('========== LOOPER DRAG RELEASE ==========')
       console.log('[Looper:onPointerUp] Velocity:', velocity, 'px/s')
+      console.log('[Looper:onPointerUp] Absolute velocity:', Math.abs(velocity), 'px/s')
+      console.log('[Looper:onPointerUp] Direction:', velocity < 0 ? 'LEFT (negative)' : 'RIGHT (positive)')
       console.log('[Looper:onPointerUp] Snap enabled:', config.snap)
+      console.log('=========================================')
 
       // If snap is enabled, always use it (GSAP-style: snap modifies inertia target)
       // Otherwise use old logic: inertia if velocity, or resume crawl
@@ -968,10 +982,31 @@ function horizontalLoop(app, items, config) {
 
       console.log('[Looper:findNearestSnapPoint] Closest snap:', closestSnapPos, 'at index:', closestIndex, 'dist:', closestDist)
 
+      // CRITICAL: Normalize snap position to be close to current actual position
+      // to avoid animating through multiple cycles
+      const currentPos = position.get()
+      const currentCycle = Math.floor(currentPos / originalItemsWidth)
+
+      // Find which cycle offset brings closestSnapPos closest to currentPos
+      let normalizedSnapPos = closestSnapPos
+      let minDist = Math.abs(closestSnapPos - currentPos)
+
+      // Check adjacent cycles
+      for (let offset = -2; offset <= 2; offset++) {
+        const candidate = closestSnapPos + (offset * originalItemsWidth)
+        const dist = Math.abs(candidate - currentPos)
+        if (dist < minDist) {
+          minDist = dist
+          normalizedSnapPos = candidate
+        }
+      }
+
+      console.log('[Looper:findNearestSnapPoint] Normalized snap:', normalizedSnapPos, '(was', closestSnapPos, ')')
+
       // Update current index
       curIndex = closestIndex
 
-      return closestSnapPos
+      return normalizedSnapPos
     }
 
     /**
@@ -1013,23 +1048,34 @@ function horizontalLoop(app, items, config) {
       const bounce = config.snapBounce
 
       console.log('[Looper:snapToNearest] Animating with spring (duration:', duration, 's, bounce:', bounce, ')')
+      console.log('[Looper:snapToNearest] Animation from', currentPos, '→', snapPos)
 
       snapAnimation = animate(position, snapPos, {
         type: 'spring',
         bounce,
         duration,
+        onUpdate: (latest) => {
+          // Log occasionally to track animation progress
+          if (Math.random() < 0.1) {
+            console.log('[Looper:snapAnimation] Progress:', latest.toFixed(2), '/', snapPos)
+          }
+        },
+        onComplete: () => {
+          console.log('[Looper:snapAnimation] ✅ Animation completed naturally at:', position.get().toFixed(2))
+        },
       })
 
       // Resume crawl after snap
       snapAnimation
         .then(() => {
-          console.log('[Looper:snapToNearest] Snap animation complete')
+          console.log('[Looper:snapToNearest] Snap animation promise resolved')
           snapAnimation = null
           if (config.crawl && animation) {
             resumeCrawl()
           }
         })
-        .catch(() => {
+        .catch((err) => {
+          console.log('[Looper:snapToNearest] ❌ Snap animation rejected/cancelled:', err)
           snapAnimation = null
         })
     }
@@ -1307,11 +1353,15 @@ function horizontalLoop(app, items, config) {
     },
 
     next(vars) {
+      // Sync curIndex with current scroll position before navigating
+      closestIndex(true)
       const nextIndex = curIndex + 1
       return toIndex(nextIndex, vars)
     },
 
     previous(vars) {
+      // Sync curIndex with current scroll position before navigating
+      closestIndex(true)
       const prevIndex = curIndex - 1
       return toIndex(prevIndex, vars)
     },
