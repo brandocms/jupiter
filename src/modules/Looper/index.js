@@ -817,6 +817,7 @@ function horizontalLoop(app, items, config) {
     /**
      * Calculate where inertia would land based on velocity
      * Uses same physics as startInertia to predict landing position
+     * Motion.js inertia formula: distance = velocity * timeConstant * (power / (1 - power))
      * @param {number} velocity - Cursor velocity in pixels per second
      * @returns {number} Predicted landing position
      */
@@ -825,7 +826,8 @@ function horizontalLoop(app, items, config) {
       const motionVelocity = -velocity
       const power = config.throwPower
       const timeConstant = config.throwResistance / 1000
-      const estimatedDistance = motionVelocity * timeConstant * 0.5
+      // Motion.js inertia distance formula
+      const estimatedDistance = motionVelocity * timeConstant * (power / (1 - power))
       return currentPos + estimatedDistance
     }
 
@@ -982,36 +984,18 @@ function horizontalLoop(app, items, config) {
 
       console.log('[Looper:findNearestSnapPoint] Closest snap:', closestSnapPos, 'at index:', closestIndex, 'dist:', closestDist)
 
-      // CRITICAL: Normalize snap position to be close to current actual position
-      // to avoid animating through multiple cycles
-      const currentPos = position.get()
-      const currentCycle = Math.floor(currentPos / originalItemsWidth)
-
-      // Find which cycle offset brings closestSnapPos closest to currentPos
-      let normalizedSnapPos = closestSnapPos
-      let minDist = Math.abs(closestSnapPos - currentPos)
-
-      // Check adjacent cycles
-      for (let offset = -2; offset <= 2; offset++) {
-        const candidate = closestSnapPos + (offset * originalItemsWidth)
-        const dist = Math.abs(candidate - currentPos)
-        if (dist < minDist) {
-          minDist = dist
-          normalizedSnapPos = candidate
-        }
-      }
-
-      console.log('[Looper:findNearestSnapPoint] Normalized snap:', normalizedSnapPos, '(was', closestSnapPos, ')')
-
       // Update current index
       curIndex = closestIndex
 
-      return normalizedSnapPos
+      // Return the snap position closest to the inertia target
+      // DO NOT normalize to current position - we want to preserve momentum
+      // and allow the carousel to spin through multiple cycles for high-velocity throws
+      return closestSnapPos
     }
 
     /**
      * Snap to nearest item with animation
-     * If velocity is provided, calculates inertia target first (GSAP-style)
+     * If velocity is provided, uses inertia physics to land on snap point
      * @param {number} velocity - Optional cursor velocity for inertia-based snapping
      */
     function snapToNearest(velocity = 0) {
@@ -1022,7 +1006,7 @@ function horizontalLoop(app, items, config) {
       let targetForSnap = currentPos
       if (Math.abs(velocity) > 0) {
         targetForSnap = calculateInertiaTarget(velocity)
-        console.log('[Looper:snapToNearest] Using inertia-based snap (GSAP style)')
+        console.log('[Looper:snapToNearest] Using inertia-based snap')
         console.log('[Looper:snapToNearest] Velocity:', velocity, 'px/s')
         console.log('[Looper:snapToNearest] Inertia would land at:', targetForSnap)
       }
@@ -1042,18 +1026,37 @@ function horizontalLoop(app, items, config) {
         return
       }
 
-      // Always use spring animation for snap to ensure precise landing
-      // Use configured duration and bounce for consistent feel
-      const duration = config.snapDuration
-      const bounce = config.snapBounce
+      const distance = Math.abs(snapPos - currentPos)
+      const absVelocity = Math.abs(velocity)
 
-      console.log('[Looper:snapToNearest] Animating with spring (duration:', duration, 's, bounce:', bounce, ')')
+      // Use inertia-like animation that preserves momentum feel
+      // Calculate duration based on velocity and distance for natural deceleration
+      let animationDuration
+      let animationEase
+
+      if (absVelocity > 100) {
+        // High velocity: use longer duration with exponential decay feel
+        // This mimics natural inertia deceleration
+        const timeConstant = config.throwResistance / 1000
+        // Duration proportional to how far we need to go at this velocity
+        // Clamp between reasonable bounds
+        animationDuration = Math.min(Math.max(distance / absVelocity * 3, 0.4), 1.2)
+        // Exponential decay easing (similar to inertia physics)
+        animationEase = [0.16, 1, 0.3, 1] // Aggressive ease-out for momentum feel
+        console.log('[Looper:snapToNearest] High velocity mode - duration:', animationDuration, 's')
+      } else {
+        // Low velocity: use configured snap duration with spring-like feel
+        animationDuration = config.snapDuration
+        animationEase = [0.25, 0.1, 0.25, 1] // Standard ease-out
+        console.log('[Looper:snapToNearest] Low velocity mode - duration:', animationDuration, 's')
+      }
+
       console.log('[Looper:snapToNearest] Animation from', currentPos, '→', snapPos)
+      console.log('[Looper:snapToNearest] Using ease:', animationEase)
 
       snapAnimation = animate(position, snapPos, {
-        type: 'spring',
-        bounce,
-        duration,
+        duration: animationDuration,
+        ease: animationEase,
         onUpdate: (latest) => {
           // Log occasionally to track animation progress
           if (Math.random() < 0.1) {
