@@ -699,9 +699,27 @@ function horizontalLoop(app, items, config) {
         console.log('[Looper:init]    → Set slide count to:', originalItemCount)
       }
 
+      // Only setup real-time index tracking if display elements exist
       if (indexElements.length > 0) {
         updateIndexDisplay()
         console.log('[Looper:init]    → Initialized slide index display')
+
+        // Update display in real-time as position changes
+        let lastDisplayedIndex = -1
+        boundedPos.on('change', () => {
+          // Find closest slide to current bounded position
+          const closest = closestIndex(false)
+
+          // Only update DOM if index changed (avoid thrashing)
+          if (closest !== lastDisplayedIndex) {
+            lastDisplayedIndex = closest
+            const displayIndex = closest + 1
+            indexElements.forEach(el => {
+              el.textContent = displayIndex
+            })
+          }
+        })
+        console.log('[Looper:init]    → Setup real-time index tracking')
       }
     }
 
