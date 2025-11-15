@@ -319,6 +319,124 @@
   </section>
   -->
 
+  <!-- Example 7: Non-Looping with Autoplay (reset to start) -->
+  <section class="section">
+    <h2 class="section-title">7. Non-Looping with Autoplay</h2>
+    <div class="info">
+      <strong>Features:</strong> Linear carousel that resets to slide 1 when reaching the end
+      <br>
+      <code>data-looper-loop="false"</code>, <code>data-looper-snap</code>, <code>data-looper-autoplay="3"</code>
+      <br>
+      <em>Autoplay advances every 3 seconds, resets to first slide at end</em>
+    </div>
+    <div class="looper-container" data-moonwalk-run="loop">
+      <div class="looper-wrapper" data-looper-container>
+        <div data-looper data-looper-loop="false" data-looper-snap data-looper-crawl="false" data-looper-autoplay="3">
+          <div data-looper-item style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);">1</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);">2</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);">3</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);">4</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);">5</div>
+        </div>
+        <div class="controls">
+          <button data-panner-previous>← Previous</button>
+          <span style="font-size: 18px; font-weight: 600;">
+            <span data-looper-slide-index></span> / <span data-looper-slide-count></span>
+          </span>
+          <button data-panner-next>Next →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Example 8: Non-Looping with Crawl (reverse at boundaries) -->
+  <section class="section">
+    <h2 class="section-title">8. Non-Looping with Crawl (Ping-Pong)</h2>
+    <div class="info">
+      <strong>Features:</strong> Continuous crawl that reverses direction at boundaries
+      <br>
+      <code>data-looper-loop="false"</code>, <code>crawl: true</code> (default)
+      <br>
+      <em>Crawls forward to end, then reverses back to start with smooth transitions</em>
+    </div>
+    <div class="looper-container" data-moonwalk-run="loop">
+      <div class="looper-wrapper" data-looper-container>
+        <div data-looper data-looper-loop="false">
+          <div data-looper-item style="background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);">A</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);">B</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);">C</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);">D</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);">E</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);">F</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);">G</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);">H</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);">I</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);">J</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Example 9: Non-Looping with Navigation (clamp to ends) -->
+  <section class="section">
+    <h2 class="section-title">9. Non-Looping with Navigation (endAlignment: right)</h2>
+    <div class="info">
+      <strong>Features:</strong> End alignment = right (last item stays at right edge of viewport)
+      <br>
+      <code>data-looper-loop="false"</code>, <code>data-looper-end-alignment="right"</code> (default)
+      <br>
+      <em>Dragging/navigation stops when last item reaches right edge - no extra gap</em>
+    </div>
+    <div class="looper-container" data-moonwalk-run="loop">
+      <div class="looper-wrapper" data-looper-container>
+        <div data-looper data-looper-loop="false" data-looper-snap data-looper-crawl="false">
+          <div data-looper-item style="background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);">1</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);">2</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);">3</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);">4</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);">5</div>
+        </div>
+        <div class="controls">
+          <button data-panner-previous>← Previous</button>
+          <span style="font-size: 18px; font-weight: 600;">
+            <span data-looper-slide-index></span> / <span data-looper-slide-count></span>
+          </span>
+          <button data-panner-next>Next →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Example 10: Non-Looping with endAlignment: start -->
+  <section class="section">
+    <h2 class="section-title">10. Non-Looping (endAlignment: start)</h2>
+    <div class="info">
+      <strong>Features:</strong> End alignment = start (last item can move to left edge)
+      <br>
+      <code>data-looper-loop="false"</code>, <code>data-looper-end-alignment="start"</code>
+      <br>
+      <em>Allows scrolling until last item reaches left edge - shows empty space on right</em>
+    </div>
+    <div class="looper-container" data-moonwalk-run="loop">
+      <div class="looper-wrapper" data-looper-container>
+        <div data-looper data-looper-loop="false" data-looper-snap data-looper-crawl="false" data-looper-end-alignment="start">
+          <div data-looper-item style="background: linear-gradient(135deg, #dfe6e9 0%, #b2bec3 100%);">1</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #dfe6e9 0%, #b2bec3 100%);">2</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #dfe6e9 0%, #b2bec3 100%);">3</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #dfe6e9 0%, #b2bec3 100%);">4</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #dfe6e9 0%, #b2bec3 100%);">5</div>
+        </div>
+        <div class="controls">
+          <button data-panner-previous>← Previous</button>
+          <span style="font-size: 18px; font-weight: 600;">
+            <span data-looper-slide-index></span> / <span data-looper-slide-count></span>
+          </span>
+          <button data-panner-next>Next →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <div style="text-align: center; padding: 60px 0; color: #666;">
     <p>✨ Looper Module - Built with Motion.js</p>
     <p style="margin-top: 10px;">Drag any looper to scrub, release for momentum</p>

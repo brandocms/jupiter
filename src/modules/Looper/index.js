@@ -22,6 +22,7 @@ const DEFAULT_OPTIONS = {
   crawl: true, // Continuous auto-scrolling
   loop: true, // Infinite looping (false for linear scrolling)
   draggable: true, // Enable drag interaction
+  endAlignment: 'right', // For non-looping: 'right' = last item at viewport right edge, 'start' = last item at viewport left edge
 
   // Inertia/throw configuration (when dragging and releasing)
   throwResistance: 325, // Time constant for deceleration (lower = more resistance/faster stop, higher = less resistance/longer glide)
@@ -88,6 +89,7 @@ function horizontalLoop(app, items, config) {
   let boundedPos = motionValue(0) // Bounded position (0 to originalItemsWidth)
   let lastBoundedValue = 0 // Track last value to detect wraps
   let originalItemCount = 0 // Track count of ORIGINAL items (before clones)
+  let maxScrollPosition = 0 // For non-looping: max scroll where last item is at right edge
 
   // Cached measurements
   let widths = []
@@ -280,6 +282,23 @@ function horizontalLoop(app, items, config) {
       // No clones yet, use totalWidth
       originalItemsWidth = totalWidth
     }
+
+    // Calculate max scroll for non-looping based on endAlignment
+    if (!shouldLoop && originalItemCount > 0) {
+      if (config.endAlignment === 'start') {
+        // 'start' alignment: last item can scroll to left edge (traditional behavior)
+        const lastItemIndex = originalItemCount - 1
+        const lastItemLeftEdge = offsetLefts[lastItemIndex] - startX
+        maxScrollPosition = Math.max(0, lastItemLeftEdge)
+        console.log('[Looper:populateWidths]    → Max scroll position (endAlignment: start):', maxScrollPosition, 'px')
+      } else {
+        // 'right' alignment (default): last item's right edge at viewport's right edge
+        const lastItemIndex = originalItemCount - 1
+        const lastItemRightEdge = offsetLefts[lastItemIndex] + widths[lastItemIndex] - startX
+        maxScrollPosition = Math.max(0, lastItemRightEdge - containerWidth)
+        console.log('[Looper:populateWidths]    → Max scroll position (endAlignment: right):', maxScrollPosition, 'px')
+      }
+    }
   }
 
   /**
@@ -288,10 +307,14 @@ function horizontalLoop(app, items, config) {
    */
   function populateSnapTimes() {
     if (!shouldLoop) {
-      // For non-looping, evenly distribute
+      // For non-looping, calculate based on actual item positions (pixels)
+      // This ensures snap and navigation work correctly
       items.forEach((item, i) => {
-        times[i] = i / Math.max(1, items.length - 1)
+        const curX = (xPercents[i] / 100) * widths[i]
+        const distanceToStart = item.offsetLeft + curX - startX
+        times[i] = distanceToStart / pixelsPerSecond
       })
+      console.log('[Looper:populateSnapTimes] Non-looping times (pixel-based):', times.slice(0, originalItemCount))
       return
     }
 
@@ -618,6 +641,12 @@ function horizontalLoop(app, items, config) {
     // Start the frame.render loop
     if (shouldLoop) {
       startRenderLoop()
+    } else {
+      // Non-looping: simple position listener to update container transform
+      const containerElement = items[0].parentElement
+      positionUnsubscribe = position.on('change', (latest) => {
+        containerElement.style.transform = `translateX(${-latest}px)`
+      })
     }
 
     // Function to create and start the animation loop
@@ -654,24 +683,59 @@ function horizontalLoop(app, items, config) {
 
       console.log('[Looper:init]    → Created position animation with auto-restart')
     } else if (!shouldLoop && config.crawl) {
-      // Non-looping: animate to max scroll distance
-      const maxScroll = Math.max(0, totalWidth - container.offsetWidth)
-      const duration = maxScroll / pixelsPerSecond
-      // Reversed: negative target, Normal: positive target
-      const target = config.reversed ? -maxScroll : maxScroll
+      // Non-looping: ping-pong animation (crawl to end, reverse to start)
+      // Use maxScrollPosition (last item at right edge) instead of totalWidth
+      const duration = maxScrollPosition / pixelsPerSecond
 
-      animation = animate(position, target, {
+      // Create a ping-pong crawl animation
+      function startPingPongCrawl(fromStart = true) {
+        const currentPos = position.get()
+        const target = fromStart ? maxScrollPosition : 0
+        const remainingDist = Math.abs(target - currentPos)
+        const remainingDuration = remainingDist / pixelsPerSecond
+
+        console.log('[Looper:pingPong] Starting crawl', fromStart ? 'forward' : 'backward')
+        console.log('[Looper:pingPong]    → Current:', currentPos, '→ Target:', target)
+        console.log('[Looper:pingPong]    → Duration:', remainingDuration, 's')
+
+        // Use easeInOut for smooth acceleration and deceleration at boundaries
+        // This creates a natural "bounce back" feel at the edges
+        animation = animate(position, target, {
+          duration: remainingDuration,
+          ease: [0.4, 0.0, 0.2, 1], // Custom cubic-bezier for smooth ease-in-out
+        })
+
+        // When reaching the end, reverse direction
+        animation
+          .then(() => {
+            console.log('[Looper:pingPong] Reached', fromStart ? 'end' : 'start', ', reversing...')
+
+            // Brief pause at boundary for visual clarity
+            setTimeout(() => {
+              if (animation && animation.speed !== 0) {
+                startPingPongCrawl(!fromStart)
+              }
+            }, 200) // Slightly longer pause for smooth reversal
+          })
+          .catch(() => {
+            console.log('[Looper:pingPong] Animation cancelled')
+          })
+      }
+
+      // Store the ping-pong starter for later use
+      config.startPingPongCrawl = startPingPongCrawl
+
+      // Create initial animation (starts paused)
+      animation = animate(position, maxScrollPosition, {
         duration,
         ease: 'linear',
       })
-
       animation.pause()
+
       console.log(
-        '[Looper:init]    → Created non-looping animation (maxScroll:',
-        maxScroll,
-        'px, reversed:',
-        config.reversed,
-        ')'
+        '[Looper:init]    → Created non-looping ping-pong animation (maxScrollPosition:',
+        maxScrollPosition,
+        'px)'
       )
     }
 
@@ -866,9 +930,8 @@ function horizontalLoop(app, items, config) {
         // For looping, allow unbounded position (frame.render will bound it)
         position.set(newPosition)
       } else {
-        // For non-looping, clamp position
-        const maxPos = Math.max(0, totalWidth - container.offsetWidth)
-        const clampedPos = Math.max(0, Math.min(maxPos, newPosition))
+        // For non-looping, clamp position to maxScrollPosition (last item at right edge)
+        const clampedPos = Math.max(0, Math.min(maxScrollPosition, newPosition))
         position.set(clampedPos)
       }
     }
@@ -965,12 +1028,12 @@ function horizontalLoop(app, items, config) {
         timeConstant: config.throwResistance,
         restSpeed: 10,
         restDelta: 0.5,
-        // For non-looping, add boundaries
+        // For non-looping, add boundaries (last item at right edge)
         ...(shouldLoop
           ? {}
           : {
               min: 0,
-              max: Math.max(0, totalWidth - container.offsetWidth),
+              max: maxScrollPosition,
               bounceStiffness: 300,
               bounceDamping: 30,
             }),
@@ -1032,12 +1095,13 @@ function horizontalLoop(app, items, config) {
             }
           }
         } else {
-          // Non-looping: just use base position
-          const dist = Math.abs(baseSnapPos - targetPos)
+          // Non-looping: just use base position, clamped to maxScrollPosition
+          const clampedSnapPos = Math.min(baseSnapPos, maxScrollPosition)
+          const dist = Math.abs(clampedSnapPos - targetPos)
           if (dist < closestDist) {
             closestDist = dist
             closestIndex = i
-            closestSnapPos = baseSnapPos
+            closestSnapPos = clampedSnapPos
           }
         }
       }
@@ -1345,8 +1409,8 @@ function horizontalLoop(app, items, config) {
       targetIndex = ((targetIndex % length) + length) % length
       console.log('[Looper:toIndex]    → Normalized targetIndex:', targetIndex, '(of', length, 'original items)')
     } else {
-      // Clamp to valid indices for non-looping
-      targetIndex = Math.max(0, Math.min(index, items.length - 1))
+      // Clamp to valid indices for non-looping (use originalItemCount, not items.length)
+      targetIndex = Math.max(0, Math.min(index, originalItemCount - 1))
     }
 
     // Get target position
@@ -1383,6 +1447,11 @@ function horizontalLoop(app, items, config) {
 
       console.log('[Looper:toIndex]    → Best candidate:', bestCandidate, '(distance:', minDist, ')')
       targetPos = bestCandidate
+    } else {
+      // For non-looping, clamp target position to maxScrollPosition
+      // This ensures last items stay at right edge of viewport
+      targetPos = Math.min(targetPos, maxScrollPosition)
+      console.log('[Looper:toIndex]    → Clamped to maxScrollPosition:', targetPos)
     }
 
     // Update current index
@@ -1427,7 +1496,13 @@ function horizontalLoop(app, items, config) {
     isLooping: shouldLoop,
 
     play() {
-      if (animation) {
+      if (!shouldLoop && config.crawl && config.startPingPongCrawl) {
+        // Non-looping: start ping-pong crawl
+        const currentPos = position.get()
+        // Determine direction based on current position
+        const goForward = currentPos < maxScrollPosition / 2
+        config.startPingPongCrawl(goForward)
+      } else if (animation) {
         animation.play()
       }
     },
@@ -1475,7 +1550,14 @@ function horizontalLoop(app, items, config) {
       }
       // Sync curIndex with current scroll position before navigating
       closestIndex(true)
-      const nextIndex = curIndex + 1
+      let nextIndex = curIndex + 1
+
+      // Non-looping: reset to start when reaching the end
+      if (!shouldLoop && nextIndex >= originalItemCount) {
+        nextIndex = 0
+        console.log('[Looper:next] Reached end, resetting to start (index 0)')
+      }
+
       return toIndex(nextIndex, vars)
     },
 
@@ -1486,7 +1568,14 @@ function horizontalLoop(app, items, config) {
       }
       // Sync curIndex with current scroll position before navigating
       closestIndex(true)
-      const prevIndex = curIndex - 1
+      let prevIndex = curIndex - 1
+
+      // Non-looping: reset to end when at the start
+      if (!shouldLoop && prevIndex < 0) {
+        prevIndex = originalItemCount - 1
+        console.log('[Looper:previous] Reached start, resetting to end (index', prevIndex, ')')
+      }
+
       return toIndex(prevIndex, vars)
     },
 
@@ -1612,8 +1701,17 @@ export default class Looper {
       const autoplayValue = looperEl?.getAttribute('data-looper-autoplay')
       const autoplayInterval = autoplayValue ? parseFloat(autoplayValue) : null
 
+      // Loop: data-looper-loop or data-looper-loop="false"
+      const hasLoopAttr = looperEl?.hasAttribute('data-looper-loop')
+      const loopValue = looperEl?.getAttribute('data-looper-loop')
+      const shouldLoop = loopValue === 'false' ? false : this.opts.loop
+
+      // End alignment: data-looper-end-alignment="right" or "start"
+      const endAlignmentValue = looperEl?.getAttribute('data-looper-end-alignment')
+      const endAlignment = endAlignmentValue || this.opts.endAlignment
+
       console.log(
-        `[Looper]    → Config: speed=${speed}, reverse=${isReverse}, snap=${shouldSnap}, crawl=${shouldCrawl}, autoplay=${autoplayInterval}`
+        `[Looper]    → Config: speed=${speed}, reverse=${isReverse}, snap=${shouldSnap}, crawl=${shouldCrawl}, autoplay=${autoplayInterval}, loop=${shouldLoop}, endAlignment=${endAlignment}`
       )
 
       // Create stub for Moonwalk compatibility
@@ -1639,9 +1737,10 @@ export default class Looper {
           snap: shouldSnap,
           speed,
           reversed: isReverse,
-          loop: this.opts.loop,
+          loop: shouldLoop,
           crawl: shouldCrawl,
           autoplayInterval,
+          endAlignment,
           ease: this.opts.ease,
           throwResistance: this.opts.throwResistance,
           throwPower: this.opts.throwPower,
