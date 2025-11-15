@@ -95,7 +95,6 @@ function horizontalLoop(app, items, config) {
 
   // Drag state and cleanup handlers
   let dragState = {}
-  let isDragging = false // Track if user is actively dragging
   let speedRampAnimation = null // Track speed ramp animation
   let inertiaAnimation = null // Track inertia animation
   let snapAnimation = null // Track snap animation
@@ -202,9 +201,6 @@ function horizontalLoop(app, items, config) {
    * Batched to avoid layout thrashing
    */
   function populateWidths() {
-    const containerRect = container.getBoundingClientRect()
-    let prevRect = containerRect
-
     // Cache CSS gap (only changes on resize)
     gap = parseFloat(getComputedStyle(container).gap) || 0
 
@@ -234,7 +230,6 @@ function horizontalLoop(app, items, config) {
         }
 
         xPercents[i] = (currentX / widths[i]) * 100
-        prevRect = rect
       }
     })
 
@@ -1104,8 +1099,6 @@ function horizontalLoop(app, items, config) {
               bounceStiffness: 300,
               bounceDamping: 30,
             }),
-        onUpdate: _latest => {},
-        onComplete: () => {},
       })
 
       // Resume crawl after snap
