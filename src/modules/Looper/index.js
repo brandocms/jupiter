@@ -91,6 +91,7 @@ function horizontalLoop(app, items, config) {
   let offsetLefts = [] // Cache offsetLeft values to avoid layout thrashing
   let containerWidth = 0 // Cache container width to avoid layout reads on every frame
   let itemWrapOffsets = [] // Cache current wrap offset for each item
+  let isCloneCache = [] // Cache which items are clones (avoid hasAttribute checks)
 
   // Drag state and cleanup handlers
   let dragState = {}
@@ -121,8 +122,10 @@ function horizontalLoop(app, items, config) {
     const lastRect = last.getBoundingClientRect()
     const lastWidth = lastRect.width
 
-    // Calculate CSS gap between items
-    gap = parseFloat(getComputedStyle(container).gap) || 0
+    // Use cached gap, or calculate if not yet cached
+    if (gap === 0) {
+      gap = parseFloat(getComputedStyle(container).gap) || 0
+    }
 
     // Calculate total including gaps and padding
     // Total = sum of item widths + gaps between items + paddingRight + trailing gap
@@ -202,25 +205,37 @@ function horizontalLoop(app, items, config) {
     const containerRect = container.getBoundingClientRect()
     let prevRect = containerRect
 
-    items.forEach((el, i) => {
-      const rect = el.getBoundingClientRect()
-      widths[i] = rect.width
+    // Cache CSS gap (only changes on resize)
+    gap = parseFloat(getComputedStyle(container).gap) || 0
 
-      // Cache offsetLeft to avoid reading it on every frame
+    items.forEach((el, i) => {
+      // Cache offsetLeft for all items (needed for positioning calculations)
       offsetLefts[i] = el.offsetLeft
 
-      // Calculate xPercent based on current position
-      const computedStyle = window.getComputedStyle(el)
-      const transform = computedStyle.transform
-      let currentX = 0
+      // For clones, copy width from corresponding original item (avoid getBoundingClientRect)
+      // Clones are exact copies so they have the same dimensions
+      if (isCloneCache[i]) {
+        const originalIndex = i % originalItemCount
+        widths[i] = widths[originalIndex]
+        xPercents[i] = 0 // Clones don't have any initial transform
+      } else {
+        // For original items, measure actual dimensions
+        const rect = el.getBoundingClientRect()
+        widths[i] = rect.width
 
-      if (transform && transform !== 'none') {
-        const matrix = new DOMMatrix(transform)
-        currentX = matrix.m41
+        // Calculate xPercent based on current transform (expensive, only for originals)
+        const computedStyle = window.getComputedStyle(el)
+        const transform = computedStyle.transform
+        let currentX = 0
+
+        if (transform && transform !== 'none') {
+          const matrix = new DOMMatrix(transform)
+          currentX = matrix.m41
+        }
+
+        xPercents[i] = (currentX / widths[i]) * 100
+        prevRect = rect
       }
-
-      xPercents[i] = (currentX / widths[i]) * 100
-      prevRect = rect
     })
 
     // Update startX and cache container width
@@ -345,8 +360,8 @@ function horizontalLoop(app, items, config) {
     // TICKER PATTERN: ONLY move ORIGINAL items to the back, NEVER touch clones!
     // This massively reduces DOM manipulation and style recalculation
     items.forEach((item, i) => {
-      // Skip clones - they stay in natural flow!
-      if (item.hasAttribute('data-looper-clone')) {
+      // Skip clones - they stay in natural flow! (use cached value for performance)
+      if (isCloneCache[i]) {
         return
       }
 
@@ -498,6 +513,9 @@ function horizontalLoop(app, items, config) {
     // Replicate items if needed
     replicateItemsIfNeeded()
 
+    // Cache which items are clones (avoid hasAttribute checks in hot paths)
+    isCloneCache = items.map((item, i) => i >= originalItemCount)
+
     // Measure everything
     populateWidths()
     populateSnapTimes()
@@ -537,12 +555,12 @@ function horizontalLoop(app, items, config) {
 
           // Count how many items have non-zero offset before reset
           const itemsWithOffset = items.filter(
-            (item, i) => !item.hasAttribute('data-looper-clone') && itemWrapOffsets[i] !== 0
+            (item, i) => !isCloneCache[i] && itemWrapOffsets[i] !== 0
           ).length
 
           // Reset ALL original items to 0 (both positive and negative offsets)
           items.forEach((item, i) => {
-            if (!item.hasAttribute('data-looper-clone') && itemWrapOffsets[i] !== 0) {
+            if (!isCloneCache[i] && itemWrapOffsets[i] !== 0) {
               item.style.transform = 'none'
               itemWrapOffsets[i] = 0
             }
