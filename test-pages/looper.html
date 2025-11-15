@@ -220,7 +220,34 @@
     </div>
   </section>
 
-  <!-- Example 5: Fast Speed -->
+  <!-- Example 5: Autoplay -->
+  <section class="section">
+    <h2 class="section-title">5. Autoplay</h2>
+    <div class="info">
+      <strong>Features:</strong> Automatically advances every 3 seconds, stops on user interaction
+      <br>
+      <code>data-looper-autoplay="3"</code> (positive = next, negative = previous)
+      <br>
+      <em>Try dragging or clicking buttons - autoplay will stop!</em>
+    </div>
+    <div class="looper-container" data-moonwalk-run="loop">
+      <div class="looper-wrapper" data-looper-container>
+        <div data-looper data-looper-snap data-looper-crawl="false" data-looper-autoplay="3">
+          <div data-looper-item style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">1</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">2</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">3</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">4</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">5</div>
+        </div>
+        <div class="controls">
+          <button data-panner-previous>← Previous</button>
+          <button data-panner-next>Next →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Example 6: Fast Speed -->
   <!--
   <section class="section">
     <h2 class="section-title">5. Different Speeds</h2>

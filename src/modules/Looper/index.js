@@ -105,6 +105,7 @@ function horizontalLoop(app, items, config) {
   let speedRampAnimation = null // Track speed ramp animation
   let inertiaAnimation = null // Track inertia animation
   let snapAnimation = null // Track snap animation
+  let navAnimation = null // Track navigation animation (next/previous/toIndex)
   let positionUnsubscribe = null // Track position listener for cleanup
   let renderUnsubscribe = null // Track frame.render loop for cleanup
 
@@ -557,12 +558,12 @@ function horizontalLoop(app, items, config) {
 
           // CRITICAL: Sync unbounded position with bounded position to prevent
           // inertia calculation bugs when dragging RIGHT across boundaries
-          // BUT only do this when NOT animating snap, otherwise it interferes
-          if (!snapAnimation) {
+          // BUT only do this when NOT animating snap or nav, otherwise it interferes
+          if (!snapAnimation && !navAnimation) {
             position.set(latest)
             console.log('[Looper:boundedPos] ✅ Synced unbounded position to:', latest.toFixed(2))
           } else {
-            console.log('[Looper:boundedPos] ⏸️ Skipped sync (snap animation active)')
+            console.log('[Looper:boundedPos] ⏸️ Skipped sync (animation active)')
           }
         }
 
@@ -746,6 +747,11 @@ function horizontalLoop(app, items, config) {
       startX = e.clientX
       startPosition = position.get()
       velocityTracker = [{ x: e.clientX, time: Date.now() }]
+
+      // Stop autoplay on user interaction
+      if (loopController && loopController.stopAutoplay) {
+        loopController.stopAutoplay()
+      }
 
       // Stop any ongoing animations
       if (inertiaAnimation) {
@@ -1223,18 +1229,22 @@ function horizontalLoop(app, items, config) {
   function closestIndex(setCurrent = false) {
     if (!times || times.length === 0) return 0
 
+    // Use bounded position to find what's actually visible
     const currentPos = position.get()
-    const currentTime = currentPos / pixelsPerSecond
+    const boundedCurrentPos = ((currentPos % originalItemsWidth) + originalItemsWidth) % originalItemsWidth
+    const currentTime = boundedCurrentPos / pixelsPerSecond
 
     let closest = 0
     let closestDist = Infinity
 
-    times.forEach((time, i) => {
+    // Only check original items, not clones
+    for (let i = 0; i < originalItemCount; i++) {
+      const time = times[i]
       let dist = Math.abs(time - currentTime)
 
       // For looping, check wrapped distance
       if (shouldLoop) {
-        const duration = totalWidth / pixelsPerSecond
+        const duration = originalItemsWidth / pixelsPerSecond
         const wrappedDist = Math.min(
           Math.abs(time + duration - currentTime),
           Math.abs(time - duration - currentTime)
@@ -1246,7 +1256,7 @@ function horizontalLoop(app, items, config) {
         closestDist = dist
         closest = i
       }
-    })
+    }
 
     if (setCurrent) {
       curIndex = closest
@@ -1265,16 +1275,22 @@ function horizontalLoop(app, items, config) {
 
     if (!times || times.length === 0) return
 
+    console.log('[Looper:toIndex] 📍 Navigation requested')
+    console.log('[Looper:toIndex]    → Requested index:', index)
+    console.log('[Looper:toIndex]    → Current curIndex:', curIndex)
+
     // Calculate target index with shortest path for looping
     let targetIndex = index
 
     if (shouldLoop) {
       // Always go in shortest direction
-      const length = items.length
+      // IMPORTANT: Use originalItemCount, not items.length (which includes clones)
+      const length = originalItemCount
       if (Math.abs(index - curIndex) > length / 2) {
         targetIndex = index + (index > curIndex ? -length : length)
       }
       targetIndex = ((targetIndex % length) + length) % length
+      console.log('[Looper:toIndex]    → Normalized targetIndex:', targetIndex, '(of', length, 'original items)')
     } else {
       // Clamp to valid indices for non-looping
       targetIndex = Math.max(0, Math.min(index, items.length - 1))
@@ -1284,21 +1300,36 @@ function horizontalLoop(app, items, config) {
     const targetTime = times[targetIndex]
     let targetPos = targetTime * pixelsPerSecond
 
+    console.log('[Looper:toIndex]    → Base target position:', targetPos)
+
     // For looping, normalize target to be close to current position
     // This ensures we take the shortest path and don't cross boundaries unnecessarily
     if (shouldLoop) {
       const currentPos = position.get()
-      let minDist = Math.abs(targetPos - currentPos)
 
-      // Check adjacent cycles to find shortest path
-      for (let offset = -2; offset <= 2; offset++) {
-        const candidate = targetPos + (offset * originalItemsWidth)
+      // Find which cycle the current position is in
+      // This handles cases where position has drifted to -4800 or +9600 etc.
+      const currentCycle = Math.floor(currentPos / originalItemsWidth)
+
+      console.log('[Looper:toIndex]    → Current position:', currentPos)
+      console.log('[Looper:toIndex]    → Current cycle:', currentCycle)
+
+      let minDist = Infinity
+      let bestCandidate = targetPos
+
+      // Check cycles around the current cycle (not around cycle 0)
+      for (let offset = -1; offset <= 1; offset++) {
+        const candidate = targetPos + ((currentCycle + offset) * originalItemsWidth)
         const dist = Math.abs(candidate - currentPos)
+        console.log(`[Looper:toIndex]    → Cycle ${currentCycle + offset}: pos=${candidate}, dist=${dist}`)
         if (dist < minDist) {
           minDist = dist
-          targetPos = candidate
+          bestCandidate = candidate
         }
       }
+
+      console.log('[Looper:toIndex]    → Best candidate:', bestCandidate, '(distance:', minDist, ')')
+      targetPos = bestCandidate
     }
 
     // Update current index
@@ -1308,10 +1339,20 @@ function horizontalLoop(app, items, config) {
     const duration = vars.duration !== undefined ? vars.duration : 0.85
     const ease = vars.ease || 'easeInOut'
 
-    const navAnimation = animate(position, targetPos, {
+    // Track navigation animation to prevent sync interference
+    navAnimation = animate(position, targetPos, {
       duration,
       ease,
     })
+
+    // Clear navAnimation when done
+    navAnimation
+      .then(() => {
+        navAnimation = null
+      })
+      .catch(() => {
+        navAnimation = null
+      })
 
     return navAnimation
   }
@@ -1319,6 +1360,8 @@ function horizontalLoop(app, items, config) {
   /**
    * Public API
    */
+  let autoplayTimer = null
+
   const loopController = {
     position,
     animation,
@@ -1347,14 +1390,44 @@ function horizontalLoop(app, items, config) {
       return closestIndex(setCurrent)
     },
 
-    next(vars) {
+    stopAutoplay() {
+      if (autoplayTimer) {
+        clearInterval(autoplayTimer)
+        autoplayTimer = null
+        console.log('[Looper:autoplay] ⏹️ Stopped autoplay')
+      }
+    },
+
+    startAutoplay(seconds) {
+      this.stopAutoplay()
+      const interval = Math.abs(seconds) * 1000
+      const direction = seconds > 0 ? 'next' : 'previous'
+      console.log('[Looper:autoplay] ▶️ Starting autoplay:', direction, 'every', Math.abs(seconds), 's')
+      autoplayTimer = setInterval(() => {
+        if (direction === 'next') {
+          this.next(null, { autoplay: true })
+        } else {
+          this.previous(null, { autoplay: true })
+        }
+      }, interval)
+    },
+
+    next(vars, options = {}) {
+      // Stop autoplay on user interaction (unless this IS autoplay)
+      if (!options.autoplay) {
+        this.stopAutoplay()
+      }
       // Sync curIndex with current scroll position before navigating
       closestIndex(true)
       const nextIndex = curIndex + 1
       return toIndex(nextIndex, vars)
     },
 
-    previous(vars) {
+    previous(vars, options = {}) {
+      // Stop autoplay on user interaction (unless this IS autoplay)
+      if (!options.autoplay) {
+        this.stopAutoplay()
+      }
       // Sync curIndex with current scroll position before navigating
       closestIndex(true)
       const prevIndex = curIndex - 1
@@ -1371,6 +1444,9 @@ function horizontalLoop(app, items, config) {
 
     destroy() {
       console.log('[Looper:destroy] 🧹 Cleaning up loop')
+
+      // Stop autoplay
+      this.stopAutoplay()
 
       // Stop animation
       if (animation) {
@@ -1458,14 +1534,30 @@ export default class Looper {
         ? this.opts.speed.sm
         : this.opts.speed.lg
 
-      const isReverse = element.querySelector('[data-looper-reverse]') !== null
-      const hasSnapAttribute = element
-        .querySelector('[data-looper]')
-        ?.hasAttribute('data-looper-snap')
-      const shouldSnap = this.opts.snap || hasSnapAttribute
+      // Parse data attributes with support for explicit "false" values
+      const looperEl = element.querySelector('[data-looper]')
+
+      // Snap: data-looper-snap or data-looper-snap="false"
+      const hasSnapAttr = looperEl?.hasAttribute('data-looper-snap')
+      const snapValue = looperEl?.getAttribute('data-looper-snap')
+      const shouldSnap = snapValue === 'false' ? false : (this.opts.snap || hasSnapAttr)
+
+      // Crawl: data-looper-crawl or data-looper-crawl="false"
+      const hasCrawlAttr = looperEl?.hasAttribute('data-looper-crawl')
+      const crawlValue = looperEl?.getAttribute('data-looper-crawl')
+      const shouldCrawl = crawlValue === 'false' ? false : (hasCrawlAttr || this.opts.crawl)
+
+      // Reverse: data-looper-reverse or data-looper-reverse="false"
+      const hasReverseAttr = looperEl?.hasAttribute('data-looper-reverse')
+      const reverseValue = looperEl?.getAttribute('data-looper-reverse')
+      const isReverse = reverseValue === 'false' ? false : hasReverseAttr
+
+      // Autoplay: data-looper-autoplay="5" (seconds, negative for previous)
+      const autoplayValue = looperEl?.getAttribute('data-looper-autoplay')
+      const autoplayInterval = autoplayValue ? parseFloat(autoplayValue) : null
 
       console.log(
-        `[Looper]    → Config: speed=${speed}, reverse=${isReverse}, snap=${shouldSnap}, loop=${this.opts.loop}, crawl=${this.opts.crawl}`
+        `[Looper]    → Config: speed=${speed}, reverse=${isReverse}, snap=${shouldSnap}, crawl=${shouldCrawl}, autoplay=${autoplayInterval}`
       )
 
       // Create stub for Moonwalk compatibility
@@ -1492,7 +1584,8 @@ export default class Looper {
           speed,
           reversed: isReverse,
           loop: this.opts.loop,
-          crawl: this.opts.crawl,
+          crawl: shouldCrawl,
+          autoplayInterval,
           ease: this.opts.ease,
           throwResistance: this.opts.throwResistance,
           throwPower: this.opts.throwPower,
@@ -1537,6 +1630,12 @@ export default class Looper {
       if (config.crawl) {
         console.log(`[Looper]    ▶️ Starting crawl animation`)
         loop.play()
+      }
+
+      // Start autoplay if configured
+      if (config.autoplayInterval && !isNaN(config.autoplayInterval)) {
+        console.log(`[Looper]    ⏰ Starting autoplay (${config.autoplayInterval}s)`)
+        loop.startAutoplay(config.autoplayInterval)
       }
 
       // Replace stub with real loop
