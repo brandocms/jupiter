@@ -26,6 +26,8 @@ const DEFAULT_OPTIONS = {
   // Inertia/throw configuration (when dragging and releasing)
   throwResistance: 325, // Time constant for deceleration (lower = more resistance/faster stop, higher = less resistance/longer glide)
   throwPower: 0.8, // Deceleration curve (0-1, higher = more gradual slowdown)
+  throwVelocityMultiplier: 1.0, // Scale velocity for all throws (0.5 = half speed, 2.0 = double)
+  snapVelocityMultiplier: 0.8, // Additional scaling for snapped loopers (stacks with throwVelocityMultiplier)
 
   // Snap animation configuration (when snap: true)
   snapDuration: 0.5, // Duration of snap animation in seconds (0.3-1.0, lower = faster/snappier)
@@ -889,7 +891,8 @@ function horizontalLoop(app, items, config) {
       // - Drag right (cursor increases) = scroll left (position decreases)
       // Note: This is ALWAYS opposite, regardless of reversed setting
       // (reversed only affects auto-crawl, not drag)
-      const motionVelocity = -velocity
+      // Apply velocity multiplier for tuning throw feel
+      const motionVelocity = -velocity * config.throwVelocityMultiplier
 
       // Calculate estimated target based on inertia physics
       const power = config.throwPower
@@ -995,76 +998,48 @@ function horizontalLoop(app, items, config) {
 
     /**
      * Snap to nearest item with animation
-     * If velocity is provided, uses inertia physics to land on snap point
+     * Uses Motion's native inertia with modifyTarget for natural physics + snap
      * @param {number} velocity - Optional cursor velocity for inertia-based snapping
      */
     function snapToNearest(velocity = 0) {
       const currentPos = position.get()
+      // Apply both velocity multipliers for snapped loopers
+      const motionVelocity = -velocity * config.throwVelocityMultiplier * config.snapVelocityMultiplier
 
-      // If we have velocity, calculate where inertia would land and snap to nearest from there
-      // This is the GSAP approach: snap modifies the inertia target
-      let targetForSnap = currentPos
-      if (Math.abs(velocity) > 0) {
-        targetForSnap = calculateInertiaTarget(velocity)
-        console.log('[Looper:snapToNearest] Using inertia-based snap')
-        console.log('[Looper:snapToNearest] Velocity:', velocity, 'px/s')
-        console.log('[Looper:snapToNearest] Inertia would land at:', targetForSnap)
-      }
-
-      const snapPos = findNearestSnapPoint(targetForSnap)
-
+      console.log('[Looper:snapToNearest] Using native inertia with modifyTarget')
       console.log('[Looper:snapToNearest] Current position:', currentPos)
-      console.log('[Looper:snapToNearest] Snap position:', snapPos)
-      console.log('[Looper:snapToNearest] Distance to snap:', Math.abs(snapPos - currentPos))
+      console.log('[Looper:snapToNearest] Velocity:', velocity, 'px/s')
+      console.log('[Looper:snapToNearest] Motion velocity (with multipliers):', motionVelocity, 'px/s')
+      console.log('[Looper:snapToNearest] Multipliers: throw=', config.throwVelocityMultiplier, 'snap=', config.snapVelocityMultiplier)
 
-      // Don't snap if we're already there
-      if (Math.abs(snapPos - currentPos) < 1) {
-        console.log('[Looper:snapToNearest] Already at snap position, skipping')
-        if (config.crawl && animation) {
-          resumeCrawl()
-        }
-        return
-      }
+      // Calculate ideal inertia target (Motion will recalculate, but we need a non-zero animation)
+      // This ensures Motion starts the inertia physics
+      const idealTarget = currentPos + motionVelocity * config.throwPower * (config.throwResistance / 1000)
+      console.log('[Looper:snapToNearest] Ideal target (before snap):', idealTarget)
 
-      const distance = Math.abs(snapPos - currentPos)
-      const absVelocity = Math.abs(velocity)
-
-      // Use inertia-like animation that preserves momentum feel
-      // Calculate duration based on velocity and distance for natural deceleration
-      let animationDuration
-      let animationEase
-
-      if (absVelocity > 100) {
-        // High velocity: use longer duration with exponential decay feel
-        // This mimics natural inertia deceleration
-        const timeConstant = config.throwResistance / 1000
-        // Duration proportional to how far we need to go at this velocity
-        // Clamp between reasonable bounds
-        animationDuration = Math.min(Math.max(distance / absVelocity * 3, 0.4), 1.2)
-        // Exponential decay easing (similar to inertia physics)
-        animationEase = [0.16, 1, 0.3, 1] // Aggressive ease-out for momentum feel
-        console.log('[Looper:snapToNearest] High velocity mode - duration:', animationDuration, 's')
-      } else {
-        // Low velocity: use configured snap duration with spring-like feel
-        animationDuration = config.snapDuration
-        animationEase = [0.25, 0.1, 0.25, 1] // Standard ease-out
-        console.log('[Looper:snapToNearest] Low velocity mode - duration:', animationDuration, 's')
-      }
-
-      console.log('[Looper:snapToNearest] Animation from', currentPos, '→', snapPos)
-      console.log('[Looper:snapToNearest] Using ease:', animationEase)
-
-      snapAnimation = animate(position, snapPos, {
-        duration: animationDuration,
-        ease: animationEase,
+      // Use Motion's native inertia animation with modifyTarget
+      // This gives us identical physics to non-snapped, but snaps to nearest item
+      snapAnimation = animate(position, idealTarget, {
+        type: 'inertia',
+        velocity: motionVelocity,
+        power: config.throwPower,
+        timeConstant: config.throwResistance,
+        modifyTarget: (target) => {
+          console.log('[Looper:snapToNearest] Motion calculated target:', target)
+          const snapPos = findNearestSnapPoint(target)
+          console.log('[Looper:snapToNearest] Snapped to:', snapPos)
+          return snapPos
+        },
+        restSpeed: 10,
+        restDelta: 0.5,
         onUpdate: (latest) => {
           // Log occasionally to track animation progress
-          if (Math.random() < 0.1) {
-            console.log('[Looper:snapAnimation] Progress:', latest.toFixed(2), '/', snapPos)
+          if (Math.random() < 0.05) {
+            console.log('[Looper:snapAnimation] Progress:', latest.toFixed(2))
           }
         },
         onComplete: () => {
-          console.log('[Looper:snapAnimation] ✅ Animation completed naturally at:', position.get().toFixed(2))
+          console.log('[Looper:snapAnimation] ✅ Animation completed at:', position.get().toFixed(2))
         },
       })
 
@@ -1307,7 +1282,24 @@ function horizontalLoop(app, items, config) {
 
     // Get target position
     const targetTime = times[targetIndex]
-    const targetPos = targetTime * pixelsPerSecond
+    let targetPos = targetTime * pixelsPerSecond
+
+    // For looping, normalize target to be close to current position
+    // This ensures we take the shortest path and don't cross boundaries unnecessarily
+    if (shouldLoop) {
+      const currentPos = position.get()
+      let minDist = Math.abs(targetPos - currentPos)
+
+      // Check adjacent cycles to find shortest path
+      for (let offset = -2; offset <= 2; offset++) {
+        const candidate = targetPos + (offset * originalItemsWidth)
+        const dist = Math.abs(candidate - currentPos)
+        if (dist < minDist) {
+          minDist = dist
+          targetPos = candidate
+        }
+      }
+    }
 
     // Update current index
     curIndex = targetIndex
@@ -1504,6 +1496,8 @@ export default class Looper {
           ease: this.opts.ease,
           throwResistance: this.opts.throwResistance,
           throwPower: this.opts.throwPower,
+          throwVelocityMultiplier: this.opts.throwVelocityMultiplier,
+          snapVelocityMultiplier: this.opts.snapVelocityMultiplier,
           snapDuration: this.opts.snapDuration,
           snapBounce: this.opts.snapBounce,
         },
