@@ -1069,10 +1069,23 @@ function horizontalLoop(app, items, config) {
         timeConstant: config.throwResistance,
         modifyTarget: target => {
           const snapPos = findNearestSnapPoint(target)
+          // For non-looping, clamp snap position to valid range
+          if (!shouldLoop) {
+            return Math.max(0, Math.min(snapPos, maxScrollPosition))
+          }
           return snapPos
         },
         restSpeed: 10,
         restDelta: 0.5,
+        // For non-looping, add boundaries to prevent overshooting
+        ...(shouldLoop
+          ? {}
+          : {
+              min: 0,
+              max: maxScrollPosition,
+              bounceStiffness: 300,
+              bounceDamping: 30,
+            }),
         onUpdate: _latest => {},
         onComplete: () => {},
       })
@@ -1240,9 +1253,16 @@ function horizontalLoop(app, items, config) {
 
     // Use bounded position to find what's actually visible
     const currentPos = position.get()
-    const boundedCurrentPos =
-      ((currentPos % originalItemsWidth) + originalItemsWidth) % originalItemsWidth
-    const currentTime = boundedCurrentPos / pixelsPerSecond
+
+    // For looping, use bounded position; for non-looping, use direct position
+    let currentTime
+    if (shouldLoop) {
+      const boundedCurrentPos =
+        ((currentPos % originalItemsWidth) + originalItemsWidth) % originalItemsWidth
+      currentTime = boundedCurrentPos / pixelsPerSecond
+    } else {
+      currentTime = currentPos / pixelsPerSecond
+    }
 
     let closest = 0
     let closestDist = Infinity
@@ -1329,9 +1349,9 @@ function horizontalLoop(app, items, config) {
 
       targetPos = bestCandidate
     } else {
-      // For non-looping, clamp target position to maxScrollPosition
-      // This ensures last items stay at right edge of viewport
-      targetPos = Math.min(targetPos, maxScrollPosition)
+      // For non-looping, clamp target position to valid range [0, maxScrollPosition]
+      // This ensures first item stays at left edge and last item at right edge
+      targetPos = Math.max(0, Math.min(targetPos, maxScrollPosition))
     }
 
     // Update current index
