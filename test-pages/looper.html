@@ -437,6 +437,66 @@
     </div>
   </section>
 
+  <!-- Example 11: Center Mode (Looping) -->
+  <section class="section">
+    <h2 class="section-title">11. Center Mode (Looping)</h2>
+    <div class="info">
+      <strong>Features:</strong> Centers active slide in viewport, starts at middle slide
+      <br>
+      <code>data-looper-center</code>, <code>data-looper-snap</code>, <code>loop: true</code> (default)
+      <br>
+      <em>Snap points center each item in viewport. Starts at slide 3 of 5.</em>
+    </div>
+    <div class="looper-container" data-moonwalk-run="loop">
+      <div class="looper-wrapper" data-looper-container>
+        <div data-looper data-looper-center data-looper-snap data-looper-crawl="false">
+          <div data-looper-item style="background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);">1</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);">2</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);">3</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);">4</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);">5</div>
+        </div>
+        <div class="controls">
+          <button data-panner-previous>← Previous</button>
+          <span style="font-size: 18px; font-weight: 600;">
+            <span data-looper-slide-index></span> / <span data-looper-slide-count></span>
+          </span>
+          <button data-panner-next>Next →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Example 12: Center Mode (Non-Looping) -->
+  <section class="section">
+    <h2 class="section-title">12. Center Mode (Non-Looping)</h2>
+    <div class="info">
+      <strong>Features:</strong> Centers slides but clamps at edges (no empty space)
+      <br>
+      <code>data-looper-center</code>, <code>data-looper-loop="false"</code>, <code>data-looper-snap</code>
+      <br>
+      <em>First/last slides stay edge-aligned, middle slides center. Starts at slide 3.</em>
+    </div>
+    <div class="looper-container" data-moonwalk-run="loop">
+      <div class="looper-wrapper" data-looper-container>
+        <div data-looper data-looper-center data-looper-loop="false" data-looper-snap data-looper-crawl="false">
+          <div data-looper-item style="background: linear-gradient(135deg, #55efc4 0%, #00b894 100%);">1</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #55efc4 0%, #00b894 100%);">2</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #55efc4 0%, #00b894 100%);">3</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #55efc4 0%, #00b894 100%);">4</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #55efc4 0%, #00b894 100%);">5</div>
+        </div>
+        <div class="controls">
+          <button data-panner-previous>← Previous</button>
+          <span style="font-size: 18px; font-weight: 600;">
+            <span data-looper-slide-index></span> / <span data-looper-slide-count></span>
+          </span>
+          <button data-panner-next>Next →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <div style="text-align: center; padding: 60px 0; color: #666;">
     <p>✨ Looper Module - Built with Motion.js</p>
     <p style="margin-top: 10px;">Drag any looper to scrub, release for momentum</p>

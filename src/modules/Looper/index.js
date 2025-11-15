@@ -55,19 +55,12 @@ const DEFAULT_OPTIONS = {
  * @returns {Object} Loop controller with methods
  */
 function horizontalLoop(app, items, config) {
-  console.log('[Looper:horizontalLoop] 🏗️ Creating horizontal loop')
-  console.log('[Looper:horizontalLoop]    → Items:', items.length)
-  console.log('[Looper:horizontalLoop]    → Config:', config)
-
   // Convert to array
   items = Array.from(items)
   config = config || {}
 
   const shouldLoop = config.loop !== false
   const shouldDrag = config.draggable !== false
-
-  console.log('[Looper:horizontalLoop]    → shouldLoop:', shouldLoop)
-  console.log('[Looper:horizontalLoop]    → shouldDrag:', shouldDrag)
 
   // Container setup
   const center = config.center
@@ -76,8 +69,6 @@ function horizontalLoop(app, items, config) {
       ? items[0].parentNode
       : (typeof center === 'string' ? document.querySelector(center) : center) ||
         items[0].parentNode
-
-  console.log('[Looper:horizontalLoop]    → Container:', container)
 
   // State
   let curIndex = 0
@@ -138,9 +129,6 @@ function horizontalLoop(app, items, config) {
     const totalWidth =
       last.offsetLeft + lastWidth - startX + (parseFloat(config.paddingRight) || 0) + gap
 
-    console.log('[Looper:getTotalWidth]    → Gap:', gap, 'px')
-    console.log('[Looper:getTotalWidth]    → Total width:', totalWidth, 'px')
-
     return totalWidth
   }
 
@@ -150,20 +138,14 @@ function horizontalLoop(app, items, config) {
    */
   function replicateItemsIfNeeded() {
     if (!shouldLoop) {
-      console.log('[Looper:replicate] ⏭️ Skipping replication (loop disabled)')
       return
     }
 
     const containerWidth = container.offsetWidth
     let totalWidth = getTotalWidthOfItems()
 
-    console.log('[Looper:replicate] 📏 Checking if replication needed')
-    console.log('[Looper:replicate]    → Container width:', containerWidth, 'px')
-    console.log('[Looper:replicate]    → Initial total width:', totalWidth, 'px')
-
     // Safety: bail if no layout yet
     if (containerWidth === 0 || totalWidth === 0) {
-      console.warn('[Looper:replicate] ⚠️ No layout yet, skipping replication')
       return
     }
 
@@ -178,16 +160,8 @@ function horizontalLoop(app, items, config) {
     // This prevents items from visibly moving to the back before they're off-screen
     const minRequiredWidth = containerWidth * 2.5 + maxItemWidth
 
-    console.log(
-      '[Looper:replicate]    → Min required width:',
-      minRequiredWidth,
-      'px',
-      '(2.5x container + buffer)'
-    )
-
     // Only replicate if needed
     if (totalWidth >= minRequiredWidth) {
-      console.log('[Looper:replicate]    ✅ No replication needed')
       return
     }
 
@@ -196,12 +170,6 @@ function horizontalLoop(app, items, config) {
     const maxReplications = 10
     let count = 0
     let previousTotalWidth = totalWidth
-
-    console.log(
-      '[Looper:replicate]    → Starting replication (original items:',
-      originalItemCount,
-      ')'
-    )
 
     while (totalWidth < minRequiredWidth && count < maxReplications) {
       // Clone ONLY original items
@@ -217,26 +185,13 @@ function horizontalLoop(app, items, config) {
       totalWidth = getTotalWidthOfItems()
       count++
 
-      console.log(
-        `[Looper:replicate]    → Replication #${count}: added ${originalItemCount} items, total width now ${totalWidth}px`
-      )
-
       // Safety: detect if width isn't increasing
       if (totalWidth <= previousTotalWidth && count > 1) {
-        console.warn('[Looper:replicate] ⚠️ Item replication not increasing width, stopping')
         break
       }
 
       previousTotalWidth = totalWidth
     }
-
-    if (count >= maxReplications) {
-      console.warn('[Looper:replicate] ⚠️ Hit max replication limit')
-    }
-
-    console.log(
-      `[Looper:replicate]    ✅ Replication complete: ${items.length} total items (${count} replication rounds)`
-    )
   }
 
   /**
@@ -277,7 +232,6 @@ function horizontalLoop(app, items, config) {
     // This is the distance from first item to first clone
     if (originalItemCount > 0 && items.length > originalItemCount) {
       originalItemsWidth = items[originalItemCount].offsetLeft - items[0].offsetLeft // + gap
-      console.log('[Looper:populateWidths]    → Original items width:', originalItemsWidth, 'px')
     } else {
       // No clones yet, use totalWidth
       originalItemsWidth = totalWidth
@@ -285,18 +239,27 @@ function horizontalLoop(app, items, config) {
 
     // Calculate max scroll for non-looping based on endAlignment
     if (!shouldLoop && originalItemCount > 0) {
-      if (config.endAlignment === 'start') {
+      if (config.centerSlide) {
+        // Center mode: max scroll is where last item's center is at viewport center
+        // But clamped so we don't show empty space
+        const lastItemIndex = originalItemCount - 1
+        const lastItemCenter = offsetLefts[lastItemIndex] + widths[lastItemIndex] / 2 - startX
+        const viewportCenter = containerWidth / 2
+        const idealMaxScroll = lastItemCenter - viewportCenter
+        // Clamp to ensure last item doesn't go past right edge
+        const lastItemRightEdge = offsetLefts[lastItemIndex] + widths[lastItemIndex] - startX
+        const absoluteMax = lastItemRightEdge - containerWidth
+        maxScrollPosition = Math.max(0, Math.min(idealMaxScroll, absoluteMax))
+      } else if (config.endAlignment === 'start') {
         // 'start' alignment: last item can scroll to left edge (traditional behavior)
         const lastItemIndex = originalItemCount - 1
         const lastItemLeftEdge = offsetLefts[lastItemIndex] - startX
         maxScrollPosition = Math.max(0, lastItemLeftEdge)
-        console.log('[Looper:populateWidths]    → Max scroll position (endAlignment: start):', maxScrollPosition, 'px')
       } else {
         // 'right' alignment (default): last item's right edge at viewport's right edge
         const lastItemIndex = originalItemCount - 1
         const lastItemRightEdge = offsetLefts[lastItemIndex] + widths[lastItemIndex] - startX
         maxScrollPosition = Math.max(0, lastItemRightEdge - containerWidth)
-        console.log('[Looper:populateWidths]    → Max scroll position (endAlignment: right):', maxScrollPosition, 'px')
       }
     }
   }
@@ -311,18 +274,39 @@ function horizontalLoop(app, items, config) {
       // This ensures snap and navigation work correctly
       items.forEach((item, i) => {
         const curX = (xPercents[i] / 100) * widths[i]
-        const distanceToStart = item.offsetLeft + curX - startX
-        times[i] = distanceToStart / pixelsPerSecond
+        let snapPos
+
+        if (config.centerSlide) {
+          // Center mode: item's center at viewport's center
+          const itemCenter = item.offsetLeft + curX + widths[i] / 2 - startX
+          const viewportCenter = containerWidth / 2
+          snapPos = itemCenter - viewportCenter
+        } else {
+          // Normal mode: item's left edge at viewport's left edge
+          snapPos = item.offsetLeft + curX - startX
+        }
+
+        times[i] = snapPos / pixelsPerSecond
       })
-      console.log('[Looper:populateSnapTimes] Non-looping times (pixel-based):', times.slice(0, originalItemCount))
       return
     }
 
     // For looping, calculate based on item positions including gaps
     items.forEach((item, i) => {
       const curX = (xPercents[i] / 100) * widths[i]
-      const distanceToStart = item.offsetLeft + curX - startX
-      times[i] = distanceToStart / pixelsPerSecond
+      let snapPos
+
+      if (config.centerSlide) {
+        // Center mode: item's center at viewport's center
+        const itemCenter = item.offsetLeft + curX + widths[i] / 2 - startX
+        const viewportCenter = containerWidth / 2
+        snapPos = itemCenter - viewportCenter
+      } else {
+        // Normal mode: item's left edge at viewport's left edge
+        snapPos = item.offsetLeft + curX - startX
+      }
+
+      times[i] = snapPos / pixelsPerSecond
     })
 
     // Adjust for container padding if present
@@ -333,8 +317,6 @@ function horizontalLoop(app, items, config) {
       const paddingTime = containerPaddingLeft / pixelsPerSecond
       times = times.map(time => time - paddingTime)
     }
-
-    console.log('[Looper:populateSnapTimes]    → Gap included in calculations:', gap, 'px')
   }
 
   /**
@@ -414,12 +396,6 @@ function horizontalLoop(app, items, config) {
       if (newOffset !== itemWrapOffsets[i]) {
         item.style.transform = newOffset !== 0 ? `translateX(${newOffset}px)` : 'none'
         itemWrapOffsets[i] = newOffset
-        console.log(`[Looper:wrap] ✅ Item #${i + 1} offset changed to ${newOffset}px`, {
-          boundedPos: boundedPos.toFixed(2),
-          itemLeft: itemLeft.toFixed(2),
-          offsetLeft: offsetLefts[i],
-          transform: newOffset !== 0 ? `translateX(${newOffset}px)` : 'none',
-        })
       }
     })
   }
@@ -505,7 +481,8 @@ function horizontalLoop(app, items, config) {
    */
   function updateIndexDisplay() {
     if (indexElements.length === 0) return
-    const displayIndex = ((curIndex % originalItemCount) + originalItemCount) % originalItemCount + 1 // 1-based, handle negative
+    const displayIndex =
+      (((curIndex % originalItemCount) + originalItemCount) % originalItemCount) + 1 // 1-based, handle negative
     indexElements.forEach(el => {
       el.textContent = displayIndex
     })
@@ -515,36 +492,20 @@ function horizontalLoop(app, items, config) {
    * Initialize the loop animation
    */
   function init() {
-    console.log('[Looper:init] 🎬 Initializing loop animation')
-
     // Store original item count BEFORE replication
     originalItemCount = items.length
-    console.log('[Looper:init]    → Original items:', originalItemCount)
 
     // Replicate items if needed
     replicateItemsIfNeeded()
-    console.log(
-      '[Looper:init]    → After replication: ',
-      items.length,
-      'items (',
-      items.length - originalItemCount,
-      'clones )'
-    )
 
     // Measure everything
     populateWidths()
-    console.log('[Looper:init]    → Total width:', totalWidth, 'px')
-    console.log('[Looper:init]    → Container width:', container.offsetWidth, 'px')
-    console.log('[Looper:init]    → Pixels per second:', pixelsPerSecond)
-
     populateSnapTimes()
-    console.log('[Looper:init]    → Snap times:', times)
 
     // Set initial container position
     const containerElement = items[0].parentElement
     containerElement.style.willChange = 'transform'
     containerElement.style.transform = 'translateX(0px)'
-    console.log('[Looper:init]    → Initialized container at position 0')
 
     // Set up RAF loop to check item positions for wrapping
     // Frame.render loop to apply bounded position to DOM
@@ -556,14 +517,14 @@ function horizontalLoop(app, items, config) {
 
       // Set up boundedPos motionValue to automatically sync with position
       // This calculates the bounded position (0 to originalItemsWidth)
-      const positionUnsubscribe = position.on('change', (latest) => {
+      const positionUnsubscribe = position.on('change', latest => {
         const bounded = ((latest % originalItemsWidth) + originalItemsWidth) % originalItemsWidth
         boundedPos.set(bounded)
       })
 
       // Detect when boundedPos wraps (makes large jump) and reset all items
       // This prevents stuck items during fast drags in either direction
-      const boundedPosUnsubscribe = boundedPos.on('change', (latest) => {
+      const boundedPosUnsubscribe = boundedPos.on('change', latest => {
         const delta = Math.abs(latest - lastBoundedValue)
 
         // If boundedPos jumped by more than 40% of the width, it wrapped
@@ -571,20 +532,13 @@ function horizontalLoop(app, items, config) {
         const didWrap = delta > originalItemsWidth * 0.4
 
         if (didWrap) {
-          const direction = latest > lastBoundedValue ? 'backward (drag right)' : 'forward (drag left)'
+          const direction =
+            latest > lastBoundedValue ? 'backward (drag right)' : 'forward (drag left)'
 
           // Count how many items have non-zero offset before reset
-          const itemsWithOffset = items.filter((item, i) =>
-            !item.hasAttribute('data-looper-clone') && itemWrapOffsets[i] !== 0
+          const itemsWithOffset = items.filter(
+            (item, i) => !item.hasAttribute('data-looper-clone') && itemWrapOffsets[i] !== 0
           ).length
-
-          console.log('[Looper:boundedPos] 🔄 Boundary crossed', {
-            lastValue: lastBoundedValue.toFixed(2),
-            newValue: latest.toFixed(2),
-            delta: delta.toFixed(2),
-            direction,
-            itemsToReset: itemsWithOffset,
-          })
 
           // Reset ALL original items to 0 (both positive and negative offsets)
           items.forEach((item, i) => {
@@ -599,9 +553,7 @@ function horizontalLoop(app, items, config) {
           // BUT only do this when NOT animating snap or nav, otherwise it interferes
           if (!snapAnimation && !navAnimation) {
             position.set(latest)
-            console.log('[Looper:boundedPos] ✅ Synced unbounded position to:', latest.toFixed(2))
           } else {
-            console.log('[Looper:boundedPos] ⏸️ Skipped sync (animation active)')
           }
         }
 
@@ -644,7 +596,7 @@ function horizontalLoop(app, items, config) {
     } else {
       // Non-looping: simple position listener to update container transform
       const containerElement = items[0].parentElement
-      positionUnsubscribe = position.on('change', (latest) => {
+      positionUnsubscribe = position.on('change', latest => {
         containerElement.style.transform = `translateX(${-latest}px)`
       })
     }
@@ -675,13 +627,10 @@ function horizontalLoop(app, items, config) {
     // Create animation by animating the position motionValue
     if (shouldLoop && config.crawl) {
       const duration = totalWidth / pixelsPerSecond
-      console.log('[Looper:init]    → Creating crawl animation (duration:', duration, 's)')
 
       // Create initial animation (paused)
       animation = startLoopAnimation()
       animation.pause()
-
-      console.log('[Looper:init]    → Created position animation with auto-restart')
     } else if (!shouldLoop && config.crawl) {
       // Non-looping: ping-pong animation (crawl to end, reverse to start)
       // Use maxScrollPosition (last item at right edge) instead of totalWidth
@@ -694,10 +643,6 @@ function horizontalLoop(app, items, config) {
         const remainingDist = Math.abs(target - currentPos)
         const remainingDuration = remainingDist / pixelsPerSecond
 
-        console.log('[Looper:pingPong] Starting crawl', fromStart ? 'forward' : 'backward')
-        console.log('[Looper:pingPong]    → Current:', currentPos, '→ Target:', target)
-        console.log('[Looper:pingPong]    → Duration:', remainingDuration, 's')
-
         // Use easeInOut for smooth acceleration and deceleration at boundaries
         // This creates a natural "bounce back" feel at the edges
         animation = animate(position, target, {
@@ -706,20 +651,14 @@ function horizontalLoop(app, items, config) {
         })
 
         // When reaching the end, reverse direction
-        animation
-          .then(() => {
-            console.log('[Looper:pingPong] Reached', fromStart ? 'end' : 'start', ', reversing...')
-
-            // Brief pause at boundary for visual clarity
-            setTimeout(() => {
-              if (animation && animation.speed !== 0) {
-                startPingPongCrawl(!fromStart)
-              }
-            }, 200) // Slightly longer pause for smooth reversal
-          })
-          .catch(() => {
-            console.log('[Looper:pingPong] Animation cancelled')
-          })
+        animation.then(() => {
+          // Brief pause at boundary for visual clarity
+          setTimeout(() => {
+            if (animation && animation.speed !== 0) {
+              startPingPongCrawl(!fromStart)
+            }
+          }, 200) // Slightly longer pause for smooth reversal
+        })
       }
 
       // Store the ping-pong starter for later use
@@ -731,24 +670,14 @@ function horizontalLoop(app, items, config) {
         ease: 'linear',
       })
       animation.pause()
-
-      console.log(
-        '[Looper:init]    → Created non-looping ping-pong animation (maxScrollPosition:',
-        maxScrollPosition,
-        'px)'
-      )
     }
 
     // Setup drag if enabled
     if (shouldDrag) {
-      console.log('[Looper:init]    → Setting up drag interaction')
       setupDrag()
-    } else {
-      console.log('[Looper:init]    → Drag disabled')
     }
 
     // Setup hover effects
-    console.log('[Looper:init]    → Setting up hover effects')
     setupHoverEffects()
 
     // Setup slide index/count display elements
@@ -760,13 +689,11 @@ function horizontalLoop(app, items, config) {
         countElements.forEach(el => {
           el.textContent = originalItemCount
         })
-        console.log('[Looper:init]    → Set slide count to:', originalItemCount)
       }
 
       // Only setup real-time index tracking if display elements exist
       if (indexElements.length > 0) {
         updateIndexDisplay()
-        console.log('[Looper:init]    → Initialized slide index display')
 
         // Update display in real-time as position changes
         let lastDisplayedIndex = -1
@@ -783,19 +710,30 @@ function horizontalLoop(app, items, config) {
             })
           }
         })
-        console.log('[Looper:init]    → Setup real-time index tracking')
       }
     }
 
     // Set initial position
     updateItemPositions(position.get())
-    console.log('[Looper:init]    → Updated initial item positions')
+
+    // For center mode, start at middle slide
+    if (config.centerSlide && originalItemCount > 0) {
+      const middleIndex = Math.floor(originalItemCount / 2)
+      const targetTime = times[middleIndex]
+      let initialPos = targetTime * pixelsPerSecond
+
+      // Clamp for non-looping
+      if (!shouldLoop) {
+        initialPos = Math.max(0, Math.min(initialPos, maxScrollPosition))
+      }
+
+      position.set(initialPos)
+      curIndex = middleIndex
+      updateIndexDisplay()
+    }
 
     // Listen for resize events
     window.addEventListener('APPLICATION:RESIZE', handleResize)
-    console.log('[Looper:init]    → Registered resize listener')
-
-    console.log('[Looper:init] ✅ Initialization complete!')
   }
 
   /**
@@ -975,23 +913,13 @@ function horizontalLoop(app, items, config) {
       // Calculate final velocity
       const velocity = getVelocity()
 
-      console.log('========== LOOPER DRAG RELEASE ==========')
-      console.log('[Looper:onPointerUp] Velocity:', velocity, 'px/s')
-      console.log('[Looper:onPointerUp] Absolute velocity:', Math.abs(velocity), 'px/s')
-      console.log('[Looper:onPointerUp] Direction:', velocity < 0 ? 'LEFT (negative)' : 'RIGHT (positive)')
-      console.log('[Looper:onPointerUp] Snap enabled:', config.snap)
-      console.log('=========================================')
-
       // If snap is enabled, always use it (GSAP-style: snap modifies inertia target)
       // Otherwise use old logic: inertia if velocity, or resume crawl
       if (config.snap) {
-        console.log('[Looper:onPointerUp] → Using snap (with velocity-based target)')
         snapToNearest(velocity)
       } else if (Math.abs(velocity) > 1) {
-        console.log('[Looper:onPointerUp] → Starting inertia (no snap)')
         startInertia(velocity)
       } else if (config.crawl) {
-        console.log('[Looper:onPointerUp] → Resuming crawl')
         resumeCrawl()
       }
     }
@@ -1062,10 +990,6 @@ function horizontalLoop(app, items, config) {
         return targetPos
       }
 
-      console.log('[Looper:findNearestSnapPoint] Finding nearest snap for targetPos:', targetPos)
-      console.log('[Looper:findNearestSnapPoint] originalItemsWidth:', originalItemsWidth)
-      console.log('[Looper:findNearestSnapPoint] times:', times.slice(0, originalItemCount))
-
       // Find closest snap point by checking each original item at different cycle offsets
       let closestIndex = 0
       let closestSnapPos = 0
@@ -1083,10 +1007,8 @@ function horizontalLoop(app, items, config) {
         if (shouldLoop) {
           // Check previous cycle, target cycle, and next cycle relative to where target is
           for (let cycleOffset = -1; cycleOffset <= 1; cycleOffset++) {
-            const candidatePos = baseSnapPos + ((targetCycle + cycleOffset) * originalItemsWidth)
+            const candidatePos = baseSnapPos + (targetCycle + cycleOffset) * originalItemsWidth
             const dist = Math.abs(candidatePos - targetPos)
-
-            console.log(`  [item ${i}, cycle ${targetCycle + cycleOffset}] pos: ${candidatePos}, dist: ${dist}`)
 
             if (dist < closestDist) {
               closestDist = dist
@@ -1106,8 +1028,6 @@ function horizontalLoop(app, items, config) {
         }
       }
 
-      console.log('[Looper:findNearestSnapPoint] Closest snap:', closestSnapPos, 'at index:', closestIndex, 'dist:', closestDist)
-
       // Update current index
       curIndex = closestIndex
 
@@ -1125,18 +1045,13 @@ function horizontalLoop(app, items, config) {
     function snapToNearest(velocity = 0) {
       const currentPos = position.get()
       // Apply both velocity multipliers for snapped loopers
-      const motionVelocity = -velocity * config.throwVelocityMultiplier * config.snapVelocityMultiplier
-
-      console.log('[Looper:snapToNearest] Using native inertia with modifyTarget')
-      console.log('[Looper:snapToNearest] Current position:', currentPos)
-      console.log('[Looper:snapToNearest] Velocity:', velocity, 'px/s')
-      console.log('[Looper:snapToNearest] Motion velocity (with multipliers):', motionVelocity, 'px/s')
-      console.log('[Looper:snapToNearest] Multipliers: throw=', config.throwVelocityMultiplier, 'snap=', config.snapVelocityMultiplier)
+      const motionVelocity =
+        -velocity * config.throwVelocityMultiplier * config.snapVelocityMultiplier
 
       // Calculate ideal inertia target (Motion will recalculate, but we need a non-zero animation)
       // This ensures Motion starts the inertia physics
-      const idealTarget = currentPos + motionVelocity * config.throwPower * (config.throwResistance / 1000)
-      console.log('[Looper:snapToNearest] Ideal target (before snap):', idealTarget)
+      const idealTarget =
+        currentPos + motionVelocity * config.throwPower * (config.throwResistance / 1000)
 
       // Use Motion's native inertia animation with modifyTarget
       // This gives us identical physics to non-snapped, but snaps to nearest item
@@ -1145,29 +1060,19 @@ function horizontalLoop(app, items, config) {
         velocity: motionVelocity,
         power: config.throwPower,
         timeConstant: config.throwResistance,
-        modifyTarget: (target) => {
-          console.log('[Looper:snapToNearest] Motion calculated target:', target)
+        modifyTarget: target => {
           const snapPos = findNearestSnapPoint(target)
-          console.log('[Looper:snapToNearest] Snapped to:', snapPos)
           return snapPos
         },
         restSpeed: 10,
         restDelta: 0.5,
-        onUpdate: (latest) => {
-          // Log occasionally to track animation progress
-          if (Math.random() < 0.05) {
-            console.log('[Looper:snapAnimation] Progress:', latest.toFixed(2))
-          }
-        },
-        onComplete: () => {
-          console.log('[Looper:snapAnimation] ✅ Animation completed at:', position.get().toFixed(2))
-        },
+        onUpdate: _latest => {},
+        onComplete: () => {},
       })
 
       // Resume crawl after snap
       snapAnimation
         .then(() => {
-          console.log('[Looper:snapToNearest] Snap animation promise resolved')
           snapAnimation = null
           // Update display to reflect landed position
           updateIndexDisplay()
@@ -1175,8 +1080,7 @@ function horizontalLoop(app, items, config) {
             resumeCrawl()
           }
         })
-        .catch((err) => {
-          console.log('[Looper:snapToNearest] ❌ Snap animation rejected/cancelled:', err)
+        .catch(err => {
           snapAnimation = null
         })
     }
@@ -1214,59 +1118,40 @@ function horizontalLoop(app, items, config) {
       })
 
       // When cycle completes, restart infinite loop
-      animation
-        .then(() => {
-          console.log(
-            '[Looper:resumeCrawl] → Remaining distance complete, restarting infinite loop'
-          )
+      animation.then(() => {
+        // Capture current speed before replacing animation
+        const currentSpeed = animation.speed
 
-          // Capture current speed before replacing animation
-          const currentSpeed = animation.speed
-          console.log('[Looper:resumeCrawl] → Current animation speed:', currentSpeed)
-
-          // Create new infinite loop animation
-          const currentPos = position.get()
-          // Reversed: crawl backwards, Normal: crawl forward
-          const target = config.reversed
-            ? currentPos - originalItemsWidth
-            : currentPos + originalItemsWidth
-          animation = animate(position, target, {
-            duration: originalItemsWidth / pixelsPerSecond,
-            repeat: Infinity,
-            ease: 'linear',
-          })
-
-          // Inherit the current speed from the ramp
-          animation.speed = currentSpeed
-          console.log(
-            '[Looper:resumeCrawl] → New animation created with inherited speed:',
-            currentSpeed
-          )
-
-          // If speed ramp is still running, re-target it to continue ramping the new animation
-          if (speedRampAnimation) {
-            speedRampAnimation.stop()
-            // Calculate remaining ramp duration based on current speed
-            // speed goes from 0.001 to 1.0, so progress = (currentSpeed - 0.001) / (1.0 - 0.001)
-            const rampProgress = (currentSpeed - 0.001) / 0.999
-            const remainingRampDuration = 2 * (1 - rampProgress)
-            console.log(
-              '[Looper:resumeCrawl] → Continuing speed ramp from',
-              currentSpeed,
-              'for',
-              remainingRampDuration,
-              's'
-            )
-            speedRampAnimation = animate(
-              animation,
-              { speed: 1 },
-              { duration: remainingRampDuration, ease: 'easeIn' }
-            )
-          }
+        // Create new infinite loop animation
+        const currentPos = position.get()
+        // Reversed: crawl backwards, Normal: crawl forward
+        const target = config.reversed
+          ? currentPos - originalItemsWidth
+          : currentPos + originalItemsWidth
+        animation = animate(position, target, {
+          duration: originalItemsWidth / pixelsPerSecond,
+          repeat: Infinity,
+          ease: 'linear',
         })
-        .catch(err => {
-          console.log('[Looper:resumeCrawl] → Animation stopped/cancelled:', err)
-        })
+
+        // Inherit the current speed from the ramp
+        animation.speed = currentSpeed
+
+        // If speed ramp is still running, re-target it to continue ramping the new animation
+        if (speedRampAnimation) {
+          speedRampAnimation.stop()
+          // Calculate remaining ramp duration based on current speed
+          // speed goes from 0.001 to 1.0, so progress = (currentSpeed - 0.001) / (1.0 - 0.001)
+          const rampProgress = (currentSpeed - 0.001) / 0.999
+          const remainingRampDuration = 2 * (1 - rampProgress)
+
+          speedRampAnimation = animate(
+            animation,
+            { speed: 1 },
+            { duration: remainingRampDuration, ease: 'easeIn' }
+          )
+        }
+      })
 
       // Start at nearly-stopped speed and ramp up to full speed
       // Use 0.001 instead of 0 to keep animation running (speed = 0 completely pauses)
@@ -1348,7 +1233,8 @@ function horizontalLoop(app, items, config) {
 
     // Use bounded position to find what's actually visible
     const currentPos = position.get()
-    const boundedCurrentPos = ((currentPos % originalItemsWidth) + originalItemsWidth) % originalItemsWidth
+    const boundedCurrentPos =
+      ((currentPos % originalItemsWidth) + originalItemsWidth) % originalItemsWidth
     const currentTime = boundedCurrentPos / pixelsPerSecond
 
     let closest = 0
@@ -1392,10 +1278,6 @@ function horizontalLoop(app, items, config) {
 
     if (!times || times.length === 0) return
 
-    console.log('[Looper:toIndex] 📍 Navigation requested')
-    console.log('[Looper:toIndex]    → Requested index:', index)
-    console.log('[Looper:toIndex]    → Current curIndex:', curIndex)
-
     // Calculate target index with shortest path for looping
     let targetIndex = index
 
@@ -1407,7 +1289,6 @@ function horizontalLoop(app, items, config) {
         targetIndex = index + (index > curIndex ? -length : length)
       }
       targetIndex = ((targetIndex % length) + length) % length
-      console.log('[Looper:toIndex]    → Normalized targetIndex:', targetIndex, '(of', length, 'original items)')
     } else {
       // Clamp to valid indices for non-looping (use originalItemCount, not items.length)
       targetIndex = Math.max(0, Math.min(index, originalItemCount - 1))
@@ -1416,8 +1297,6 @@ function horizontalLoop(app, items, config) {
     // Get target position
     const targetTime = times[targetIndex]
     let targetPos = targetTime * pixelsPerSecond
-
-    console.log('[Looper:toIndex]    → Base target position:', targetPos)
 
     // For looping, normalize target to be close to current position
     // This ensures we take the shortest path and don't cross boundaries unnecessarily
@@ -1428,30 +1307,24 @@ function horizontalLoop(app, items, config) {
       // This handles cases where position has drifted to -4800 or +9600 etc.
       const currentCycle = Math.floor(currentPos / originalItemsWidth)
 
-      console.log('[Looper:toIndex]    → Current position:', currentPos)
-      console.log('[Looper:toIndex]    → Current cycle:', currentCycle)
-
       let minDist = Infinity
       let bestCandidate = targetPos
 
       // Check cycles around the current cycle (not around cycle 0)
       for (let offset = -1; offset <= 1; offset++) {
-        const candidate = targetPos + ((currentCycle + offset) * originalItemsWidth)
+        const candidate = targetPos + (currentCycle + offset) * originalItemsWidth
         const dist = Math.abs(candidate - currentPos)
-        console.log(`[Looper:toIndex]    → Cycle ${currentCycle + offset}: pos=${candidate}, dist=${dist}`)
         if (dist < minDist) {
           minDist = dist
           bestCandidate = candidate
         }
       }
 
-      console.log('[Looper:toIndex]    → Best candidate:', bestCandidate, '(distance:', minDist, ')')
       targetPos = bestCandidate
     } else {
       // For non-looping, clamp target position to maxScrollPosition
       // This ensures last items stay at right edge of viewport
       targetPos = Math.min(targetPos, maxScrollPosition)
-      console.log('[Looper:toIndex]    → Clamped to maxScrollPosition:', targetPos)
     }
 
     // Update current index
@@ -1525,7 +1398,6 @@ function horizontalLoop(app, items, config) {
       if (autoplayTimer) {
         clearInterval(autoplayTimer)
         autoplayTimer = null
-        console.log('[Looper:autoplay] ⏹️ Stopped autoplay')
       }
     },
 
@@ -1533,7 +1405,6 @@ function horizontalLoop(app, items, config) {
       this.stopAutoplay()
       const interval = Math.abs(seconds) * 1000
       const direction = seconds > 0 ? 'next' : 'previous'
-      console.log('[Looper:autoplay] ▶️ Starting autoplay:', direction, 'every', Math.abs(seconds), 's')
       autoplayTimer = setInterval(() => {
         if (direction === 'next') {
           this.next(null, { autoplay: true })
@@ -1553,9 +1424,13 @@ function horizontalLoop(app, items, config) {
       let nextIndex = curIndex + 1
 
       // Non-looping: reset to start when reaching the end
-      if (!shouldLoop && nextIndex >= originalItemCount) {
-        nextIndex = 0
-        console.log('[Looper:next] Reached end, resetting to start (index 0)')
+      if (!shouldLoop) {
+        const currentPos = position.get()
+        const atEnd = currentPos >= maxScrollPosition - 1
+
+        if (nextIndex >= originalItemCount || atEnd) {
+          nextIndex = 0
+        }
       }
 
       return toIndex(nextIndex, vars)
@@ -1573,7 +1448,6 @@ function horizontalLoop(app, items, config) {
       // Non-looping: reset to end when at the start
       if (!shouldLoop && prevIndex < 0) {
         prevIndex = originalItemCount - 1
-        console.log('[Looper:previous] Reached start, resetting to end (index', prevIndex, ')')
       }
 
       return toIndex(prevIndex, vars)
@@ -1588,15 +1462,12 @@ function horizontalLoop(app, items, config) {
     },
 
     destroy() {
-      console.log('[Looper:destroy] 🧹 Cleaning up loop')
-
       // Stop autoplay
       this.stopAutoplay()
 
       // Stop animation
       if (animation) {
         animation.stop()
-        console.log('[Looper:destroy]    → Stopped animation')
       }
 
       // Stop frame.render loop
@@ -1605,22 +1476,18 @@ function horizontalLoop(app, items, config) {
       // Cleanup position listener
       if (positionUnsubscribe) {
         positionUnsubscribe()
-        console.log('[Looper:destroy]    → Unsubscribed from position changes')
       }
 
       // Cleanup drag
       if (dragState && dragState.cleanup) {
         dragState.cleanup()
-        console.log('[Looper:destroy]    → Cleaned up drag handlers')
       }
 
       // Cleanup resize listener
       window.removeEventListener('APPLICATION:RESIZE', handleResize)
-      console.log('[Looper:destroy]    → Removed resize listener')
 
       // Destroy position value
       position.destroy()
-      console.log('[Looper:destroy]    ✅ Destroy complete')
     },
   }
 
@@ -1643,34 +1510,20 @@ export default class Looper {
   }
 
   init() {
-    console.log('[Looper] 🚀 Initializing module with options:', this.opts)
-
     this.looperElements = Dom.all(this.opts.selector)
-    console.log(
-      '[Looper] 📦 Found',
-      this.looperElements.length,
-      'looper elements matching selector:',
-      this.opts.selector
-    )
-
     this.looperElements.forEach((element, idx) => {
-      console.log(`[Looper] 🔍 Processing looper #${idx + 1}:`, element)
-
       const items = Dom.all(element, '[data-panner-item], [data-looper-item]')
-      console.log(`[Looper]    → Found ${items.length} items`)
 
       if (!items.length) {
-        console.warn('[Looper] ⚠️ No items found in', element)
         return
       }
 
       // Find the wrapper element (with opacity: 0)
       const wrapper =
         Dom.find(element, '[data-looper-container]') || Dom.find(element, '.looper-wrapper')
-      console.log(`[Looper]    → Found wrapper:`, wrapper)
 
       if (!wrapper) {
-        console.warn(
+        console.error(
           '[Looper] ⚠️ No wrapper element found (expected [data-looper-container] or .looper-wrapper)'
         )
       }
@@ -1685,12 +1538,12 @@ export default class Looper {
       // Snap: data-looper-snap or data-looper-snap="false"
       const hasSnapAttr = looperEl?.hasAttribute('data-looper-snap')
       const snapValue = looperEl?.getAttribute('data-looper-snap')
-      const shouldSnap = snapValue === 'false' ? false : (this.opts.snap || hasSnapAttr)
+      const shouldSnap = snapValue === 'false' ? false : this.opts.snap || hasSnapAttr
 
       // Crawl: data-looper-crawl or data-looper-crawl="false"
       const hasCrawlAttr = looperEl?.hasAttribute('data-looper-crawl')
       const crawlValue = looperEl?.getAttribute('data-looper-crawl')
-      const shouldCrawl = crawlValue === 'false' ? false : (hasCrawlAttr || this.opts.crawl)
+      const shouldCrawl = crawlValue === 'false' ? false : hasCrawlAttr || this.opts.crawl
 
       // Reverse: data-looper-reverse or data-looper-reverse="false"
       const hasReverseAttr = looperEl?.hasAttribute('data-looper-reverse')
@@ -1710,9 +1563,10 @@ export default class Looper {
       const endAlignmentValue = looperEl?.getAttribute('data-looper-end-alignment')
       const endAlignment = endAlignmentValue || this.opts.endAlignment
 
-      console.log(
-        `[Looper]    → Config: speed=${speed}, reverse=${isReverse}, snap=${shouldSnap}, crawl=${shouldCrawl}, autoplay=${autoplayInterval}, loop=${shouldLoop}, endAlignment=${endAlignment}`
-      )
+      // Center: data-looper-center or data-looper-center="false"
+      const hasCenterAttr = looperEl?.hasAttribute('data-looper-center')
+      const centerValue = looperEl?.getAttribute('data-looper-center')
+      const shouldCenterSlide = centerValue === 'false' ? false : hasCenterAttr
 
       // Create stub for Moonwalk compatibility
       const stubLoop = {
@@ -1722,7 +1576,6 @@ export default class Looper {
       }
 
       element.$loop = stubLoop
-      console.log(`[Looper]    → Created stub loop for Moonwalk`)
 
       // Store for later initialization
       this.pendingLoopers.push({
@@ -1734,6 +1587,7 @@ export default class Looper {
           repeat: -1,
           draggable: this.opts.draggable,
           center: this.opts.center,
+          centerSlide: shouldCenterSlide,
           snap: shouldSnap,
           speed,
           reversed: isReverse,
@@ -1750,13 +1604,7 @@ export default class Looper {
           snapBounce: this.opts.snapBounce,
         },
       })
-      console.log(
-        `[Looper]    ✅ Added to pending loopers (total: ${this.pendingLoopers.length})`
-      )
     })
-
-    console.log('[Looper] 🎯 Registering APPLICATION:REVEALED callback')
-    console.log('[Looper] 💤 Waiting for APPLICATION:REVEALED event to finalize loopers...')
 
     // Register callback for when layout is ready
     this.app.registerCallback('APPLICATION:REVEALED', () => {
@@ -1765,76 +1613,52 @@ export default class Looper {
   }
 
   finalizeLoopers() {
-    console.log(
-      '[Looper] 🎬 APPLICATION:REVEALED fired! Finalizing',
-      this.pendingLoopers.length,
-      'pending loopers...'
-    )
-
     this.pendingLoopers.forEach(({ element, wrapper, items, config }, idx) => {
-      console.log(`[Looper] 🔧 Creating loop #${idx + 1} with ${items.length} items`)
-      console.log(`[Looper]    → Element:`, element)
-      console.log(`[Looper]    → Wrapper:`, wrapper)
-      console.log(`[Looper]    → Config:`, config)
-
       // Pass wrapper to config for display element lookup
       config.wrapper = wrapper
 
       // Create the real loop
       const loop = horizontalLoop(this.app, items, config)
-      console.log(`[Looper]    ✅ Loop created successfully`)
 
       // Start playing if crawl enabled
       if (config.crawl) {
-        console.log(`[Looper]    ▶️ Starting crawl animation`)
         loop.play()
       }
 
       // Start autoplay if configured
       if (config.autoplayInterval && !isNaN(config.autoplayInterval)) {
-        console.log(`[Looper]    ⏰ Starting autoplay (${config.autoplayInterval}s)`)
         loop.startAutoplay(config.autoplayInterval)
       }
 
       // Replace stub with real loop
       element.$loop = loop
-      console.log(`[Looper]    → Replaced stub with real loop controller`)
 
       // Setup navigation buttons if present
       const next = Dom.find(element, '[data-panner-next]')
       const previous = Dom.find(element, '[data-panner-previous]')
 
       if (next) {
-        console.log(`[Looper]    → Found "Next" button, attaching handler`)
         next.addEventListener('click', () => {
-          console.log('[Looper] 👉 Next button clicked')
           loop.next({ duration: 0.85, ease: 'easeInOut' })
         })
       }
 
       if (previous) {
-        console.log(`[Looper]    → Found "Previous" button, attaching handler`)
         previous.addEventListener('click', () => {
-          console.log('[Looper] 👈 Previous button clicked')
           loop.previous({ duration: 0.85, ease: 'easeInOut' })
         })
       }
 
       // Fade in the WRAPPER (not the outer element!)
       if (wrapper) {
-        console.log(`[Looper]    🎨 Fading in wrapper (opacity 0 → 1)`)
         animate(wrapper, { opacity: 1 }, { duration: 0.5, delay: 0.5, ease: 'easeOut' })
-      } else {
-        console.warn(`[Looper]    ⚠️ No wrapper found, cannot fade in`)
       }
 
       this.loopers.push(loop)
-      console.log(`[Looper]    ✅ Loop #${idx + 1} finalized and added to active loopers`)
     })
 
     // Clear pending
     this.pendingLoopers = []
-    console.log('[Looper] 🎉 All loopers finalized! Active loopers:', this.loopers.length)
   }
 
   destroy() {
