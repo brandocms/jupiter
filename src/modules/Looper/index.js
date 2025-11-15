@@ -697,7 +697,7 @@ function horizontalLoop(app, items, config) {
 
         // Update display in real-time as position changes
         let lastDisplayedIndex = -1
-        boundedPos.on('change', () => {
+        const updateIndexOnChange = () => {
           // Find closest slide to current bounded position
           const closest = closestIndex(false)
 
@@ -709,7 +709,14 @@ function horizontalLoop(app, items, config) {
               el.textContent = displayIndex
             })
           }
-        })
+        }
+
+        // For looping, use boundedPos; for non-looping, use position directly
+        if (shouldLoop) {
+          boundedPos.on('change', updateIndexOnChange)
+        } else {
+          position.on('change', updateIndexOnChange)
+        }
       }
     }
 
