@@ -109,6 +109,10 @@ function horizontalLoop(app, items, config) {
   let positionUnsubscribe = null // Track position listener for cleanup
   let renderUnsubscribe = null // Track frame.render loop for cleanup
 
+  // Display elements for index/count
+  let indexElements = []
+  let countElements = []
+
   /**
    * Measure total width of all items as currently laid out
    * @returns {number} Total width in pixels
@@ -474,6 +478,17 @@ function horizontalLoop(app, items, config) {
   }
 
   /**
+   * Update the slide index display elements
+   */
+  function updateIndexDisplay() {
+    if (indexElements.length === 0) return
+    const displayIndex = ((curIndex % originalItemCount) + originalItemCount) % originalItemCount + 1 // 1-based, handle negative
+    indexElements.forEach(el => {
+      el.textContent = displayIndex
+    })
+  }
+
+  /**
    * Initialize the loop animation
    */
   function init() {
@@ -671,6 +686,24 @@ function horizontalLoop(app, items, config) {
     // Setup hover effects
     console.log('[Looper:init]    → Setting up hover effects')
     setupHoverEffects()
+
+    // Setup slide index/count display elements
+    if (config.wrapper) {
+      indexElements = Array.from(config.wrapper.querySelectorAll('[data-looper-slide-index]'))
+      countElements = Array.from(config.wrapper.querySelectorAll('[data-looper-slide-count]'))
+
+      if (countElements.length > 0) {
+        countElements.forEach(el => {
+          el.textContent = originalItemCount
+        })
+        console.log('[Looper:init]    → Set slide count to:', originalItemCount)
+      }
+
+      if (indexElements.length > 0) {
+        updateIndexDisplay()
+        console.log('[Looper:init]    → Initialized slide index display')
+      }
+    }
 
     // Set initial position
     updateItemPositions(position.get())
@@ -1054,6 +1087,8 @@ function horizontalLoop(app, items, config) {
         .then(() => {
           console.log('[Looper:snapToNearest] Snap animation promise resolved')
           snapAnimation = null
+          // Update display to reflect landed position
+          updateIndexDisplay()
           if (config.crawl && animation) {
             resumeCrawl()
           }
@@ -1334,6 +1369,9 @@ function horizontalLoop(app, items, config) {
 
     // Update current index
     curIndex = targetIndex
+
+    // Update display immediately
+    updateIndexDisplay()
 
     // Animate to target
     const duration = vars.duration !== undefined ? vars.duration : 0.85
@@ -1621,6 +1659,9 @@ export default class Looper {
       console.log(`[Looper]    → Element:`, element)
       console.log(`[Looper]    → Wrapper:`, wrapper)
       console.log(`[Looper]    → Config:`, config)
+
+      // Pass wrapper to config for display element lookup
+      config.wrapper = wrapper
 
       // Create the real loop
       const loop = horizontalLoop(this.app, items, config)

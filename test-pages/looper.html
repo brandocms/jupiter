@@ -247,6 +247,34 @@
     </div>
   </section>
 
+  <!-- Example 6: Slide Index Display -->
+  <section class="section">
+    <h2 class="section-title">6. Slide Index Display</h2>
+    <div class="info">
+      <strong>Features:</strong> Shows current slide number and total count
+      <br>
+      <code>&lt;span data-looper-slide-index&gt;&lt;/span&gt; / &lt;span data-looper-slide-count&gt;&lt;/span&gt;</code>
+    </div>
+    <div class="looper-container" data-moonwalk-run="loop">
+      <div class="looper-wrapper" data-looper-container>
+        <div data-looper data-looper-snap data-looper-crawl="false">
+          <div data-looper-item style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">A</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">B</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">C</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">D</div>
+          <div data-looper-item style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">E</div>
+        </div>
+        <div class="controls">
+          <button data-panner-previous>← Previous</button>
+          <span style="font-size: 18px; font-weight: 600;">
+            <span data-looper-slide-index></span> / <span data-looper-slide-count></span>
+          </span>
+          <button data-panner-next>Next →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- Example 6: Fast Speed -->
   <!--
   <section class="section">
