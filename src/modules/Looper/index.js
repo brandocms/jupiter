@@ -23,6 +23,7 @@ const DEFAULT_OPTIONS = {
   loop: true, // Infinite looping (false for linear scrolling)
   draggable: true, // Enable drag interaction
   endAlignment: 'right', // For non-looping: 'right' = last item at viewport right edge, 'start' = last item at viewport left edge
+  minimumMovement: 3, // Pixels - movement below this is treated as click, above as drag
 
   // Inertia/throw configuration (when dragging and releasing)
   throwResistance: 325, // Time constant for deceleration (lower = more resistance/faster stop, higher = less resistance/longer glide)
@@ -777,6 +778,8 @@ function horizontalLoop(app, items, config) {
     let startX = 0
     let startPosition = 0
     let velocityTracker = [] // Track recent movements for velocity calculation
+    let hasDragged = false // Did movement exceed minimumMovement threshold?
+    let totalMovement = 0 // Total pixels moved (for click vs drag detection)
 
     /**
      * Calculate velocity from recent pointer movements
@@ -820,6 +823,8 @@ function horizontalLoop(app, items, config) {
       startX = e.clientX
       startPosition = position.get()
       velocityTracker = [{ x: e.clientX, time: Date.now() }]
+      hasDragged = false // Reset - will be set true if movement exceeds threshold
+      totalMovement = 0
 
       // Stop autoplay on user interaction
       if (loopController && loopController.stopAutoplay) {
@@ -844,13 +849,8 @@ function horizontalLoop(app, items, config) {
         speedRampAnimation = null
       }
 
-      // Change cursor and disable hover effects during drag
-      container.style.cursor = 'grabbing'
-      items.forEach(item => {
-        item.style.pointerEvents = 'none'
-      })
-
-      // Prevent text selection
+      // Prevent default to stop native drag behavior on links/images
+      // We'll manually trigger click in onPointerUp if it wasn't a real drag
       e.preventDefault()
 
       // Add move/up listeners to window for better tracking
@@ -865,10 +865,27 @@ function horizontalLoop(app, items, config) {
     function onPointerMove(e) {
       if (!isDragging) return
 
-      e.preventDefault()
-
       const currentX = e.clientX
       const currentTime = Date.now()
+
+      // Track total movement for click vs drag detection
+      const movementDelta = Math.abs(currentX - startX)
+
+      // Check if this is now a real drag (exceeded minimum movement threshold)
+      if (!hasDragged && movementDelta > config.minimumMovement) {
+        hasDragged = true
+        // Now that we know it's a drag, change cursor and disable pointer events on items
+        container.style.cursor = 'grabbing'
+        items.forEach(item => {
+          item.style.pointerEvents = 'none'
+        })
+      }
+
+      // Only update position if we've confirmed this is a drag
+      if (!hasDragged) return
+
+      // Prevent default only for actual drags (not clicks)
+      e.preventDefault()
 
       // Track for velocity calculation
       velocityTracker.push({ x: currentX, time: currentTime })
@@ -924,11 +941,23 @@ function horizontalLoop(app, items, config) {
       window.removeEventListener('pointerup', onPointerUp)
       window.removeEventListener('pointercancel', onPointerUp)
 
-      // Reset cursor and re-enable hover effects
-      container.style.cursor = 'grab'
-      items.forEach(item => {
-        item.style.pointerEvents = ''
-      })
+      // Reset cursor and re-enable hover effects (only if we actually dragged)
+      if (hasDragged) {
+        container.style.cursor = 'grab'
+        items.forEach(item => {
+          item.style.pointerEvents = ''
+        })
+      }
+
+      // If this was a click (not a drag), trigger click on the element
+      if (!hasDragged) {
+        // Find the element under the pointer and trigger a click
+        const clickedElement = document.elementFromPoint(e.clientX, e.clientY)
+        if (clickedElement) {
+          clickedElement.click()
+        }
+        return
+      }
 
       // Calculate final velocity
       const velocity = getVelocity()
@@ -1640,6 +1669,7 @@ export default class Looper {
           snapVelocityMultiplier: this.opts.snapVelocityMultiplier,
           snapDuration: this.opts.snapDuration,
           snapBounce: this.opts.snapBounce,
+          minimumMovement: this.opts.minimumMovement,
         },
       })
     })
