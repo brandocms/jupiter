@@ -1,5 +1,14 @@
 #### 4.0.0-beta.2
 
+- **BREAKING** Renamed `StickyHeader` to `DoubleHeader`
+  - The old StickyHeader module cloned the header element (dual-header architecture)
+  - Renamed to better reflect its behavior - it creates a clone/double of the header
+  - Update imports: `import { StickyHeader } from 'jupiter'` → `import { DoubleHeader } from 'jupiter'`
+- **FEATURE** New `StickyHeader` module based on FixedHeader
+  - Uses `position: sticky` instead of `position: fixed`
+  - Header stays in document flow - space is reserved even when hidden
+  - No padding-top needed on content below
+  - Same API as FixedHeader (hide on scroll down, reveal on scroll up)
 - Update gsap - export InertiaPlugin, SplitText <3
 - **BREAKING** Lightbox: Removed Hammer.js dependency and swipe functionality
   - The `swipe` option has been removed from LightboxOptions

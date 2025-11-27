@@ -13,6 +13,7 @@ import Cookies from './modules/Cookies'
 import CoverOverlay from './modules/CoverOverlay'
 import Dataloader from './modules/Dataloader'
 import Dom from './modules/Dom'
+import DoubleHeader from './modules/DoubleHeader'
 import Dropdown from './modules/Dropdown'
 import EqualHeightElements from './modules/EqualHeightElements'
 import EqualHeightImages from './modules/EqualHeightImages'
@@ -50,6 +51,7 @@ export {
   CoverOverlay,
   Dataloader,
   Dom,
+  DoubleHeader,
   Dropdown,
   EqualHeightElements,
   EqualHeightImages,

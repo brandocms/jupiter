@@ -916,7 +916,15 @@ const customPopup = new Popup(app, '[data-popup][data-popup-key="custom"]', {
 </div>
 ```
 
-## StickyHeader
+## DoubleHeader
+
+A dual-header module that clones the original header element. The clone stays fixed and
+hides when scrolling down, revealing on scroll up. Uses IntersectionObserver to detect
+when the original header is visible.
+
+> **Note:** This module was previously named `StickyHeader`. It was renamed to `DoubleHeader`
+> to better reflect its dual-header/clone architecture. The new `StickyHeader` module uses
+> CSS `position: sticky` instead.
 
  * header element should not have position: fixed
 
@@ -947,6 +955,23 @@ const customPopup = new Popup(app, '[data-popup][data-popup-key="custom"]', {
   - `beforeEnter`
     - Triggers during initialization. Useful for preparing elements
       before tweening into view
+
+
+## StickyHeader
+
+A header that uses `position: sticky`. Hides when scrolling down and is revealed on scrolling up.
+Unlike FixedHeader, the sticky header stays in document flow - when hidden via transform,
+its space is still reserved.
+
+> **Note:** This is a new module. If you were using the old `StickyHeader` (which cloned the header),
+> you should now use `DoubleHeader` instead.
+
+ * header element needs `position: sticky; top: 0;`
+ * No padding-top needed on content below (header stays in document flow)
+
+### Options
+
+Same options as FixedHeader - see FixedHeader documentation below.
 
 
 ## FixedHeader

@@ -12,25 +12,30 @@
         padding: 0;
       }
 
-      .main-header {
+      .sticky-header {
+        position: sticky;
+        top: 0;
+        left: 0;
+        right: 0;
         background-color: #4a90e2;
         color: white;
         padding: 2rem;
+        z-index: 100;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       }
 
-      .main-header h1 {
+      .sticky-header h1 {
         margin: 0;
         font-size: 2rem;
       }
 
-      .main-header p {
-        margin: 0.5rem 0 0 0;
-        opacity: 0.9;
+      .sticky-header[data-header-small] {
+        padding: 1rem 2rem;
       }
 
-      /* Auxiliary header will be styled similarly but with position: fixed */
-      /* Note: The module creates and styles this dynamically */
+      .sticky-header[data-header-small] h1 {
+        font-size: 1.5rem;
+      }
 
       .header-states {
         position: fixed;
@@ -42,7 +47,7 @@
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         z-index: 101;
         font-size: 0.9rem;
-        min-width: 180px;
+        min-width: 150px;
       }
 
       .header-states h3 {
@@ -75,9 +80,13 @@
       }
 
       .main-content {
-        padding: 2rem;
+        /* No padding-top needed - sticky header stays in document flow */
+      }
+
+      .content-section {
         max-width: 800px;
         margin: 0 auto;
+        padding: 2rem;
       }
 
       .intro {
@@ -99,18 +108,6 @@
 
       .spacer h2 {
         color: #999;
-      }
-
-      .scroll-position {
-        position: fixed;
-        bottom: 10px;
-        right: 10px;
-        background: rgba(0, 0, 0, 0.8);
-        color: white;
-        padding: 0.5rem 1rem;
-        border-radius: 4px;
-        font-size: 0.9rem;
-        z-index: 101;
       }
 
       .mobile-menu-toggle {
@@ -147,15 +144,32 @@
         align-items: center;
         justify-content: center;
       }
+
+      .scroll-position {
+        position: fixed;
+        bottom: 10px;
+        right: 10px;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        z-index: 101;
+      }
+
+      .note-box {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        border-radius: 4px;
+        padding: 1rem;
+        margin: 1rem 0;
+      }
     </style>
   </head>
   <body>
-    <header class="main-header" data-sticky-header data-testid="main-header">
+    <header class="sticky-header" data-sticky-header data-testid="sticky-header">
       <h1>Jupiter StickyHeader Test</h1>
-      <p>
-        This is the main header in normal document flow. Scroll down to see
-        the auxiliary header appear.
-      </p>
+      <p>Scroll down to hide the header, scroll up to reveal it</p>
       <button class="mobile-menu-toggle" data-testid="mobile-menu-toggle">
         Toggle Mobile Menu
       </button>
@@ -164,16 +178,24 @@
     <div class="header-states" data-testid="header-states">
       <h3>Header States</h3>
       <div class="state-indicator">
-        <span class="label">Main Visible:</span>
-        <span class="value" data-state="mainVisible">true</span>
+        <span class="label">Pinned:</span>
+        <span class="value" data-state="pinned">false</span>
       </div>
       <div class="state-indicator">
-        <span class="label">Aux Pinned:</span>
-        <span class="value" data-state="auxPinned">false</span>
+        <span class="label">Small:</span>
+        <span class="value" data-state="small">false</span>
       </div>
       <div class="state-indicator">
-        <span class="label">Aux Small:</span>
-        <span class="value" data-state="auxSmall">false</span>
+        <span class="label">Alt BG:</span>
+        <span class="value" data-state="altBg">false</span>
+      </div>
+      <div class="state-indicator">
+        <span class="label">Top:</span>
+        <span class="value" data-state="top">true</span>
+      </div>
+      <div class="state-indicator">
+        <span class="label">Bottom:</span>
+        <span class="value" data-state="bottom">false</span>
       </div>
     </div>
 
@@ -183,79 +205,92 @@
 
     <div class="mobile-menu" data-testid="mobile-menu">
       <h2>Mobile Menu</h2>
-      <p>
-        This is a mock mobile menu. While open, the auxiliary header should
-        not unpin.
-      </p>
+      <p>This is a mock mobile menu. While open, the header should not unpin.</p>
       <button class="mobile-menu-toggle">Close Menu</button>
     </div>
 
     <div class="main-content">
-      <div class="intro" data-testid="intro-section">
-        <h2>StickyHeader Module Testing</h2>
-        <p>
-          This page tests the StickyHeader module's behavior in various
-          scenarios:
-        </p>
-        <ul>
-          <li>
-            <strong>Main Header:</strong> Stays in normal document flow and
-            fades out when scrolled out of view
-          </li>
-          <li>
-            <strong>Auxiliary Header:</strong> A cloned fixed header that
-            appears when the main header is not visible
-          </li>
-          <li>
-            <strong>Pin/Unpin:</strong> The auxiliary header hides on scroll
-            down, reveals on scroll up
-          </li>
-          <li>
-            <strong>Small State:</strong> Auxiliary header shrinks after
-            scrolling past certain threshold
-          </li>
-          <li>
-            <strong>Mobile Menu:</strong> Auxiliary header won't unpin while
-            mobile menu is open
-          </li>
-        </ul>
-        <p>
-          Watch the "Header States" indicator in the top-right corner to see
-          the module's state changes in real-time.
-        </p>
-      </div>
-
-      <div class="spacer" data-testid="spacer-1">
-        <h2>Scroll Zone 1</h2>
-        <p>Scroll down to hide the main header and show the auxiliary header</p>
-      </div>
-
-      <div class="spacer" data-testid="spacer-2">
-        <h2>Scroll Zone 2</h2>
-        <p>The auxiliary header should pin/unpin as you scroll</p>
-      </div>
-
-      <div class="spacer" data-testid="spacer-3">
-        <h2>Scroll Zone 3</h2>
-        <p>Continue scrolling to test all behaviors</p>
-      </div>
-
-      <div class="spacer" data-testid="spacer-4">
-        <h2>Scroll Zone 4</h2>
-        <p>Try scrolling up and down at different speeds</p>
-      </div>
-
-      <div class="spacer" data-testid="spacer-5">
-        <h2>Scroll Zone 5</h2>
-        <p>Test the mobile menu interaction with the auxiliary header</p>
-      </div>
-
       <div class="content-section">
-        <h2>End of Page</h2>
-        <p>
-          Scroll back to the top to see the main header reappear and the
-          auxiliary header disappear.
-        </p>
+        <div class="intro" data-testid="intro-section">
+          <h2>StickyHeader Module Testing</h2>
+          <p>
+            This page tests the StickyHeader module's behavior in various
+            scenarios:
+          </p>
+          <ul>
+            <li>
+              <strong>Pin/Unpin:</strong> Scroll down to hide the header, scroll
+              up to reveal it
+            </li>
+            <li>
+              <strong>Small State:</strong> Header shrinks after scrolling 50px
+              (offsetSmall)
+            </li>
+            <li>
+              <strong>Alt Background:</strong> Background color changes after
+              scrolling 200px (offsetBg)
+            </li>
+            <li>
+              <strong>Top/Bottom Detection:</strong> Tracks when you're at the
+              top or bottom of the page
+            </li>
+            <li>
+              <strong>Mobile Menu:</strong> Header won't unpin while mobile menu
+              is open
+            </li>
+          </ul>
+
+          <div class="note-box">
+            <strong>Note:</strong> Unlike FixedHeader, StickyHeader uses <code>position: sticky</code>
+            instead of <code>position: fixed</code>. This means the header stays in document flow
+            and its space is reserved even when hidden via transform. No padding-top is needed
+            on the content below.
+          </div>
+
+          <p>
+            Watch the "Header States" indicator in the top-right corner to see
+            the module's state changes in real-time.
+          </p>
+        </div>
+
+        <div class="spacer" data-testid="spacer-1">
+          <h2>Scroll Zone 1</h2>
+        </div>
+
+        <div class="spacer" data-testid="spacer-2">
+          <h2>Scroll Zone 2</h2>
+        </div>
+
+        <div class="spacer" data-testid="spacer-3">
+          <h2>Scroll Zone 3</h2>
+        </div>
+
+        <div class="spacer" data-testid="spacer-4">
+          <h2>Scroll Zone 4</h2>
+        </div>
+
+        <div class="spacer" data-testid="spacer-5">
+          <h2>Scroll Zone 5</h2>
+        </div>
+
+        <div class="spacer" data-testid="spacer-6">
+          <h2>Scroll Zone 6</h2>
+        </div>
+
+        <div class="spacer" data-testid="spacer-7">
+          <h2>Scroll Zone 7</h2>
+        </div>
+
+        <div class="spacer" data-testid="spacer-8">
+          <h2>Scroll Zone 8</h2>
+        </div>
+
+        <div class="content-section" style="padding-bottom: 200px;">
+          <h2>End of Page</h2>
+          <p>You've reached the bottom. The header should detect the "bottom" state.</p>
+          <p>Keep scrolling to the very bottom to trigger the bottom detection.</p>
+          <p id="scroll-debug" style="margin-top: 2rem; padding: 1rem; background: #f0f0f0; font-family: monospace; font-size: 0.9rem;"></p>
+        </div>
       </div>
     </div>
 
@@ -282,6 +317,7 @@
 
         // Get header element
         const headerEl = document.querySelector("[data-sticky-header]");
+        const stateIndicators = document.querySelectorAll("[data-state]");
         const scrollValue = document.querySelector("[data-scroll-value]");
 
         // Update state indicators
@@ -301,57 +337,75 @@
           el: headerEl,
           default: {
             offset: 0,
-            offsetSmall: 100,
+            offsetSmall: 50,
+            offsetBg: 200,
             tolerance: 3,
-            enterDelay: 0.3,
             beforeEnter: (h) => {
               // Override default beforeEnter since we don't have <li> elements
+              // The default tries to animate h.lis which would be empty
             },
             enter: null, // No enter animation for this test
-            onMainVisible: (h) => {
-              updateState("mainVisible", true);
-              console.log("Main header visible");
-            },
-            onMainInvisible: (h) => {
-              updateState("mainVisible", false);
-              console.log("Main header invisible");
-            },
             onPin: (h) => {
-              updateState("auxPinned", true);
-              console.log("Auxiliary header pinned");
-              // Animate the auxiliary header sliding down
-              if (h.auxEl) {
-                animate(h.auxEl, {
-                  y: '0%'
-                }, {
-                  duration: 0.35,
-                  easing: 'ease-out'
-                });
-              }
+              updateState("pinned", true);
+              console.log("Header pinned");
+              // Animate the header sliding down
+              animate(h.el, {
+                y: '0%'
+              }, {
+                duration: 0.35,
+                easing: 'ease-out'
+              });
             },
             onUnpin: (h) => {
-              updateState("auxPinned", false);
-              console.log("Auxiliary header unpinned");
-              // Animate the auxiliary header sliding up
-              if (h.auxEl) {
-                h._hiding = true;
-                animate(h.auxEl, {
-                  y: '-100%'
-                }, {
-                  duration: 0.25,
-                  easing: 'ease-in'
-                }).finished.then(() => {
-                  h._hiding = false;
-                });
-              }
+              updateState("pinned", false);
+              console.log("Header unpinned");
+              // Animate the header sliding up
+              h._hiding = true;
+              animate(h.el, {
+                y: '-100%'
+              }, {
+                duration: 0.25,
+                easing: 'ease-in'
+              }).finished.then(() => {
+                h._hiding = false;
+              });
             },
             onSmall: (h) => {
-              updateState("auxSmall", true);
-              console.log("Auxiliary header small");
+              updateState("small", true);
+              console.log("Header small");
             },
             onNotSmall: (h) => {
-              updateState("auxSmall", false);
-              console.log("Auxiliary header not small");
+              updateState("small", false);
+              console.log("Header not small");
+            },
+            onAltBg: (h) => {
+              updateState("altBg", true);
+              console.log("Header alt background");
+            },
+            onNotAltBg: (h) => {
+              updateState("altBg", false);
+              console.log("Header normal background");
+            },
+            onTop: (h) => {
+              updateState("top", true);
+              console.log("At top");
+            },
+            onNotTop: (h) => {
+              updateState("top", false);
+              console.log("Not at top");
+            },
+            onBottom: (h) => {
+              updateState("bottom", true);
+              console.log("At bottom", {
+                currentScrollY: h.currentScrollY,
+                viewportHeight: h.getViewportHeight(),
+                scrollerHeight: h.getScrollerHeight(),
+                sum: h.currentScrollY + h.getViewportHeight()
+              });
+            },
+            onNotBottom: (h) => {
+              updateState("bottom", false);
+              console.log("Not at bottom");
             },
           },
         });
@@ -378,9 +432,39 @@
           });
         });
 
-        // Update scroll position indicator
+        // Update scroll position indicator and debug info
+        const scrollDebug = document.getElementById("scroll-debug");
         window.addEventListener("scroll", () => {
-          scrollValue.textContent = Math.round(window.scrollY);
+          const currentY = Math.round(window.scrollY);
+          scrollValue.textContent = currentY;
+
+          // Debug bottom detection - use same logic as StickyHeader
+          const viewportHeight = window.innerHeight;
+          const { body, documentElement } = document;
+          const scrollHeight = Math.max(
+            body.scrollHeight,
+            documentElement.scrollHeight,
+            body.offsetHeight,
+            documentElement.offsetHeight,
+            body.clientHeight,
+            documentElement.clientHeight
+          );
+          const scrollBottom = currentY + viewportHeight;
+          const distanceToBottom = scrollHeight - scrollBottom;
+
+          if (scrollDebug) {
+            scrollDebug.innerHTML = `
+              ScrollY: ${currentY}px<br>
+              Viewport Height: ${viewportHeight}px<br>
+              Document Height: ${scrollHeight}px<br>
+              (body.scrollHeight: ${body.scrollHeight}px)<br>
+              (documentElement.scrollHeight: ${documentElement.scrollHeight}px)<br>
+              Scroll + Viewport: ${scrollBottom}px<br>
+              Distance to Bottom: ${distanceToBottom}px<br>
+              At Bottom: ${scrollBottom >= scrollHeight ? 'YES' : 'NO'}<br>
+              _bottom flag: ${stickyHeader._bottom ? 'true' : 'false'}
+            `;
+          }
         });
 
         // Start the application

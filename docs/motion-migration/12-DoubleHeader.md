@@ -1,6 +1,6 @@
-# Migration: StickyHeader Module
+# Migration: DoubleHeader Module
 
-**Tier**: 2 (Moderate) | **Complexity**: ⭐⭐⭐ | **Time**: 4-5 hours | **File**: `src/modules/StickyHeader/index.js`
+**Tier**: 2 (Moderate) | **Complexity**: ⭐⭐⭐ | **Time**: 4-5 hours | **File**: `src/modules/DoubleHeader/index.js`
 
 ---
 

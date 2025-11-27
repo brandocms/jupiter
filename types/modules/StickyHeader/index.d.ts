@@ -1,42 +1,53 @@
+/**
+ * StickyHeader component for sticky navigation headers with scroll behaviors.
+ * Uses position: sticky instead of position: fixed, keeping the header in document flow.
+ */
 export default class StickyHeader {
-    constructor(app: any, opts?: {});
+    /**
+     * Create a new StickyHeader instance
+     * @param {Object} app - Application instance
+     * @param {StickyHeaderOptions} [opts={}] - StickyHeader options
+     */
+    constructor(app: any, opts?: StickyHeaderOptions);
     app: any;
     mainOpts: any;
-    preventUnpin: boolean;
     el: any;
     opts: any;
-    auxEl: any;
     lis: any;
     preventPin: boolean;
-    _isResizing: boolean;
+    preventUnpin: boolean;
     _firstLoad: boolean;
     _pinned: boolean;
     _top: boolean;
     _bottom: boolean;
     _small: boolean;
+    _altBg: boolean;
+    _isResizing: boolean;
     _hiding: boolean;
     lastKnownScrollY: number;
+    lastKnownScrollHeight: number;
+    currentScrollHeight: number;
     currentScrollY: number;
     mobileMenuOpen: boolean;
     timer: any;
     resetResizeTimer: any;
-    firstReveal: boolean;
+    intersectingElements: any;
     initialize(): void;
-    setupObserver(): void;
-    observer: IntersectionObserver;
-    _navVisible: boolean;
-    bindObserver(): void;
-    setResizeTimer(): void;
-    _hideAlt(): void;
-    _showAlt(): void;
-    update(): void;
+    pageIsScrolledOnReady: boolean;
+    preflight(): void;
     lock(): void;
     unlock(): void;
+    isScrolled(): boolean;
+    unpinIfScrolled(): void;
+    enter(): void;
+    setResizeTimer(): void;
+    update(): void;
     checkSize(force: any): void;
+    checkBg(force: any): void;
     checkTop(force: any): void;
     checkBot(force: any): void;
     checkPin(force: any, toleranceExceeded: any): void;
-    redraw(force?: boolean): void;
+    redraw(): void;
     notTop(): void;
     top(): void;
     notBottom(): void;
@@ -45,6 +56,8 @@ export default class StickyHeader {
     pin(): void;
     notSmall(): void;
     small(): void;
+    notAltBg(): void;
+    altBg(): void;
     shouldUnpin(toleranceExceeded: any): any;
     shouldPin(toleranceExceeded: any): any;
     isOutOfBounds(): boolean;
@@ -61,3 +74,147 @@ export default class StickyHeader {
     _onMobileMenuOpen(): void;
     _onMobileMenuClose(): void;
 }
+export type StickyHeaderEvents = {
+    /**
+     * - Called when header is pinned
+     */
+    onPin?: Function;
+    /**
+     * - Called when header is unpinned
+     */
+    onUnpin?: Function;
+    /**
+     * - Called when alternate background is applied
+     */
+    onAltBg?: Function;
+    /**
+     * - Called when regular background is applied
+     */
+    onNotAltBg?: Function;
+    /**
+     * - Called when header becomes small
+     */
+    onSmall?: Function;
+    /**
+     * - Called when header becomes normal size
+     */
+    onNotSmall?: Function;
+    /**
+     * - Called when page is at the top
+     */
+    onTop?: Function;
+    /**
+     * - Called when page is not at the top
+     */
+    onNotTop?: Function;
+    /**
+     * - Called when page is at the bottom
+     */
+    onBottom?: Function;
+    /**
+     * - Called when page is not at the bottom
+     */
+    onNotBottom?: Function;
+    /**
+     * - Called when mobile menu opens
+     */
+    onMobileMenuOpen?: Function;
+    /**
+     * - Called when mobile menu closes
+     */
+    onMobileMenuClose?: Function;
+    /**
+     * - Called when header intersects with an element
+     */
+    onIntersect?: Function;
+    /**
+     * - Called when user tabs (outline mode)
+     */
+    onOutline?: Function;
+};
+export type StickyHeaderSectionOptions = {
+    /**
+     * - Whether to unpin header on window resize
+     */
+    unPinOnResize?: boolean;
+    /**
+     * - Scrolling element
+     */
+    canvas?: Window | HTMLElement;
+    /**
+     * - Selector for elements to check intersection with
+     */
+    intersects?: string | null;
+    /**
+     * - Called before header enters
+     */
+    beforeEnter?: Function;
+    /**
+     * - Called when header enters
+     */
+    enter?: Function;
+    /**
+     * - Delay before enter animation
+     */
+    enterDelay?: number;
+    /**
+     * - Scroll tolerance before triggering hide/show
+     */
+    tolerance?: number;
+    /**
+     * - Offset from top before triggering hide
+     */
+    offset?: number | string | Function;
+    /**
+     * - Offset from top before shrinking header
+     */
+    offsetSmall?: number | string | Function;
+    /**
+     * - Offset from top before changing background color
+     */
+    offsetBg?: number | string | Function;
+    /**
+     * - Regular background color
+     */
+    regBgColor?: string | null;
+    /**
+     * - Alternate background color
+     */
+    altBgColor?: string | null;
+};
+export type StickyHeaderOptions = {
+    /**
+     * - Header element or selector
+     */
+    el?: string | HTMLElement;
+    /**
+     * - Event to initialize on
+     */
+    on?: string;
+    /**
+     * - Whether to unpin on forced scroll start
+     */
+    unpinOnForcedScrollStart?: boolean;
+    /**
+     * - Whether to pin on forced scroll end
+     */
+    pinOnForcedScrollEnd?: boolean;
+    /**
+     * - Whether to ignore forced scroll events
+     */
+    ignoreForcedScroll?: boolean;
+    /**
+     * - Whether to use requestAnimationFrame for scrolling
+     */
+    rafScroll?: boolean;
+    /**
+     * - Default options for all sections
+     */
+    default?: StickyHeaderSectionOptions;
+    /**
+     * - Section-specific options
+     */
+    sections?: {
+        [x: string]: StickyHeaderSectionOptions;
+    };
+};

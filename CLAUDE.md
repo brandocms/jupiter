@@ -75,5 +75,5 @@ yarn vite:preview
 - All modules have been typed and organized into categories:
   - Core: Application, Breakpoints, Cookies, Dataloader, Dom, FeatureTests, Fontloader
   - Media: HeroSlider, HeroVideo, Lazyload, Lightbox, Marquee
-  - Navigation/UI: CoverOverlay, Dropdown, FixedHeader, Links, MobileMenu, Popover, Popup, ScrollSpy, StickyHeader, Toggler, Typography
+  - Navigation/UI: CoverOverlay, DoubleHeader, Dropdown, FixedHeader, Links, MobileMenu, Popover, Popup, ScrollSpy, StickyHeader, Toggler, Typography
   - Animation: EqualHeightElements, EqualHeightImages, FooterReveal, Moonwalk, Parallax, StackedBoxes

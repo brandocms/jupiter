@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jupiter DoubleHeader Test</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        line-height: 1.5;
+        margin: 0;
+        padding: 0;
+      }
+
+      .main-header {
+        background-color: #4a90e2;
+        color: white;
+        padding: 2rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .main-header h1 {
+        margin: 0;
+        font-size: 2rem;
+      }
+
+      .main-header p {
+        margin: 0.5rem 0 0 0;
+        opacity: 0.9;
+      }
+
+      /* Auxiliary header will be styled similarly but with position: fixed */
+      /* Note: The module creates and styles this dynamically */
+
+      .header-states {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 1rem;
+        border-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        z-index: 101;
+        font-size: 0.9rem;
+        min-width: 180px;
+      }
+
+      .header-states h3 {
+        margin: 0 0 0.5rem 0;
+        font-size: 1rem;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 0.5rem;
+      }
+
+      .state-indicator {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.25rem 0;
+      }
+
+      .state-indicator .label {
+        color: #666;
+      }
+
+      .state-indicator .value {
+        font-weight: bold;
+      }
+
+      .state-indicator .value.active {
+        color: #4a90e2;
+      }
+
+      .state-indicator .value.inactive {
+        color: #ccc;
+      }
+
+      .main-content {
+        padding: 2rem;
+        max-width: 800px;
+        margin: 0 auto;
+      }
+
+      .intro {
+        background-color: #f5f5f5;
+        border-radius: 4px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+      }
+
+      .spacer {
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f9f9f9;
+        border: 2px dashed #ddd;
+        margin: 2rem 0;
+      }
+
+      .spacer h2 {
+        color: #999;
+      }
+
+      .scroll-position {
+        position: fixed;
+        bottom: 10px;
+        right: 10px;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        z-index: 101;
+      }
+
+      .mobile-menu-toggle {
+        background-color: white;
+        color: #4a90e2;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1rem;
+        margin-top: 1rem;
+      }
+
+      .mobile-menu-toggle:hover {
+        background-color: #f0f0f0;
+      }
+
+      .mobile-menu {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.95);
+        z-index: 200;
+        color: white;
+        padding: 2rem;
+      }
+
+      .mobile-menu.is-open {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="main-header" data-double-header data-testid="main-header">
+      <h1>Jupiter DoubleHeader Test</h1>
+      <p>
+        This is the main header in normal document flow. Scroll down to see
+        the auxiliary header appear.
+      </p>
+      <button class="mobile-menu-toggle" data-testid="mobile-menu-toggle">
+        Toggle Mobile Menu
+      </button>
+    </header>
+
+    <div class="header-states" data-testid="header-states">
+      <h3>Header States</h3>
+      <div class="state-indicator">
+        <span class="label">Main Visible:</span>
+        <span class="value" data-state="mainVisible">true</span>
+      </div>
+      <div class="state-indicator">
+        <span class="label">Aux Pinned:</span>
+        <span class="value" data-state="auxPinned">false</span>
+      </div>
+      <div class="state-indicator">
+        <span class="label">Aux Small:</span>
+        <span class="value" data-state="auxSmall">false</span>
+      </div>
+    </div>
+
+    <div class="scroll-position" data-testid="scroll-position">
+      Scroll: <span data-scroll-value>0</span>px
+    </div>
+
+    <div class="mobile-menu" data-testid="mobile-menu">
+      <h2>Mobile Menu</h2>
+      <p>
+        This is a mock mobile menu. While open, the auxiliary header should
+        not unpin.
+      </p>
+      <button class="mobile-menu-toggle">Close Menu</button>
+    </div>
+
+    <div class="main-content">
+      <div class="intro" data-testid="intro-section">
+        <h2>DoubleHeader Module Testing</h2>
+        <p>
+          This page tests the DoubleHeader module's behavior in various
+          scenarios:
+        </p>
+        <ul>
+          <li>
+            <strong>Main Header:</strong> Stays in normal document flow and
+            fades out when scrolled out of view
+          </li>
+          <li>
+            <strong>Auxiliary Header:</strong> A cloned fixed header that
+            appears when the main header is not visible
+          </li>
+          <li>
+            <strong>Pin/Unpin:</strong> The auxiliary header hides on scroll
+            down, reveals on scroll up
+          </li>
+          <li>
+            <strong>Small State:</strong> Auxiliary header shrinks after
+            scrolling past certain threshold
+          </li>
+          <li>
+            <strong>Mobile Menu:</strong> Auxiliary header won't unpin while
+            mobile menu is open
+          </li>
+        </ul>
+        <p>
+          Watch the "Header States" indicator in the top-right corner to see
+          the module's state changes in real-time.
+        </p>
+      </div>
+
+      <div class="spacer" data-testid="spacer-1">
+        <h2>Scroll Zone 1</h2>
+        <p>Scroll down to hide the main header and show the auxiliary header</p>
+      </div>
+
+      <div class="spacer" data-testid="spacer-2">
+        <h2>Scroll Zone 2</h2>
+        <p>The auxiliary header should pin/unpin as you scroll</p>
+      </div>
+
+      <div class="spacer" data-testid="spacer-3">
+        <h2>Scroll Zone 3</h2>
+        <p>Continue scrolling to test all behaviors</p>
+      </div>
+
+      <div class="spacer" data-testid="spacer-4">
+        <h2>Scroll Zone 4</h2>
+        <p>Try scrolling up and down at different speeds</p>
+      </div>
+
+      <div class="spacer" data-testid="spacer-5">
+        <h2>Scroll Zone 5</h2>
+        <p>Test the mobile menu interaction with the auxiliary header</p>
+      </div>
+
+      <div class="content-section">
+        <h2>End of Page</h2>
+        <p>
+          Scroll back to the top to see the main header reappear and the
+          auxiliary header disappear.
+        </p>
+      </div>
+    </div>
+
+    <script type="module">
+      import { Application, DoubleHeader, Events } from "../src/index.js";
+      import { animate } from "motion";
+
+      document.addEventListener("DOMContentLoaded", () => {
+        // Initialize Application
+        const app = new Application({
+          respectReducedMotion: false,
+          breakpointConfig: {
+            breakpoints: [
+              "iphone",
+              "mobile",
+              "ipad_portrait",
+              "ipad_landscape",
+              "desktop_md",
+              "desktop_lg",
+              "desktop_xl",
+            ],
+          },
+        });
+
+        // Get header element
+        const headerEl = document.querySelector("[data-double-header]");
+        const scrollValue = document.querySelector("[data-scroll-value]");
+
+        // Update state indicators
+        function updateState(stateName, isActive) {
+          const indicator = document.querySelector(
+            `[data-state="${stateName}"]`,
+          );
+          if (indicator) {
+            indicator.textContent = isActive ? "true" : "false";
+            indicator.classList.toggle("active", isActive);
+            indicator.classList.toggle("inactive", !isActive);
+          }
+        }
+
+        // Initialize DoubleHeader with custom callbacks
+        const doubleHeader = new DoubleHeader(app, {
+          el: headerEl,
+          default: {
+            offset: 0,
+            offsetSmall: 100,
+            tolerance: 3,
+            enterDelay: 0.3,
+            beforeEnter: (h) => {
+              // Override default beforeEnter since we don't have <li> elements
+            },
+            enter: null, // No enter animation for this test
+            onMainVisible: (h) => {
+              updateState("mainVisible", true);
+              console.log("Main header visible");
+            },
+            onMainInvisible: (h) => {
+              updateState("mainVisible", false);
+              console.log("Main header invisible");
+            },
+            onPin: (h) => {
+              updateState("auxPinned", true);
+              console.log("Auxiliary header pinned");
+              // Animate the auxiliary header sliding down
+              if (h.auxEl) {
+                animate(h.auxEl, {
+                  y: '0%'
+                }, {
+                  duration: 0.35,
+                  easing: 'ease-out'
+                });
+              }
+            },
+            onUnpin: (h) => {
+              updateState("auxPinned", false);
+              console.log("Auxiliary header unpinned");
+              // Animate the auxiliary header sliding up
+              if (h.auxEl) {
+                h._hiding = true;
+                animate(h.auxEl, {
+                  y: '-100%'
+                }, {
+                  duration: 0.25,
+                  easing: 'ease-in'
+                }).finished.then(() => {
+                  h._hiding = false;
+                });
+              }
+            },
+            onSmall: (h) => {
+              updateState("auxSmall", true);
+              console.log("Auxiliary header small");
+            },
+            onNotSmall: (h) => {
+              updateState("auxSmall", false);
+              console.log("Auxiliary header not small");
+            },
+          },
+        });
+
+        // Mobile menu toggle
+        const menuToggles = document.querySelectorAll(
+          ".mobile-menu-toggle",
+        );
+        const mobileMenu = document.querySelector(".mobile-menu");
+
+        menuToggles.forEach((toggle) => {
+          toggle.addEventListener("click", () => {
+            mobileMenu.classList.toggle("is-open");
+            // Dispatch mobile menu events that StickyHeader listens to
+            if (mobileMenu.classList.contains("is-open")) {
+              document.dispatchEvent(
+                new CustomEvent(Events.MOBILE_MENU_OPEN),
+              );
+            } else {
+              document.dispatchEvent(
+                new CustomEvent(Events.MOBILE_MENU_CLOSE),
+              );
+            }
+          });
+        });
+
+        // Update scroll position indicator
+        window.addEventListener("scroll", () => {
+          scrollValue.textContent = Math.round(window.scrollY);
+        });
+
+        // Start the application
+        app.initialize();
+
+        // Expose for testing
+        window.doubleHeader = doubleHeader;
+        window.app = app;
+      });
+    </script>
+  </body>
+</html>
