@@ -84,6 +84,7 @@ export default class HeroSlider {
 
   initialize() {
     this._addResizeHandler()
+    this._addVisibilityHandler()
     // style the container
     set(this.el, {
       position: 'absolute',
@@ -237,9 +238,9 @@ export default class HeroSlider {
             ],
           ]
 
-          const animation = animate(sequence)
+          this._currentAnimation = animate(sequence)
 
-          animation.finished.then(() => {
+          this._currentAnimation.finished.then(() => {
             // Cleanup after animation completes
             set(this._previousSlide, { opacity: 0 })
             set(this._currentSlide, { opacity: 1 })
@@ -302,9 +303,9 @@ export default class HeroSlider {
             ],
           ]
 
-          const animation = animate(sequence)
+          this._currentAnimation = animate(sequence)
 
-          animation.finished.then(() => {
+          this._currentAnimation.finished.then(() => {
             // Cleanup and shuffle z-indexes
             set(this._nextSlide, { zIndex: this.opts.zIndex.next, opacity: 1 })
             set(this._currentSlide, {
@@ -365,5 +366,55 @@ export default class HeroSlider {
       { width: document.body.clientWidth },
       { duration: 0.15 }
     )
+  }
+
+  /**
+   * Add a visibility change handler to restart animations when tab becomes visible
+   */
+  _addVisibilityHandler() {
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        // Cancel running animation when tab becomes hidden
+        if (this._currentAnimation) {
+          this._currentAnimation.cancel()
+          this._currentAnimation = null
+        }
+      } else {
+        // Reset and restart when tab becomes visible
+        this._resetAndRestart()
+      }
+    })
+  }
+
+  /**
+   * Reset slide states and restart the animation cycle
+   */
+  _resetAndRestart() {
+    // Reset all slides to initial state
+    Array.from(this.slides).forEach((s, index) => {
+      const nextSlideIdx = (this._currentSlideIdx + 1) % this.slides.length
+      set(s, {
+        width: '100%',
+        opacity: index === this._currentSlideIdx ? 1 : 0,
+        zIndex: index === this._currentSlideIdx ? this.opts.zIndex.visible :
+                index === nextSlideIdx ? this.opts.zIndex.next :
+                this.opts.zIndex.regular
+      })
+      const img = s.querySelector('.hero-slide-img')
+      if (img) {
+        set(img, { scale: 1 })
+      }
+    })
+
+    // Restart the zoom animation on current slide, then continue cycle
+    const currentSlideImg = this.slides[this._currentSlideIdx].querySelector('.hero-slide-img')
+    if (currentSlideImg && this.slides.length > 1) {
+      this._currentAnimation = animate(
+        currentSlideImg,
+        { scale: [1, this.opts.transition.scale] },
+        { type: "tween", duration: this.opts.interval, ease: "linear" }
+      )
+      this._currentAnimation.finished.then(() => this.next())
+    }
   }
 }
