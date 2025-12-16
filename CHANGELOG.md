@@ -1,5 +1,20 @@
-#### 4.0.0-beta.2
+#### 5.0.0-alpha.0
 
+- **BREAKING** Replace GSAP with Motion.js
+  - All animations now use Motion.js instead of GSAP
+  - Significantly smaller bundle size
+  - Native browser APIs for better performance
+  - GSAP exports removed - update imports if you were using GSAP directly from Jupiter
+- **FEATURE** New `Looper` module - horizontal infinite scrolling carousels
+  - Seamless horizontal looping with Motion.js (replaces GSAP Draggable + InertiaPlugin)
+  - Draggable interaction with momentum/inertia
+  - Auto-crawl (continuous scrolling) with configurable speed
+  - Snap-to-item behavior with `data-looper-snap`
+  - Next/Previous navigation buttons
+  - Responsive resize handling
+  - Moonwalk integration (play/pause on viewport entry/exit)
+  - Supports both looping and non-looping modes
+  - Configurable: `crawl`, `snap`, `loop`, `reverse`, `autoplay`, `centerSlide`
 - **BREAKING** Renamed `StickyHeader` to `DoubleHeader`
   - The old StickyHeader module cloned the header element (dual-header architecture)
   - Renamed to better reflect its behavior - it creates a clone/double of the header
@@ -9,7 +24,6 @@
   - Header stays in document flow - space is reserved even when hidden
   - No padding-top needed on content below
   - Same API as FixedHeader (hide on scroll down, reveal on scroll up)
-- Update gsap - export InertiaPlugin, SplitText <3
 - **BREAKING** Lightbox: Removed Hammer.js dependency and swipe functionality
   - The `swipe` option has been removed from LightboxOptions
   - Swipe gestures are no longer supported - use keyboard arrows, click navigation, or native touch gestures
@@ -34,6 +48,11 @@
   - Configurable options: `updateOnInit`, `languageInPath`, `hideDefaultLanguage`, `defaultLanguage`
   - Optional `buildUrl` and `parseUrl` callbacks for custom URL logic
   - Centralized configuration - pass all URL configs once and dataloaders pick their config by ID
+
+
+#### 4.0.0-beta.2
+
+- Update gsap - export InertiaPlugin, SplitText <3
 
 
 #### 4.0.0-beta.1
