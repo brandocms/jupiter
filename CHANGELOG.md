@@ -1,4 +1,8 @@
-#### 5.0.0-alpha.0
+#### 5.0.0-beta.2
+
+- Remove GSAP dependency from package.json
+
+#### 5.0.0-beta.1
 
 - **BREAKING** Replace GSAP with Motion.js
   - All animations now use Motion.js instead of GSAP
