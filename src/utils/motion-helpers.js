@@ -33,6 +33,8 @@ export function set(target, values) {
         transformProps.push(`translateX(${typeof value === 'number' ? value + 'px' : value})`)
       } else if (key === 'y') {
         transformProps.push(`translateY(${typeof value === 'number' ? value + 'px' : value})`)
+      } else if (key === 'yPercent') {
+        transformProps.push(`translateY(${value}%)`)
       } else if (key === 'scale') {
         transformProps.push(`scale(${value})`)
       } else if (key === 'scaleX') {

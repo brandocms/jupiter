@@ -50,7 +50,7 @@ const DEFAULT_EVENTS = {
 
   onPin: (h) => {
     animate(h.auxEl, {
-      yPercent: '0'
+      y: '0%'
     }, {
       duration: 0.35,
       ease: 'easeOut'
@@ -60,7 +60,7 @@ const DEFAULT_EVENTS = {
   onUnpin: (h) => {
     h._hiding = true
     animate(h.auxEl, {
-      yPercent: '-100'
+      y: '-100%'
     }, {
       duration: 0.25,
       ease: 'easeIn'
@@ -86,12 +86,12 @@ const DEFAULT_OPTIONS = {
     },
     enter: (h) => {
       // Set initial states
-      set(h.auxEl, { yPercent: -100 })
+      set(h.auxEl, { y: '-100%' })
       set(h.lis, { opacity: 0 })
 
       // Auxiliary header slides down
       animate(h.auxEl, {
-        yPercent: 0
+        y: '0%'
       }, {
         duration: 1,
         delay: h.opts.enterDelay,

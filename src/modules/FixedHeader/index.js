@@ -79,7 +79,7 @@ import { set } from '../../utils/motion-helpers'
 const DEFAULT_EVENTS = {
   onPin: (h) => {
     animate(h.el, {
-      yPercent: '0'
+      y: '0%'
     }, {
       duration: 0.35,
       ease: 'easeOut'
@@ -89,7 +89,7 @@ const DEFAULT_EVENTS = {
   onUnpin: (h) => {
     h._hiding = true
     animate(h.el, {
-      yPercent: '-100'
+      y: '-100%'
     }, {
       duration: 0.25,
       ease: 'easeIn'
@@ -156,14 +156,14 @@ const DEFAULT_OPTIONS = {
     canvas: window,
     intersects: null,
     beforeEnter: (h) => {
-      set(h.el, { yPercent: -100 })
+      set(h.el, { y: '-100%' })
       set(h.lis, { opacity: 0 })
     },
 
     enter: (h) => {
       // Header slides down
       animate(h.el, {
-        yPercent: 0
+        y: '0%'
       }, {
         duration: 1,
         delay: h.opts.enterDelay,

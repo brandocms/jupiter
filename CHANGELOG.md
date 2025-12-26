@@ -1,3 +1,7 @@
+#### 5.0.0-beta.3
+
+- Fix `yPercent` usage in header modules (GSAP-ism not supported by Motion)
+
 #### 5.0.0-beta.2
 
 - Remove GSAP dependency from package.json
