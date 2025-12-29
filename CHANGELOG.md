@@ -1,3 +1,8 @@
+#### 5.0.0-beta.6
+
+- Remove unused dependencies: `body-scroll-lock`, `virtual-scroll`
+- Update dependencies: `motion`, `@playwright/test`, `typescript`, `vite`, `@types/node`
+
 #### 5.0.0-beta.5
 
 - Add `observe()` method to Lazyload for registering dynamically added elements
