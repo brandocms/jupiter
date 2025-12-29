@@ -83,6 +83,65 @@ export default class Lazyload {
     this.initObserver(this.revealObserver, false)
   }
 
+  /**
+   * Observe new lazyload elements within a container
+   * Handles both [data-ll-image] and [data-ll-srcset] elements
+   * Useful for dynamically added content (e.g., Looper clones)
+   * @param {HTMLElement|HTMLElement[]|NodeList} elements - Container element(s) or lazyload element(s) to observe
+   */
+  observe(elements) {
+    // Handle NodeList, array, or single element
+    const els = elements instanceof NodeList ? Array.from(elements) :
+                Array.isArray(elements) ? elements : [elements]
+
+    let imgIdx = this.lazyImages?.length || 0
+    let picIdx = this.lazyPictures?.length || 0
+
+    els.forEach(el => {
+      // Handle [data-ll-image] elements
+      if (this.imageObserver) {
+        const images = el.matches?.('[data-ll-image]')
+          ? [el]
+          : el.querySelectorAll?.('[data-ll-image]') || []
+
+        images.forEach(img => {
+          // Skip if already observed or loaded
+          if (img.hasAttribute('data-ll-idx') || img.hasAttribute('data-ll-loaded')) return
+
+          img.setAttribute('data-ll-blurred', '')
+          img.setAttribute('data-ll-idx', imgIdx)
+          img.style.setProperty('--ll-idx', imgIdx)
+          this.imageObserver.observe(img)
+          imgIdx++
+        })
+      }
+
+      // Handle [data-ll-srcset] picture elements
+      if (this.loadObserver) {
+        const pictures = el.matches?.('[data-ll-srcset]')
+          ? [el]
+          : el.querySelectorAll?.('[data-ll-srcset]') || []
+
+        pictures.forEach(picture => {
+          // Skip if already loaded
+          if (picture.hasAttribute('data-ll-srcset-ready')) return
+
+          picture.setAttribute('data-ll-srcset-initialized', '')
+          picture.querySelectorAll('img:not([data-ll-loaded])').forEach(img => {
+            img.removeAttribute('data-ll-idx') // Clear cloned idx
+            img.setAttribute('data-ll-blurred', '')
+            img.setAttribute('data-ll-idx', picIdx)
+            img.style.setProperty('--ll-idx', picIdx)
+          })
+          // Add to both observers like initObserver does
+          this.loadObserver.observe(picture)
+          this.revealObserver?.observe(picture)
+          picIdx++
+        })
+      }
+    })
+  }
+
   initialize() {
     // initialize ResizeObserver for images with data-sizes="auto"
     this.initializeResizeObserver()
@@ -128,12 +187,7 @@ export default class Lazyload {
     )
 
     this.lazyImages = this.target.querySelectorAll('[data-ll-image]')
-    this.lazyImages.forEach((img, idx) => {
-      img.setAttribute('data-ll-blurred', '')
-      img.setAttribute('data-ll-idx', idx)
-      img.style.setProperty('--ll-idx', idx)
-      this.imageObserver.observe(img)
-    })
+    this.observe(this.lazyImages)
   }
 
   initObserver(observer, setAttrs = true) {

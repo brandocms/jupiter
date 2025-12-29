@@ -182,6 +182,30 @@ function horizontalLoop(app, items, config) {
         clone.setAttribute('data-looper-clone', 'true')
         container.appendChild(clone)
         items.push(clone)
+
+        // Register cloned lazyload elements with Lazyload module if available
+        if (app?.lazyload?.observe) {
+          // Clear data-ll-idx from unloaded [data-ll-image] images
+          clone.querySelectorAll('[data-ll-image]:not([data-ll-loaded])').forEach(img => {
+            img.removeAttribute('data-ll-idx')
+          })
+
+          // Clear attributes from unloaded [data-ll-srcset] pictures so they can be re-observed
+          clone.querySelectorAll('[data-ll-srcset]:not([data-ll-srcset-ready])').forEach(picture => {
+            picture.removeAttribute('data-ll-srcset-initialized')
+            // Clear ready state from sources and img so they can be re-processed
+            picture.querySelectorAll('source').forEach(source => {
+              source.removeAttribute('data-ll-ready')
+            })
+            picture.querySelectorAll('img').forEach(img => {
+              img.removeAttribute('data-ll-idx')
+              img.removeAttribute('data-ll-loaded')
+              img.removeAttribute('data-ll-ready')
+            })
+          })
+
+          app.lazyload.observe(clone)
+        }
       }
 
       // Force layout recalculation

@@ -1,3 +1,8 @@
+#### 5.0.0-beta.5
+
+- Add `observe()` method to Lazyload for registering dynamically added elements
+- Fix Looper cloned images not being lazyloaded - clones now properly register with Lazyload observers
+
 #### 5.0.0-beta.4
 
 - Fix HeroSlider animations breaking after one cycle by using `animate()` with `duration: 0` instead of `set()` for proper Motion.js state synchronization
