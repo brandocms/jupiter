@@ -1,3 +1,8 @@
+#### 5.0.0-beta.4
+
+- Fix HeroSlider animations breaking after one cycle by using `animate()` with `duration: 0` instead of `set()` for proper Motion.js state synchronization
+- Fix Looper reverse scroll bug where items would disappear when dragging right - now tracks scroll direction and only wraps items during forward scroll
+
 #### 5.0.0-beta.3
 
 - Fix `yPercent` usage in header modules (GSAP-ism not supported by Motion)

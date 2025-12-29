@@ -306,20 +306,30 @@ export default class HeroSlider {
           this._currentAnimation = animate(sequence)
 
           this._currentAnimation.finished.then(() => {
-            // Cleanup and shuffle z-indexes
-            set(this._nextSlide, { zIndex: this.opts.zIndex.next, opacity: 1 })
-            set(this._currentSlide, {
-              zIndex: this.opts.zIndex.visible,
+            // Reset ALL slides using instant animations to ensure Motion.js state is clean
+            Array.from(this.slides).forEach((slide) => {
+              if (slide === this._currentSlide) return
+              const img = slide.querySelector('.hero-slide-img')
+              if (img) {
+                // Use animate with duration 0 to reset Motion.js internal state
+                animate(img, { scale: 1 }, { duration: 0 })
+              }
+              const isNext = slide === this._nextSlide
+              // Reset slide using animate with duration 0
+              animate(slide, {
+                width: '100%',
+                opacity: isNext ? 1 : 0,
+              }, { duration: 0 })
+              slide.style.overflow = ''
+              slide.style.zIndex = isNext ? this.opts.zIndex.next : this.opts.zIndex.regular
+            })
+
+            animate(this._currentSlide, {
               width: '100%',
               opacity: 1,
-            })
-            set(this._previousSlide, {
-              zIndex: this.opts.zIndex.regular,
-              width: '100%',
-              opacity: 0, // Hide previous slide
-            })
-            // Reset previous slide image scale for next time
-            set(previousSlideImg, { scale: 1.0 })
+            }, { duration: 0 })
+            this._currentSlide.style.zIndex = this.opts.zIndex.visible
+
             this.next()
           })
         }

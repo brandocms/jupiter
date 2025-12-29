@@ -103,6 +103,10 @@ function horizontalLoop(app, items, config) {
   let positionUnsubscribe = null // Track position listener for cleanup
   let renderUnsubscribe = null // Track frame.render loop for cleanup
 
+  // Scroll direction tracking for wrap logic
+  let scrollDirection = 0 // -1 = backward, 0 = neutral, 1 = forward
+  let lastPositionForDirection = 0
+
   // Display elements for index/count
   let indexElements = []
   let countElements = []
@@ -163,18 +167,15 @@ function horizontalLoop(app, items, config) {
     // This prevents items from visibly moving to the back before they're off-screen
     const minRequiredWidth = containerWidth * 2.5 + maxItemWidth
 
-    // Only replicate if needed
-    if (totalWidth >= minRequiredWidth) {
-      return
-    }
-
     // Store original count to prevent exponential growth
     const originalItemCount = items.length
     const maxReplications = 10
     let count = 0
     let previousTotalWidth = totalWidth
 
-    while (totalWidth < minRequiredWidth && count < maxReplications) {
+    // Always create at least one set of clones - the wrapping logic depends on clones existing
+    // Then continue until we have enough width for seamless looping
+    while ((count === 0 || totalWidth < minRequiredWidth) && count < maxReplications) {
       // Clone ONLY original items
       for (let i = 0; i < originalItemCount; i++) {
         const clone = items[i].cloneNode(true)
@@ -390,10 +391,11 @@ function horizontalLoop(app, items, config) {
         // In reset zone but item doesn't need reset → keep current offset
         newOffset = itemWrapOffsets[i]
       } else if (itemLeft < -(widths[i] + containerWidth * 0.5)) {
-        // Item exited LEFT edge
-        // Forward drag (low boundedPos): wrap to END
-        // Backward drag (high boundedPos): don't wrap, clones fill in from right
-        newOffset = boundedPos < originalItemsWidth / 2 ? wrapOffset : 0
+        // Item exited LEFT edge - only wrap during forward scroll
+        // During reverse scroll (scrollDirection < 0), items off-screen left
+        // will naturally scroll back into view - don't wrap them
+        const isForwardScroll = scrollDirection >= 0
+        newOffset = (isForwardScroll && boundedPos < originalItemsWidth / 2) ? wrapOffset : 0
       } else if (itemLeft > containerWidth + containerWidth * 0.5) {
         // Item exited RIGHT edge
         // This shouldn't happen much, but handle it
@@ -532,6 +534,13 @@ function horizontalLoop(app, items, config) {
       // Set up boundedPos motionValue to automatically sync with position
       // This calculates the bounded position (0 to originalItemsWidth)
       const positionUnsubscribe = position.on('change', latest => {
+        // Track scroll direction for wrap logic
+        const delta = latest - lastPositionForDirection
+        if (Math.abs(delta) > 1) {
+          scrollDirection = delta > 0 ? 1 : -1
+        }
+        lastPositionForDirection = latest
+
         const bounded = ((latest % originalItemsWidth) + originalItemsWidth) % originalItemsWidth
         boundedPos.set(bounded)
       })
@@ -1165,7 +1174,8 @@ function horizontalLoop(app, items, config) {
       const currentPos = position.get()
 
       // Calculate position within current cycle (using originalItemsWidth)
-      const cyclePos = currentPos % originalItemsWidth
+      // Use proper modulo for negative positions (dragging right/backward)
+      const cyclePos = ((currentPos % originalItemsWidth) + originalItemsWidth) % originalItemsWidth
       const remainingDist = originalItemsWidth - cyclePos
       const remainingDuration = remainingDist / pixelsPerSecond
 
