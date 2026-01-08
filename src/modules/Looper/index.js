@@ -96,6 +96,7 @@ function horizontalLoop(app, items, config) {
 
   // Drag state and cleanup handlers
   let dragState = {}
+  let isDragging = false  // Track if user is actively dragging (for wrap detection guard)
   let speedRampAnimation = null // Track speed ramp animation
   let inertiaAnimation = null // Track inertia animation
   let snapAnimation = null // Track snap animation
@@ -526,6 +527,31 @@ function horizontalLoop(app, items, config) {
   }
 
   /**
+   * Create and start the crawl animation loop
+   * Animates the position motionValue (frame.render loop applies to DOM)
+   */
+  function startLoopAnimation() {
+    if (!shouldLoop || !config.crawl) return null
+
+    const duration = originalItemsWidth / pixelsPerSecond
+    const currentPos = position.get()
+    // Reversed: crawl backwards (right-to-left), Normal: crawl forward (left-to-right)
+    const target = config.reversed
+      ? currentPos - originalItemsWidth
+      : currentPos + originalItemsWidth
+
+    // Animate the position motionValue
+    // frame.render loop will apply bounded position to DOM
+    animation = animate(position, target, {
+      duration,
+      repeat: Infinity,
+      ease: 'linear',
+    })
+
+    return animation
+  }
+
+  /**
    * Initialize the loop animation
    */
   function init() {
@@ -579,28 +605,14 @@ function horizontalLoop(app, items, config) {
         const didWrap = delta > originalItemsWidth * 0.4
 
         if (didWrap) {
-          const direction =
-            latest > lastBoundedValue ? 'backward (drag right)' : 'forward (drag left)'
+          // NOTE: We intentionally do NOT reset item transforms here anymore.
+          // Resetting here caused flash because it happens between render frames.
+          // The updateItemPositions() in frame.render handles wrapping correctly
+          // when called with the new boundedPos.
 
-          // Count how many items have non-zero offset before reset
-          const itemsWithOffset = items.filter(
-            (item, i) => !isCloneCache[i] && itemWrapOffsets[i] !== 0
-          ).length
-
-          // Reset ALL original items to 0 (both positive and negative offsets)
-          items.forEach((item, i) => {
-            if (!isCloneCache[i] && itemWrapOffsets[i] !== 0) {
-              item.style.transform = 'none'
-              itemWrapOffsets[i] = 0
-            }
-          })
-
-          // CRITICAL: Sync unbounded position with bounded position to prevent
-          // inertia calculation bugs when dragging RIGHT across boundaries
-          // BUT only do this when NOT animating snap or nav, otherwise it interferes
-          if (!snapAnimation && !navAnimation) {
+          // Sync position to bounded value (only when not dragging/animating)
+          if (!snapAnimation && !navAnimation && !isDragging) {
             position.set(latest)
-          } else {
           }
         }
 
@@ -646,29 +658,6 @@ function horizontalLoop(app, items, config) {
       positionUnsubscribe = position.on('change', latest => {
         containerElement.style.transform = `translateX(${-latest}px)`
       })
-    }
-
-    // Function to create and start the animation loop
-    // Animates the position motionValue (frame.render loop applies to DOM)
-    function startLoopAnimation() {
-      if (!shouldLoop || !config.crawl) return null
-
-      const duration = originalItemsWidth / pixelsPerSecond
-      const currentPos = position.get()
-      // Reversed: crawl backwards (right-to-left), Normal: crawl forward (left-to-right)
-      const target = config.reversed
-        ? currentPos - originalItemsWidth
-        : currentPos + originalItemsWidth
-
-      // Animate the position motionValue
-      // frame.render loop will apply bounded position to DOM
-      animation = animate(position, target, {
-        duration,
-        repeat: Infinity,
-        ease: 'linear',
-      })
-
-      return animation
     }
 
     // Create animation by animating the position motionValue
@@ -807,7 +796,7 @@ function horizontalLoop(app, items, config) {
    * Replaces GSAP Draggable with optimized pointer events
    */
   function setupDrag() {
-    let isDragging = false
+    // isDragging is now module-level so wrap detection can see it
     let startX = 0
     let startPosition = 0
     let velocityTracker = [] // Track recent movements for velocity calculation
@@ -1169,7 +1158,7 @@ function horizontalLoop(app, items, config) {
           snapAnimation = null
           // Update display to reflect landed position
           updateIndexDisplay()
-          if (config.crawl && animation) {
+          if (config.crawl) {
             resumeCrawl()
           }
         })

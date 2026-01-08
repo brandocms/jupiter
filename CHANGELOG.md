@@ -1,3 +1,8 @@
+#### 5.0.0-beta.7
+
+- Fix Looper wrap detection causing visual flash - no longer resets item transforms between render frames
+- Fix Looper position sync guard to prevent inertia bugs while dragging
+
 #### 5.0.0-beta.6
 
 - Remove unused dependencies: `body-scroll-lock`, `virtual-scroll`
