@@ -15,7 +15,7 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
       background: #0a0a0a;
       color: #fff;
-      padding: 40px 20px;
+      padding: 40px 40px;
     }
 
     h1 {
@@ -39,13 +39,13 @@
 
     .looper-container {
       position: relative;
-      margin: 0 -20px;
+      margin: 0 -40px;
       overflow-x: clip;
     }
 
     .looper-wrapper,
     [data-looper-container] {
-      padding: 0 20px;
+      padding: 0 40px;
       opacity: 0;
     }
 
@@ -140,7 +140,7 @@
       <br>
       <code>loop: true</code>, <code>crawl: true</code>, <code>snap: false</code>
     </div>
-    <div class="looper-container" data-moonwalk-run="loop">
+    <div class="looper-container" data-testid="looper-basic" data-moonwalk-run="loop">
       <div class="looper-wrapper" data-looper-container>
         <div data-looper>
           <div data-looper-item>1</div>
@@ -161,7 +161,7 @@
       <br>
       <code>reversed: true</code>
     </div>
-    <div class="looper-container" data-moonwalk-run="loop">
+    <div class="looper-container" data-testid="looper-reversed" data-moonwalk-run="loop">
       <div class="looper-wrapper" data-looper-container>
         <div data-looper data-looper-reverse>
           <div data-looper-item style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">A</div>
@@ -182,7 +182,7 @@
       <br>
       <code>snap: true</code>
     </div>
-    <div class="looper-container" data-moonwalk-run="loop">
+    <div class="looper-container" data-testid="looper-snap" data-moonwalk-run="loop">
       <div class="looper-wrapper" data-looper-container>
         <div data-looper data-looper-snap>
           <div data-looper-item style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">1</div>
@@ -203,7 +203,7 @@
       <br>
       Uses <code>loop.previous()</code> and <code>loop.next()</code>
     </div>
-    <div class="looper-container" data-moonwalk-run="loop">
+    <div class="looper-container" data-testid="looper-nav" data-moonwalk-run="loop">
       <div class="looper-wrapper" data-looper-container>
         <div data-looper data-looper-snap>
           <div data-looper-item style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">1</div>
@@ -230,7 +230,7 @@
       <br>
       <em>Try dragging or clicking buttons - autoplay will stop!</em>
     </div>
-    <div class="looper-container" data-moonwalk-run="loop">
+    <div class="looper-container" data-testid="looper-autoplay" data-moonwalk-run="loop">
       <div class="looper-wrapper" data-looper-container>
         <div data-looper data-looper-snap data-looper-crawl="false" data-looper-autoplay="3">
           <div data-looper-item style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">1</div>
@@ -255,7 +255,7 @@
       <br>
       <code>&lt;span data-looper-slide-index&gt;&lt;/span&gt; / &lt;span data-looper-slide-count&gt;&lt;/span&gt;</code>
     </div>
-    <div class="looper-container" data-moonwalk-run="loop">
+    <div class="looper-container" data-testid="looper-index" data-moonwalk-run="loop">
       <div class="looper-wrapper" data-looper-container>
         <div data-looper data-looper-snap data-looper-crawl="false">
           <div data-looper-item style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">A</div>
@@ -329,7 +329,7 @@
       <br>
       <em>Autoplay advances every 3 seconds, resets to first slide at end</em>
     </div>
-    <div class="looper-container" data-moonwalk-run="loop">
+    <div class="looper-container" data-testid="looper-nonloop-autoplay" data-moonwalk-run="loop">
       <div class="looper-wrapper" data-looper-container>
         <div data-looper data-looper-loop="false" data-looper-snap data-looper-crawl="false" data-looper-autoplay="3">
           <div data-looper-item style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);">1</div>
@@ -359,7 +359,7 @@
       <br>
       <em>Crawls forward to end, then reverses back to start with smooth transitions</em>
     </div>
-    <div class="looper-container" data-moonwalk-run="loop">
+    <div class="looper-container" data-testid="looper-pingpong" data-moonwalk-run="loop">
       <div class="looper-wrapper" data-looper-container>
         <div data-looper data-looper-loop="false">
           <div data-looper-item style="background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);">A</div>
@@ -387,7 +387,7 @@
       <br>
       <em>Dragging/navigation stops when last item reaches right edge - no extra gap</em>
     </div>
-    <div class="looper-container" data-moonwalk-run="loop">
+    <div class="looper-container" data-testid="looper-end-right" data-moonwalk-run="loop">
       <div class="looper-wrapper" data-looper-container>
         <div data-looper data-looper-loop="false" data-looper-snap data-looper-crawl="false">
           <div data-looper-item style="background: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);">1</div>
@@ -417,7 +417,7 @@
       <br>
       <em>Allows scrolling until last item reaches left edge - shows empty space on right</em>
     </div>
-    <div class="looper-container" data-moonwalk-run="loop">
+    <div class="looper-container" data-testid="looper-end-start" data-moonwalk-run="loop">
       <div class="looper-wrapper" data-looper-container>
         <div data-looper data-looper-loop="false" data-looper-snap data-looper-crawl="false" data-looper-end-alignment="start">
           <div data-looper-item style="background: linear-gradient(135deg, #dfe6e9 0%, #b2bec3 100%);">1</div>
@@ -447,7 +447,7 @@
       <br>
       <em>Snap points center each item in viewport. Starts at slide 3 of 5.</em>
     </div>
-    <div class="looper-container" data-moonwalk-run="loop">
+    <div class="looper-container" data-testid="looper-center" data-moonwalk-run="loop">
       <div class="looper-wrapper" data-looper-container>
         <div data-looper data-looper-center data-looper-snap data-looper-crawl="false">
           <div data-looper-item style="background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);">1</div>
@@ -477,7 +477,7 @@
       <br>
       <em>First/last slides stay edge-aligned, middle slides center. Starts at slide 3.</em>
     </div>
-    <div class="looper-container" data-moonwalk-run="loop">
+    <div class="looper-container" data-testid="looper-center-nonloop" data-moonwalk-run="loop">
       <div class="looper-wrapper" data-looper-container>
         <div data-looper data-looper-center data-looper-loop="false" data-looper-snap data-looper-crawl="false">
           <div data-looper-item style="background: linear-gradient(135deg, #55efc4 0%, #00b894 100%);">1</div>
@@ -507,7 +507,7 @@
       <br>
       <em>Try dragging vs clicking - short click should navigate, drag should scroll</em>
     </div>
-    <div class="looper-container" data-moonwalk-run="loop">
+    <div class="looper-container" data-testid="looper-links" data-moonwalk-run="loop">
       <div class="looper-wrapper" data-looper-container>
         <div data-looper data-looper-snap data-looper-crawl="false">
           <a href="#link1" data-looper-item style="background: linear-gradient(135deg, #fd79a8 0%, #e84393 100%); text-decoration: none;">Link 1</a>
@@ -537,7 +537,7 @@
       <br>
       <em>15 items at 300px each = 4500px+ (exceeds clone threshold)</em>
     </div>
-    <div class="looper-container" data-moonwalk-run="loop">
+    <div class="looper-container" data-testid="looper-many" data-moonwalk-run="loop">
       <div class="looper-wrapper" data-looper-container>
         <div data-looper>
           <div data-looper-item style="background: linear-gradient(135deg, #e17055 0%, #d63031 100%);">1</div>

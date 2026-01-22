@@ -36,6 +36,7 @@
     "playwright:dataloader": "playwright test e2e/dataloader.spec.js --project=chromium  --reporter line",
     "playwright:dataloader-url-sync": "playwright test e2e/dataloader-url-sync.spec.js --project=chromium  --reporter line",
     "playwright:parallax": "playwright test e2e/parallax.spec.js --project=chromium  --reporter line",
+    "playwright:looper": "playwright test e2e/looper.spec.js --project=chromium  --reporter line",
     "vite": "vite",
     "vite:build": "vite build",
     "vite:preview": "vite preview"

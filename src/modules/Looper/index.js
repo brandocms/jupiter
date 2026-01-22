@@ -77,9 +77,7 @@ function horizontalLoop(app, items, config) {
   let originalItemsWidth = 0 // Width of ONLY original items (for wrapping)
   let pixelsPerSecond = (config.speed || 1) * 100
   let animation = null
-  let position = motionValue(0) // Source of truth for position
-  let boundedPos = motionValue(0) // Bounded position (0 to originalItemsWidth)
-  let lastBoundedValue = 0 // Track last value to detect wraps
+  let position = motionValue(0) // Source of truth for position (raw, unbounded)
   let originalItemCount = 0 // Track count of ORIGINAL items (before clones)
   let maxScrollPosition = 0 // For non-looping: max scroll where last item is at right edge
 
@@ -174,9 +172,9 @@ function horizontalLoop(app, items, config) {
     let count = 0
     let previousTotalWidth = totalWidth
 
-    // Always create at least one set of clones - the wrapping logic depends on clones existing
+    // Always create at least TWO sets of clones - needed for starting at first clone position
     // Then continue until we have enough width for seamless looping
-    while ((count === 0 || totalWidth < minRequiredWidth) && count < maxReplications) {
+    while ((count < 2 || totalWidth < minRequiredWidth) && count < maxReplications) {
       // Clone ONLY original items
       for (let i = 0; i < originalItemCount; i++) {
         const clone = items[i].cloneNode(true)
@@ -358,84 +356,48 @@ function horizontalLoop(app, items, config) {
 
   /**
    * Check item positions and wrap when needed
-   * Container is animated DIRECTLY (not updated here!)
-   * This function only reads position to determine wrapping
-   * @param {number} pos - Current position value (can grow infinitely)
+   * Container uses RAW position - items wrap individually when far off-screen
+   * @param {number} rawPos - Current raw position value (unbounded)
    */
-  function updateItemPositions(pos) {
-    const containerElement = items[0].parentElement
-
-    if (!shouldLoop) {
-      // Non-looping: we'll handle this with direct animation
-      return
-    }
-
-    // Calculate bounded position for checking item wrap points
-    // Use same wrapping formula as frame.render to handle negative positions (reversed mode)
-    const boundedPos = ((pos % originalItemsWidth) + originalItemsWidth) % originalItemsWidth
+  function updateItemPositions(rawPos) {
+    if (!shouldLoop) return
 
     // Initialize wrap offsets cache if needed
     if (itemWrapOffsets.length === 0) {
       itemWrapOffsets = new Array(items.length).fill(0)
     }
 
-    // TICKER PATTERN: ONLY move ORIGINAL items to the back, NEVER touch clones!
-    // This massively reduces DOM manipulation and style recalculation
-    items.forEach((item, i) => {
-      // Skip clones - they stay in natural flow! (use cached value for performance)
-      if (isCloneCache[i]) {
-        return
+    // Items wrap by the full cycle distance (totalWidth) to maintain relative positions
+    // This keeps all items within viewing distance as position grows/shrinks
+    const cycleDistance = totalWidth
+
+    // Wrap threshold: when an item is more than half a cycle from view, wrap it
+    const wrapThreshold = cycleDistance / 2
+
+    for (let i = 0; i < items.length; i++) {
+      // Calculate this item's effective position (DOM position + wrap offset)
+      const effectivePos = offsetLefts[i] + itemWrapOffsets[i]
+
+      // Distance from current view position
+      // Positive = item is ahead (to the right), Negative = item is behind (to the left)
+      const distanceFromView = effectivePos - rawPos
+
+      let newOffset = itemWrapOffsets[i]
+
+      if (distanceFromView < -wrapThreshold) {
+        // Item is too far left (behind), wrap it forward (to the right)
+        newOffset = itemWrapOffsets[i] + cycleDistance
+      } else if (distanceFromView > wrapThreshold + containerWidth) {
+        // Item is too far right (ahead), wrap it backward (to the left)
+        newOffset = itemWrapOffsets[i] - cycleDistance
       }
 
-      // Calculate where this ORIGINAL item is on screen (relative to bounded container)
-      const itemLeft = offsetLefts[i] - boundedPos
-
-      // Original items only ever have -totalWidth, 0, or +totalWidth offset
-      // This positions them AFTER all clones (not just after wrapping area)
-      let newOffset = 0
-
-      // Ticker boundary pattern: Check if item should be at the END or at the START
-      // When container cycles (boundedPos wraps from ~originalItemsWidth to ~0),
-      // items with large offsets get reset back to 0
-
-      // Wrap distance includes the trailing gap for seamless cycling
-      const wrapOffset = totalWidth + gap
-
-      // Check if we're in the "reset zone" near wrap boundaries
-      const nearForwardWrap = boundedPos > originalItemsWidth - gap
-      const nearReverseWrap = boundedPos < gap
-
-      // RESET: When in reset zone, reset items and SKIP wrap checks to avoid fighting
-      if (nearForwardWrap && itemWrapOffsets[i] === wrapOffset) {
-        // Container about to wrap (forward), reset items at END back to START
-        newOffset = 0
-      } else if (nearReverseWrap && itemWrapOffsets[i] === -wrapOffset) {
-        // Container about to wrap (reverse), reset items at START back to END
-        newOffset = 0
-      } else if (nearForwardWrap || nearReverseWrap) {
-        // In reset zone but item doesn't need reset → keep current offset
-        newOffset = itemWrapOffsets[i]
-      } else if (itemLeft < -(widths[i] + containerWidth * 0.5)) {
-        // Item exited LEFT edge - only wrap during forward scroll
-        // During reverse scroll (scrollDirection < 0), items off-screen left
-        // will naturally scroll back into view - don't wrap them
-        const isForwardScroll = scrollDirection >= 0
-        newOffset = (isForwardScroll && boundedPos < originalItemsWidth / 2) ? wrapOffset : 0
-      } else if (itemLeft > containerWidth + containerWidth * 0.5) {
-        // Item exited RIGHT edge
-        // This shouldn't happen much, but handle it
-        newOffset = 0
-      } else {
-        // Keep current offset
-        newOffset = itemWrapOffsets[i]
-      }
-
-      // ONLY update transform if the offset has changed!
+      // Only update DOM if offset changed
       if (newOffset !== itemWrapOffsets[i]) {
-        item.style.transform = newOffset !== 0 ? `translateX(${newOffset}px)` : 'none'
+        items[i].style.transform = newOffset !== 0 ? `translateX(${newOffset}px)` : 'none'
         itemWrapOffsets[i] = newOffset
       }
-    })
+    }
   }
 
   /**
@@ -443,14 +405,22 @@ function horizontalLoop(app, items, config) {
    * @param {boolean} deep - Whether to rebuild animation (on resize)
    */
   function refresh(deep = false) {
-    // Save progress to preserve position
-    const progress = animation ? animation.time / animation.duration : 0
-    const currentPos = position.get()
-
     // Pause animation if running
     const wasPlaying = animation && animation.speed !== 0
     if (animation) {
       animation.pause()
+    }
+
+    if (deep && shouldLoop) {
+      // DEEP REFRESH: Reset everything for new dimensions
+      // Clear all item wrap offsets and transforms
+      for (let i = 0; i < items.length; i++) {
+        items[i].style.transform = 'none'
+        if (itemWrapOffsets[i] !== undefined) {
+          itemWrapOffsets[i] = 0
+        }
+      }
+      itemWrapOffsets = []
     }
 
     // Remeasure everything
@@ -458,16 +428,34 @@ function horizontalLoop(app, items, config) {
 
     if (deep) {
       // Check if we need to replicate more items
-      const containerWidth = container.offsetWidth
+      const currentContainerWidth = container.offsetWidth
       const currentTotalWidth = getTotalWidthOfItems()
 
       // Use same 2.5x buffer as replication logic
-      if (shouldLoop && currentTotalWidth < containerWidth * 2.5) {
+      if (shouldLoop && currentTotalWidth < currentContainerWidth * 2.5) {
         replicateItemsIfNeeded()
+        // Re-cache clone status for any new items
+        isCloneCache = items.map((item, i) => i >= originalItemCount)
         populateWidths()
       }
 
       populateSnapTimes()
+
+      // Reset position to start at first clone (like initial state)
+      if (shouldLoop && !config.centerSlide) {
+        position.set(originalItemsWidth)
+        lastPositionForDirection = originalItemsWidth
+        items[0].parentElement.style.transform = `translateX(${-originalItemsWidth}px)`
+      } else if (shouldLoop && config.centerSlide) {
+        // For center mode, go to middle slide
+        const middleIndex = Math.floor(originalItemCount / 2)
+        const targetTime = times[middleIndex]
+        const initialPos = targetTime * pixelsPerSecond
+        position.set(initialPos)
+        lastPositionForDirection = initialPos
+        items[0].parentElement.style.transform = `translateX(${-initialPos}px)`
+        curIndex = middleIndex
+      }
 
       // Recreate animation with new measurements
       if (shouldLoop && config.crawl) {
@@ -476,7 +464,7 @@ function horizontalLoop(app, items, config) {
           animation.stop()
         }
 
-        // Use startLoopAnimation for bounded position (no repeat: Infinity!)
+        // Recreate loop animation with new measurements
         animation = startLoopAnimation()
 
         // Restore playback state
@@ -499,19 +487,20 @@ function horizontalLoop(app, items, config) {
         })
 
         if (wasPlaying) {
-          animation.time = progress * animation.duration
           animation.play()
         } else {
           animation.pause()
         }
       }
+
+      // Update index display
+      updateIndexDisplay()
     } else {
       // Light refresh - just update measurements
       populateSnapTimes()
+      // Update positions based on current scroll
+      updateItemPositions(position.get())
     }
-
-    // Update positions based on current scroll
-    updateItemPositions(currentPos)
   }
 
   /**
@@ -541,7 +530,7 @@ function horizontalLoop(app, items, config) {
       : currentPos + originalItemsWidth
 
     // Animate the position motionValue
-    // frame.render loop will apply bounded position to DOM
+    // frame.render loop will apply raw position to container and wrap items
     animation = animate(position, target, {
       duration,
       repeat: Infinity,
@@ -549,6 +538,21 @@ function horizontalLoop(app, items, config) {
     })
 
     return animation
+  }
+
+  /**
+   * Stop the frame.render loop and cleanup listeners
+   * Called from init() and destroy()
+   */
+  function stopRenderLoop() {
+    if (renderUnsubscribe) {
+      // Unsubscribe from motionValue listener
+      if (renderUnsubscribe.positionUnsubscribe) {
+        renderUnsubscribe.positionUnsubscribe()
+      }
+      cancelFrame(renderUnsubscribe)
+      renderUnsubscribe = null
+    }
   }
 
   /**
@@ -571,82 +575,45 @@ function horizontalLoop(app, items, config) {
     // Set initial container position
     const containerElement = items[0].parentElement
     containerElement.style.willChange = 'transform'
-    containerElement.style.transform = 'translateX(0px)'
 
-    // Set up RAF loop to check item positions for wrapping
-    // Frame.render loop to apply bounded position to DOM
+    // For looping (non-center mode): start viewing first CLONE, not originals
+    // This positions originals OFF-SCREEN LEFT so backward scroll reveals them smoothly
+    if (shouldLoop && !config.centerSlide) {
+      position.set(originalItemsWidth)
+      lastPositionForDirection = originalItemsWidth
+      containerElement.style.transform = `translateX(${-originalItemsWidth}px)`
+    } else {
+      containerElement.style.transform = 'translateX(0px)'
+    }
+
+    // Set up RAF loop to update container position and wrap items
+    // Uses RAW position (no modulo) for container transform
     // This is Motion's optimized render loop - prevents layout thrashing
     function startRenderLoop() {
       if (renderUnsubscribe) return // Already running
 
       const containerElement = items[0].parentElement
 
-      // Set up boundedPos motionValue to automatically sync with position
-      // This calculates the bounded position (0 to originalItemsWidth)
+      // Track scroll direction for wrap logic
       const positionUnsubscribe = position.on('change', latest => {
-        // Track scroll direction for wrap logic
         const delta = latest - lastPositionForDirection
         if (Math.abs(delta) > 1) {
           scrollDirection = delta > 0 ? 1 : -1
         }
         lastPositionForDirection = latest
-
-        const bounded = ((latest % originalItemsWidth) + originalItemsWidth) % originalItemsWidth
-        boundedPos.set(bounded)
-      })
-
-      // Detect when boundedPos wraps (makes large jump) and reset all items
-      // This prevents stuck items during fast drags in either direction
-      const boundedPosUnsubscribe = boundedPos.on('change', latest => {
-        const delta = Math.abs(latest - lastBoundedValue)
-
-        // If boundedPos jumped by more than 40% of the width, it wrapped
-        // Using 40% instead of 50% to catch edge cases
-        const didWrap = delta > originalItemsWidth * 0.4
-
-        if (didWrap) {
-          // NOTE: We intentionally do NOT reset item transforms here anymore.
-          // Resetting here caused flash because it happens between render frames.
-          // The updateItemPositions() in frame.render handles wrapping correctly
-          // when called with the new boundedPos.
-
-          // Sync position to bounded value (only when not dragging/animating)
-          if (!snapAnimation && !navAnimation && !isDragging) {
-            position.set(latest)
-          }
-        }
-
-        lastBoundedValue = latest
       })
 
       renderUnsubscribe = frame.render(() => {
-        // Read bounded position from motionValue
-        const currentBoundedPos = boundedPos.get()
+        // Use RAW position (no bounded) for container
+        const currentPos = position.get()
+        containerElement.style.transform = `translateX(${-currentPos}px)`
 
-        // Apply bounded transform to container
-        containerElement.style.transform = `translateX(${-currentBoundedPos}px)`
-
-        // Wrap items based on bounded position
-        updateItemPositions(currentBoundedPos)
+        // Wrap items based on raw position
+        updateItemPositions(currentPos)
       }, true) // true = keep alive
 
-      // Store unsubscribe functions for cleanup
+      // Store unsubscribe function for cleanup
       renderUnsubscribe.positionUnsubscribe = positionUnsubscribe
-      renderUnsubscribe.boundedPosUnsubscribe = boundedPosUnsubscribe
-    }
-
-    function stopRenderLoop() {
-      if (renderUnsubscribe) {
-        // Unsubscribe from motionValue listeners
-        if (renderUnsubscribe.positionUnsubscribe) {
-          renderUnsubscribe.positionUnsubscribe()
-        }
-        if (renderUnsubscribe.boundedPosUnsubscribe) {
-          renderUnsubscribe.boundedPosUnsubscribe()
-        }
-        cancelFrame(renderUnsubscribe)
-        renderUnsubscribe = null
-      }
     }
 
     // Start the frame.render loop
@@ -734,7 +701,7 @@ function horizontalLoop(app, items, config) {
         // Update display in real-time as position changes
         let lastDisplayedIndex = -1
         const updateIndexOnChange = () => {
-          // Find closest slide to current bounded position
+          // Find closest slide to current position
           const closest = closestIndex(false)
 
           // Only update DOM if index changed (avoid thrashing)
@@ -747,12 +714,8 @@ function horizontalLoop(app, items, config) {
           }
         }
 
-        // For looping, use boundedPos; for non-looping, use position directly
-        if (shouldLoop) {
-          boundedPos.on('change', updateIndexOnChange)
-        } else {
-          position.on('change', updateIndexOnChange)
-        }
+        // Update index display whenever position changes (closestIndex normalizes internally)
+        position.on('change', updateIndexOnChange)
       }
     }
 
@@ -922,9 +885,9 @@ function horizontalLoop(app, items, config) {
       const newPosition = startPosition + deltaX
 
       // Update position motionValue
-      // frame.render loop will apply bounded transform to DOM
+      // frame.render loop applies raw position to container
       if (shouldLoop) {
-        // For looping, allow unbounded position (frame.render will bound it)
+        // For looping, position grows freely - items wrap as groups
         position.set(newPosition)
       } else {
         // For non-looping, clamp position to maxScrollPosition (last item at right edge)
@@ -1513,13 +1476,18 @@ function horizontalLoop(app, items, config) {
       closestIndex(true)
       let nextIndex = curIndex + 1
 
-      // Non-looping: reset to start when reaching the end
+      // Non-looping: clamp at boundaries
       if (!shouldLoop) {
         const currentPos = position.get()
         const atEnd = currentPos >= maxScrollPosition - 1
 
         if (nextIndex >= originalItemCount || atEnd) {
-          nextIndex = 0
+          // Autoplay resets to start, user navigation clamps
+          if (options.autoplay) {
+            nextIndex = 0
+          } else {
+            return // Clamp - do nothing at boundary
+          }
         }
       }
 
@@ -1535,9 +1503,14 @@ function horizontalLoop(app, items, config) {
       closestIndex(true)
       let prevIndex = curIndex - 1
 
-      // Non-looping: reset to end when at the start
+      // Non-looping: clamp at boundaries
       if (!shouldLoop && prevIndex < 0) {
-        prevIndex = originalItemCount - 1
+        // Autoplay resets to end, user navigation clamps
+        if (options.autoplay) {
+          prevIndex = originalItemCount - 1
+        } else {
+          return // Clamp - do nothing at boundary
+        }
       }
 
       return toIndex(prevIndex, vars)
