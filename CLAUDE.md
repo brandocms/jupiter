@@ -38,6 +38,15 @@ yarn vite:build
 yarn vite:preview
 ```
 
+## Publishing a New Version
+1. Update version in `package.json`
+2. Add changelog entry to `CHANGELOG.md`
+3. Commit changes with version as commit message (e.g., `5.0.0-beta.7`)
+4. Create a git tag matching the version: `git tag 5.0.0-beta.7`
+5. Push to GitHub with tags: `git push origin <branch> --tags`
+
+Publishing is triggered automatically when the tag is pushed to GitHub.
+
 ## Code Style Guidelines
 
 ### Imports

@@ -1,3 +1,8 @@
+#### 5.0.0-beta.8
+
+- Rewrite Looper logic - place clones at front of container for more reliable wrapping
+- Add Playwright tests for Looper module
+
 #### 5.0.0-beta.7
 
 - Fix Looper wrap detection causing visual flash - no longer resets item transforms between render frames
