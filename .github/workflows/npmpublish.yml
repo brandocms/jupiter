@@ -5,6 +5,10 @@ on:
     tags:
       - "*"
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build:
     timeout-minutes: 60
@@ -35,8 +39,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
-          registry-url: https://registry.npmjs.org/
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
       - name: Determine npm tag
         id: npm-tag
         run: |
@@ -48,5 +52,3 @@ jobs:
           fi
       - name: Publish to npm
         run: npm publish --access=public --tag ${{ steps.npm-tag.outputs.tag }}
-        env:
-          NODE_AUTH_TOKEN: ${{secrets.npm_token}}
