@@ -15,7 +15,11 @@ export default class Moonwalk {
         id: string;
         el: any;
         name: any;
-        timeline: any;
+        animation: {
+            lastDelay: number;
+            lastDuration: number;
+            lastStartTime: any;
+        };
         observer: any;
         stage: {
             name: any;
@@ -91,7 +95,11 @@ export default class Moonwalk {
         id: string;
         el: any;
         name: any;
-        timeline: any;
+        animation: {
+            lastDelay: number;
+            lastDuration: number;
+            lastStartTime: any;
+        };
         observer: any;
         stage: {
             name: any;
@@ -104,7 +112,11 @@ export default class Moonwalk {
         id: string;
         el: any;
         name: any;
-        timeline: any;
+        animation: {
+            lastDelay: number;
+            lastDuration: number;
+            lastStartTime: any;
+        };
         observer: any;
         stage: {
             name: any;
@@ -153,6 +165,24 @@ export default class Moonwalk {
      * @param {*} children
      */
     orderChildren(children: any): any[];
+    /**
+     * Calculate the delay for the next animation in the section.
+     * This replaces GSAP's timeline.recent() logic.
+     *
+     * @param {*} section - The section object
+     * @param {*} duration - Duration of the animation to add
+     * @param {*} overlap - How much the animations should overlap
+     * @returns {number} The delay in seconds
+     */
+    calculateDelay(section: any, duration: any, overlap: any): number;
+    /**
+     * Update the animation state after adding an animation.
+     *
+     * @param {*} section - The section object
+     * @param {*} delay - The delay that was used
+     * @param {*} duration - The duration of the animation
+     */
+    updateAnimationState(section: any, delay: any, duration: any): void;
     onReady(): void;
     /**
      * Called on `APPLICATION_READY` event, if `config.fireOnReady`.

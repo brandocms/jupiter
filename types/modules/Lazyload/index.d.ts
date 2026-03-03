@@ -15,6 +15,13 @@ export default class Lazyload {
     rafId: number;
     srcsetReadyObserver: MutationObserver;
     watch(): void;
+    /**
+     * Observe new lazyload elements within a container
+     * Handles both [data-ll-image] and [data-ll-srcset] elements
+     * Useful for dynamically added content (e.g., Looper clones)
+     * @param {HTMLElement|HTMLElement[]|NodeList} elements - Container element(s) or lazyload element(s) to observe
+     */
+    observe(elements: HTMLElement | HTMLElement[] | NodeList): void;
     initialize(): void;
     lazyPictures: any;
     loadObserver: IntersectionObserver;

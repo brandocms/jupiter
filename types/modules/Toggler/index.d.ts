@@ -2,6 +2,22 @@
  * Toggler component for show/hide functionality
  * Uses [data-toggle-trigger] for the toggle button and [data-toggle-content] for toggleable content
  * Can be grouped using [data-toggle-group] to create accordion-like behavior
+ *
+ * IMPORTANT: For smooth animations, avoid padding/margins on [data-toggle-content].
+ * Instead, wrap content in a child element with padding/margins:
+ *
+ * @example
+ * // ❌ DON'T: Padding/margins directly on toggle content
+ * <div data-toggle-content style="padding: 20px; margin-top: 10px">
+ *   Content here
+ * </div>
+ *
+ * // ✅ DO: Wrap content in child element
+ * <div data-toggle-content>
+ *   <div style="padding: 20px; margin-top: 10px">
+ *     Content here
+ *   </div>
+ * </div>
  */
 export default class Toggler {
     /**

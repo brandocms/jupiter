@@ -80,6 +80,93 @@ test.describe('Jupiter Cookies Module', () => {
     await expect(cookieContainer).not.toBeVisible({ timeout: 5000 })
   })
 
+  test('consent toggle should show refused state initially', async ({ page }) => {
+    // Clear any existing cookies
+    await page.locator('[data-testid="clear-cookies"]').click()
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+
+    const toggle = page.locator('[data-testid="consent-toggle"]')
+    await expect(toggle).toHaveAttribute('data-cookie-consent-status', 'refused')
+
+    const icon = toggle.locator('[data-cookie-consent-icon]')
+    await expect(icon).toHaveText('\u2715')
+
+    const label = toggle.locator('[data-cookie-consent-label]')
+    await expect(label).toHaveText('Accept cookies')
+  })
+
+  test('consent toggle should accept cookies when clicked from refused state', async ({ page }) => {
+    // Clear any existing cookies
+    await page.locator('[data-testid="clear-cookies"]').click()
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+
+    const toggle = page.locator('[data-testid="consent-toggle"]')
+
+    // Click to accept
+    await toggle.click()
+
+    // Verify toggle updated to accepted state
+    await expect(toggle).toHaveAttribute('data-cookie-consent-status', 'accepted')
+
+    const icon = toggle.locator('[data-cookie-consent-icon]')
+    await expect(icon).toHaveText('\u2713')
+
+    const label = toggle.locator('[data-cookie-consent-label]')
+    await expect(label).toHaveText('Refuse cookies')
+
+    // Verify consent status display updated via onConsentChanged
+    const consentStatus = page.locator('[data-testid="consent-status"]')
+    await expect(consentStatus).toHaveText('Accepted')
+  })
+
+  test('consent toggle should refuse cookies when clicked from accepted state', async ({ page }) => {
+    // Clear any existing cookies
+    await page.locator('[data-testid="clear-cookies"]').click()
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+
+    const toggle = page.locator('[data-testid="consent-toggle"]')
+
+    // First click to accept
+    await toggle.click()
+    await expect(toggle).toHaveAttribute('data-cookie-consent-status', 'accepted')
+
+    // Second click to refuse
+    await toggle.click()
+
+    // Verify toggle updated to refused state
+    await expect(toggle).toHaveAttribute('data-cookie-consent-status', 'refused')
+
+    const icon = toggle.locator('[data-cookie-consent-icon]')
+    await expect(icon).toHaveText('\u2715')
+
+    const label = toggle.locator('[data-cookie-consent-label]')
+    await expect(label).toHaveText('Accept cookies')
+
+    // Verify consent status display updated
+    const consentStatus = page.locator('[data-testid="consent-status"]')
+    await expect(consentStatus).toHaveText('Declined')
+  })
+
+  test('consent toggle should sync with dialog accept', async ({ page }) => {
+    // Clear any existing cookies
+    await page.locator('[data-testid="clear-cookies"]').click()
+    await page.reload()
+    await page.waitForLoadState('networkidle')
+
+    const toggle = page.locator('[data-testid="consent-toggle"]')
+    await expect(toggle).toHaveAttribute('data-cookie-consent-status', 'refused')
+
+    // Accept via dialog
+    await page.locator('[data-testid="show-cookie-dialog"]').click()
+    await page.locator('[data-testid="accept-cookies"]').click()
+
+    // Toggle should now show accepted
+    await expect(toggle).toHaveAttribute('data-cookie-consent-status', 'accepted')
+  })
+
   test('should set, get and remove cookies properly', async ({ page }) => {
     // Clear any existing cookies first
     await page.locator('[data-testid="clear-cookies"]').click()

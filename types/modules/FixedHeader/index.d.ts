@@ -30,6 +30,7 @@ export default class FixedHeader {
     mobileMenuOpen: boolean;
     timer: any;
     resetResizeTimer: any;
+    scrollSettleTimeout: NodeJS.Timeout;
     intersectingElements: any;
     initialize(): void;
     pageIsScrolledOnReady: boolean;

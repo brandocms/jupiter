@@ -11,6 +11,7 @@ export default class Marquee {
     duration: number;
     clearHolders(): void;
     killTweens(): void;
+    speedAnimation: any;
     initializeTween(): void;
     play(rampUp?: boolean): void;
     playing: boolean;
@@ -19,5 +20,6 @@ export default class Marquee {
     speedUp(): void;
     setupObserver(): void;
     fillText(): void;
+    measuredHeight: any;
     setHeight(): void;
 }

@@ -16,7 +16,7 @@ export default class Popover {
     handleClick(e: any): void;
     get isVisible(): boolean;
     show(): void;
-    updatePosition(animate?: boolean): void;
+    updatePosition(shouldAnimate?: boolean): void;
     hide(): void;
     toggle(): void;
     addDocumentClickHandler(): void;

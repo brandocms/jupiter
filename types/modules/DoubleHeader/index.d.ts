@@ -20,6 +20,7 @@ export default class DoubleHeader {
     mobileMenuOpen: boolean;
     timer: any;
     resetResizeTimer: any;
+    scrollSettleTimeout: NodeJS.Timeout;
     firstReveal: boolean;
     initialize(): void;
     setupObserver(): void;

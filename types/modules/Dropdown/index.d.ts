@@ -5,9 +5,9 @@ export default class Dropdown {
     elements: {};
     open: boolean;
     element: any;
-    timeline: any;
     handleDocumentClick(event: any): void;
     initialize(): void;
+    positionMenu(): void;
     onClick(event: any): Promise<void>;
     openMenu(): Promise<void>;
     closeMenu(): Promise<void>;

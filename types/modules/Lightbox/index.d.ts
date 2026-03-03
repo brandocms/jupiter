@@ -19,8 +19,8 @@ export default class Lightbox {
     firstTransition: boolean;
     previousCaption: any;
     timelines: {
-        caption: any;
-        image: any;
+        caption: PausedTimeline;
+        image: PausedTimeline;
     };
     showBox(section: any, index: any): void;
     buildBox(section: any, index: any): void;
@@ -121,3 +121,4 @@ export type LightboxOptions = {
      */
     onClose?: Function;
 };
+import { PausedTimeline } from '../../utils/motion-helpers';
