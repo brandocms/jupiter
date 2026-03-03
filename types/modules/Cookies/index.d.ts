@@ -17,6 +17,24 @@ export default class Cookies {
     btn: Element;
     btnRefuse: Element;
     /**
+     * Find all `[data-cookie-consent]` elements and wire them up.
+     */
+    setupConsentToggles(): void;
+    consentToggles: Element[];
+    /**
+     * Update a single consent toggle element to reflect current cookie state.
+     * @param {Element} el - The toggle element
+     */
+    updateConsentToggle(el: Element): void;
+    /**
+     * Update all consent toggle elements.
+     */
+    updateConsentToggles(): void;
+    /**
+     * Handle a click on a consent toggle button.
+     */
+    handleConsentToggle(): void;
+    /**
      * Get a cookie value by key
      * @param {string} sKey - Cookie key
      * @returns {string|null} Cookie value or null if not found
@@ -78,4 +96,8 @@ export type CookiesOptions = {
      * - Custom function to display cookie consent dialog
      */
     showCC?: Function;
+    /**
+     * - Called after consent is toggled via the toggle button
+     */
+    onConsentChanged?: Function;
 };
