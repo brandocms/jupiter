@@ -4,6 +4,91 @@ import * as Events from '../../events'
 import { set } from '../../utils/motion-helpers'
 
 /**
+ * @module Cookies
+ *
+ * Cookie consent module with optional dialog and toggle button support.
+ *
+ * ## Consent dialog
+ *
+ * The traditional consent banner uses a fixed container at the bottom of the page:
+ *
+ * ```html
+ * <div class="cookie-container">
+ *   <div class="cookie-container-inner">
+ *     <div class="cookie-law-text">
+ *       <p>We use cookies...</p>
+ *     </div>
+ *     <div class="cookie-law-buttons">
+ *       <button class="dismiss-cookielaw">Accept</button>
+ *       <button class="refuse-cookielaw">Decline</button>
+ *     </div>
+ *   </div>
+ * </div>
+ * ```
+ *
+ * ## Consent toggle button
+ *
+ * A toggle button can be placed anywhere on the page to let users change their
+ * consent at any time. It can also serve as the sole consent mechanism (no
+ * dialog required).
+ *
+ * ```html
+ * <button data-cookie-consent
+ *         data-cookie-consent-accept="Accept cookies"
+ *         data-cookie-consent-refuse="Refuse cookies">
+ * </button>
+ * ```
+ *
+ * ### Data attributes
+ *
+ * | Attribute | Description |
+ * |---|---|
+ * | `data-cookie-consent` | Marks the element as a consent toggle |
+ * | `data-cookie-consent-accept` | Label shown when user can accept (currently refused/unset) |
+ * | `data-cookie-consent-refuse` | Label shown when user can retract (currently accepted) |
+ * | `data-cookie-consent-status` | Set by the module: `"accepted"` or `"refused"` |
+ * | `data-cookie-consent-icon` | Set on the injected icon `<span>` |
+ * | `data-cookie-consent-label` | Set on the injected label `<span>` |
+ *
+ * ### CSS styling
+ *
+ * ```css
+ * [data-cookie-consent-status="accepted"] [data-cookie-consent-icon] { color: green; }
+ * [data-cookie-consent-status="refused"] [data-cookie-consent-icon] { color: red; }
+ * ```
+ *
+ * ### Gettext / translation
+ *
+ * ```html
+ * <button data-cookie-consent
+ *         data-cookie-consent-accept="{{ _('Accept cookies') }}"
+ *         data-cookie-consent-refuse="{{ _('Refuse cookies') }}">
+ * </button>
+ * ```
+ *
+ * ## Usage examples
+ *
+ * Dialog only (default):
+ * ```js
+ * new Cookies(app)
+ * ```
+ *
+ * Toggle only (no dialog HTML needed):
+ * ```js
+ * new Cookies(app, { setCookies: (c) => { ... } })
+ * ```
+ *
+ * Both dialog and toggle:
+ * ```js
+ * new Cookies(app, {
+ *   onConsentChanged: (c) => {
+ *     console.log(c.getCookie('COOKIES_CONSENT_STATUS'))
+ *   }
+ * })
+ * ```
+ */
+
+/**
  * @typedef {Object} CookiesOptions
  * @property {Function} [onAccept] - Called when cookies are accepted
  * @property {Function} [onRefuse] - Called when cookies are refused
@@ -11,6 +96,7 @@ import { set } from '../../utils/motion-helpers'
  * @property {Function} [alreadyRefused] - Called if user has already refused cookies
  * @property {Function} [setCookies] - Custom function to set cookies
  * @property {Function} [showCC] - Custom function to display cookie consent dialog
+ * @property {Function} [onConsentChanged] - Called after consent is toggled via the toggle button
  */
 
 /** @type {CookiesOptions} */
@@ -21,6 +107,7 @@ const DEFAULT_OPTIONS = {
 
     c.setCookie('COOKIES_CONSENT_STATUS', 1, oneYearFromNow, '/')
     c.opts.setCookies(c)
+    c.updateConsentToggles()
 
     const timeline = [
       [c.cc, { y: '120%' }, { duration: 0.35, ease: 'easeIn', at: 0 }],
@@ -37,6 +124,7 @@ const DEFAULT_OPTIONS = {
     oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1)
 
     c.setCookie('COOKIES_CONSENT_STATUS', 0, oneYearFromNow, '/')
+    c.updateConsentToggles()
 
     const timeline = [
       [c.cc, { y: '120%' }, { duration: 0.35, ease: 'easeIn', at: 0 }],
@@ -57,6 +145,8 @@ const DEFAULT_OPTIONS = {
   },
 
   setCookies: (c) => {},
+
+  onConsentChanged: (c) => {},
 
   showCC: (c) => {
     if (c.hasCookie('COOKIES_CONSENT_STATUS')) {
@@ -107,22 +197,114 @@ export default class Cookies {
     this.btn = document.querySelector('.dismiss-cookielaw')
     this.btnRefuse = document.querySelector('.refuse-cookielaw')
 
-    if (!this.btn) {
+    this.setupConsentToggles()
+
+    if (!this.btn && this.consentToggles.length === 0) {
       return
     }
 
-    this.app.registerCallback(Events.APPLICATION_REVEALED, () => {
-      this.opts.showCC(this)
-    })
+    if (this.btn) {
+      this.app.registerCallback(Events.APPLICATION_REVEALED, () => {
+        this.opts.showCC(this)
+      })
 
-    this.btn.addEventListener('click', () => {
-      this.opts.onAccept(this)
+      this.btn.addEventListener('click', () => {
+        this.opts.onAccept(this)
+      })
+      if (this.btnRefuse) {
+        this.btnRefuse.addEventListener('click', () => {
+          this.opts.onRefuse(this)
+        })
+      }
+    }
+  }
+
+  /**
+   * Find all `[data-cookie-consent]` elements and wire them up.
+   */
+  setupConsentToggles() {
+    this.consentToggles = [...document.querySelectorAll('[data-cookie-consent]')]
+
+    this.consentToggles.forEach(el => {
+      const icon = document.createElement('span')
+      icon.setAttribute('data-cookie-consent-icon', '')
+
+      const label = document.createElement('span')
+      label.setAttribute('data-cookie-consent-label', '')
+
+      el.appendChild(icon)
+      el.appendChild(label)
+
+      this.updateConsentToggle(el)
+
+      el.addEventListener('click', () => {
+        this.handleConsentToggle()
+      })
     })
-    if (this.btnRefuse) {
-      this.btnRefuse.addEventListener('click', () => {
-        this.opts.onRefuse(this)
+  }
+
+  /**
+   * Update a single consent toggle element to reflect current cookie state.
+   * @param {Element} el - The toggle element
+   */
+  updateConsentToggle(el) {
+    const accepted = this.getCookie('COOKIES_CONSENT_STATUS') === '1'
+    const acceptText = el.getAttribute('data-cookie-consent-accept') || 'Accept cookies'
+    const refuseText = el.getAttribute('data-cookie-consent-refuse') || 'Refuse cookies'
+
+    const icon = el.querySelector('[data-cookie-consent-icon]')
+    const label = el.querySelector('[data-cookie-consent-label]')
+
+    if (accepted) {
+      el.setAttribute('data-cookie-consent-status', 'accepted')
+      icon.textContent = '\u2713'
+      label.textContent = refuseText
+    } else {
+      el.setAttribute('data-cookie-consent-status', 'refused')
+      icon.textContent = '\u2715'
+      label.textContent = acceptText
+    }
+  }
+
+  /**
+   * Update all consent toggle elements.
+   */
+  updateConsentToggles() {
+    this.consentToggles.forEach(el => {
+      this.updateConsentToggle(el)
+    })
+  }
+
+  /**
+   * Handle a click on a consent toggle button.
+   */
+  handleConsentToggle() {
+    const oneYearFromNow = new Date()
+    oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1)
+
+    const accepted = this.getCookie('COOKIES_CONSENT_STATUS') === '1'
+
+    if (accepted) {
+      this.setCookie('COOKIES_CONSENT_STATUS', 0, oneYearFromNow, '/')
+    } else {
+      this.setCookie('COOKIES_CONSENT_STATUS', 1, oneYearFromNow, '/')
+      this.opts.setCookies(this)
+    }
+
+    this.updateConsentToggles()
+
+    if (this.cc && this.cc.style.display !== 'none') {
+      const timeline = [
+        [this.cc, { y: '120%' }, { duration: 0.35, ease: 'easeIn', at: 0 }],
+        [this.inner, { opacity: 0 }, { duration: 0.3, ease: 'easeIn', at: 0 }]
+      ]
+
+      animate(timeline).finished.then(() => {
+        this.cc.style.display = 'none'
       })
     }
+
+    this.opts.onConsentChanged(this)
   }
 
   /**
