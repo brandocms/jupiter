@@ -1,3 +1,11 @@
+#### 5.0.0-beta.9
+
+- Add cookie consent toggle button for post-consent state changes
+- Force-load Looper clone images immediately to prevent flash on loop wrap
+- Fix Lazyload `forceLoad` not loading srcset sources before revealing
+- Add Playwright tests for cookie consent toggle and Looper lazyload clone behavior
+- Split Looper test pages into individual focused pages for test stability
+
 #### 5.0.0-beta.8
 
 - Rewrite Looper logic - place clones at front of container for more reliable wrapping

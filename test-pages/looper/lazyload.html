@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Looper - Lazyload</title>
+  <link rel="stylesheet" href="shared.css">
+</head>
+<body>
+  <div class="looper-container" data-testid="looper-lazyload" data-moonwalk-run="loop">
+    <div class="looper-wrapper" data-looper-container>
+      <div data-looper data-looper-crawl="false" data-looper-snap>
+        <div data-looper-item style="width:300px;height:200px;flex-shrink:0;">
+          <picture data-ll-srcset>
+            <source data-srcset="../images/blue-400x300.svg 400w" type="image/svg+xml" />
+            <img data-ll-placeholder data-ll-srcset-image data-sizes="auto" data-src="../images/blue-400x300.svg" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'%3E%3C/svg%3E" />
+          </picture>
+        </div>
+        <div data-looper-item style="width:300px;height:200px;flex-shrink:0;">
+          <picture data-ll-srcset>
+            <source data-srcset="../images/blue-400x300.svg 400w" type="image/svg+xml" />
+            <img data-ll-placeholder data-ll-srcset-image data-sizes="auto" data-src="../images/blue-400x300.svg" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'%3E%3C/svg%3E" />
+          </picture>
+        </div>
+        <div data-looper-item style="width:300px;height:200px;flex-shrink:0;">
+          <picture data-ll-srcset>
+            <source data-srcset="../images/blue-400x300.svg 400w" type="image/svg+xml" />
+            <img data-ll-placeholder data-ll-srcset-image data-sizes="auto" data-src="../images/blue-400x300.svg" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'%3E%3C/svg%3E" />
+          </picture>
+        </div>
+        <div data-looper-item style="width:300px;height:200px;flex-shrink:0;">
+          <picture data-ll-srcset>
+            <source data-srcset="../images/blue-400x300.svg 400w" type="image/svg+xml" />
+            <img data-ll-placeholder data-ll-srcset-image data-sizes="auto" data-src="../images/blue-400x300.svg" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'%3E%3C/svg%3E" />
+          </picture>
+        </div>
+        <div data-looper-item style="width:300px;height:200px;flex-shrink:0;">
+          <picture data-ll-srcset>
+            <source data-srcset="../images/blue-400x300.svg 400w" type="image/svg+xml" />
+            <img data-ll-placeholder data-ll-srcset-image data-sizes="auto" data-src="../images/blue-400x300.svg" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 300'%3E%3C/svg%3E" />
+          </picture>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initLooper } from './shared.js'
+    initLooper({ lazyload: true })
+  </script>
+</body>
+</html>

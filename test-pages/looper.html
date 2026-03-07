@@ -560,16 +560,78 @@
     </div>
   </section>
 
+  <!-- Example 15: Looper with Lazyload Images -->
+  <section class="section">
+    <h2 class="section-title">15. Lazyload Clone Force-Load</h2>
+    <div class="info">
+      <strong>Features:</strong> Cloned images are force-loaded immediately (no flash on wrap)
+      <br>
+      <code>data-ll-srcset</code> pictures inside looper items
+    </div>
+    <div class="looper-container" data-testid="looper-lazyload" data-moonwalk-run="loop">
+      <div class="looper-wrapper" data-looper-container>
+        <div data-looper data-looper-crawl="false" data-looper-snap>
+          <div data-looper-item style="width:300px;height:200px;flex-shrink:0;">
+            <picture data-ll-srcset>
+              <source data-srcset="images/blue-400x300.svg 400w" type="image/svg+xml" />
+              <img alt="Item 1" data-ll-placeholder data-ll-srcset-image data-sizes="auto"
+                src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27400%27%20height%3D%27300%27%20style%3D%27background%3Argba%280%2C0%2C0%2C0%29%27%2F%3E"
+                data-src="images/blue-400x300.svg" width="400" height="300" />
+            </picture>
+          </div>
+          <div data-looper-item style="width:300px;height:200px;flex-shrink:0;">
+            <picture data-ll-srcset>
+              <source data-srcset="images/blue-400x300.svg 400w" type="image/svg+xml" />
+              <img alt="Item 2" data-ll-placeholder data-ll-srcset-image data-sizes="auto"
+                src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27400%27%20height%3D%27300%27%20style%3D%27background%3Argba%280%2C0%2C0%2C0%29%27%2F%3E"
+                data-src="images/blue-400x300.svg" width="400" height="300" />
+            </picture>
+          </div>
+          <div data-looper-item style="width:300px;height:200px;flex-shrink:0;">
+            <picture data-ll-srcset>
+              <source data-srcset="images/blue-400x300.svg 400w" type="image/svg+xml" />
+              <img alt="Item 3" data-ll-placeholder data-ll-srcset-image data-sizes="auto"
+                src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27400%27%20height%3D%27300%27%20style%3D%27background%3Argba%280%2C0%2C0%2C0%29%27%2F%3E"
+                data-src="images/blue-400x300.svg" width="400" height="300" />
+            </picture>
+          </div>
+          <div data-looper-item style="width:300px;height:200px;flex-shrink:0;">
+            <picture data-ll-srcset>
+              <source data-srcset="images/blue-400x300.svg 400w" type="image/svg+xml" />
+              <img alt="Item 4" data-ll-placeholder data-ll-srcset-image data-sizes="auto"
+                src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27400%27%20height%3D%27300%27%20style%3D%27background%3Argba%280%2C0%2C0%2C0%29%27%2F%3E"
+                data-src="images/blue-400x300.svg" width="400" height="300" />
+            </picture>
+          </div>
+          <div data-looper-item style="width:300px;height:200px;flex-shrink:0;">
+            <picture data-ll-srcset>
+              <source data-srcset="images/blue-400x300.svg 400w" type="image/svg+xml" />
+              <img alt="Item 5" data-ll-placeholder data-ll-srcset-image data-sizes="auto"
+                src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27400%27%20height%3D%27300%27%20style%3D%27background%3Argba%280%2C0%2C0%2C0%29%27%2F%3E"
+                data-src="images/blue-400x300.svg" width="400" height="300" />
+            </picture>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <div style="text-align: center; padding: 60px 0; color: #666;">
     <p>✨ Looper Module - Built with Motion.js</p>
     <p style="margin-top: 10px;">Drag any looper to scrub, release for momentum</p>
   </div>
 
   <script type="module">
-    import { Application, Looper, Moonwalk } from '../src/index.js'
+    import { Application, Lazyload, Looper, Moonwalk } from '../src/index.js'
 
     const app = new Application({
       debug: true,
+    })
+
+    // Initialize Lazyload so Looper can force-load clone images
+    app.lazyload = new Lazyload(app, {
+      useNativeLazyloadIfAvailable: false,
+      registerCallback: false,
     })
 
     // Initialize Looper with custom options

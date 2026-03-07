@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Looper - Drag</title>
+  <link rel="stylesheet" href="shared.css">
+</head>
+<body>
+  <div class="looper-container" data-testid="looper-basic" data-moonwalk-run="loop" style="margin-bottom: 20px;">
+    <div class="looper-wrapper" data-looper-container>
+      <div data-looper>
+        <div data-looper-item style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">1</div>
+        <div data-looper-item style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">2</div>
+        <div data-looper-item style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">3</div>
+        <div data-looper-item style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">4</div>
+        <div data-looper-item style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">5</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="looper-container" data-testid="looper-links" data-moonwalk-run="loop">
+    <div class="looper-wrapper" data-looper-container>
+      <div data-looper data-looper-snap data-looper-crawl="false">
+        <a href="#link1" data-looper-item style="background: linear-gradient(135deg, #fd79a8 0%, #e84393 100%); text-decoration: none;">Link 1</a>
+        <a href="#link2" data-looper-item style="background: linear-gradient(135deg, #fd79a8 0%, #e84393 100%); text-decoration: none;">Link 2</a>
+        <a href="#link3" data-looper-item style="background: linear-gradient(135deg, #fd79a8 0%, #e84393 100%); text-decoration: none;">Link 3</a>
+        <a href="#link4" data-looper-item style="background: linear-gradient(135deg, #fd79a8 0%, #e84393 100%); text-decoration: none;">Link 4</a>
+        <a href="#link5" data-looper-item style="background: linear-gradient(135deg, #fd79a8 0%, #e84393 100%); text-decoration: none;">Link 5</a>
+      </div>
+      <div class="controls">
+        <button data-panner-previous>Prev</button>
+        <span style="font-size: 18px; font-weight: 600;">
+          <span data-looper-slide-index></span> / <span data-looper-slide-count></span>
+        </span>
+        <button data-panner-next>Next</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initLooper } from './shared.js'
+    initLooper()
+  </script>
+</body>
+</html>

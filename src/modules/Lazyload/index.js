@@ -209,7 +209,10 @@ export default class Lazyload {
     images.forEach(img => this.swapImage(img))
 
     const pictures = Dom.all($container, '[data-ll-srcset]')
-    pictures.forEach(picture => this.revealPicture(picture))
+    pictures.forEach(picture => {
+      this.loadPicture(picture)
+      this.revealPicture(picture)
+    })
   }
 
   initializeResizeObserver() {
