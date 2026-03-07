@@ -1,3 +1,10 @@
+#### 5.0.0-beta.10
+
+- Defer reveal of Looper viewport images until after wrapper fade-in for nice per-image CSS transition
+- Pre-reveal off-screen Looper clone images immediately to prevent flash on scroll/loop
+- Add `reveal` option to Lazyload `forceLoad()` for loading without revealing
+- Update Motion.js to 12.35.1
+
 #### 5.0.0-beta.9
 
 - Add cookie consent toggle button for post-consent state changes

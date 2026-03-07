@@ -182,9 +182,11 @@ function horizontalLoop(app, items, config) {
         container.appendChild(clone)
         items.push(clone)
 
-        // Force-load cloned lazyload elements immediately to prevent flash on wrap
+        // Force-load cloned lazyload elements without revealing them
+        // Sources are swapped immediately (no flash on wrap), but data-ll-loaded
+        // is not set — the reveal happens after the wrapper fade-in animation
         if (app?.lazyload?.forceLoad) {
-          app.lazyload.forceLoad(clone)
+          app.lazyload.forceLoad(clone, { reveal: false })
         }
       }
 
@@ -1694,8 +1696,29 @@ export default class Looper {
         })
       }
 
-      // Fade in the WRAPPER (not the outer element!)
-      if (wrapper) {
+      // Reveal lazyload images: immediately reveal off-screen items (no visible transition),
+      // defer reveal of viewport items until after wrapper fade-in for a nice per-image fade
+      if (this.app?.lazyload && wrapper) {
+        const wrapperRect = wrapper.getBoundingClientRect()
+        const pictures = Dom.all(wrapper, '[data-ll-srcset]')
+        const viewportPictures = []
+
+        pictures.forEach(picture => {
+          const rect = picture.getBoundingClientRect()
+          const inViewport = rect.right > wrapperRect.left && rect.left < wrapperRect.right
+          if (inViewport) {
+            viewportPictures.push(picture)
+          } else {
+            this.app.lazyload.revealPicture(picture)
+          }
+        })
+
+        // Fade in the WRAPPER (not the outer element!)
+        animate(wrapper, { opacity: 1 }, { duration: 0.5, delay: 0.5, ease: 'easeOut' })
+          .then(() => {
+            viewportPictures.forEach(picture => this.app.lazyload.revealPicture(picture))
+          })
+      } else if (wrapper) {
         animate(wrapper, { opacity: 1 }, { duration: 0.5, delay: 0.5, ease: 'easeOut' })
       }
 

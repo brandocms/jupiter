@@ -204,14 +204,16 @@ export default class Lazyload {
     })
   }
 
-  forceLoad($container = document.body) {
+  forceLoad($container = document.body, { reveal = true } = {}) {
     const images = Dom.all($container, '[data-ll-image]')
     images.forEach(img => this.swapImage(img))
 
     const pictures = Dom.all($container, '[data-ll-srcset]')
     pictures.forEach(picture => {
       this.loadPicture(picture)
-      this.revealPicture(picture)
+      if (reveal) {
+        this.revealPicture(picture)
+      }
     })
   }
 
