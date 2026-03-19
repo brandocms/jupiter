@@ -1,3 +1,7 @@
+#### 5.0.0-beta.11
+
+- Add `reconfigure()` method to FixedHeader for SPA/view transition navigation — re-resolves section options, dynamic offsets, and resets scroll tracking state
+
 #### 5.0.0-beta.10
 
 - Defer reveal of Looper viewport images until after wrapper fade-in for nice per-image CSS transition

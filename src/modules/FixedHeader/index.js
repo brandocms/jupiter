@@ -202,6 +202,12 @@ export default class FixedHeader {
    */
   constructor(app, opts = {}) {
     this.app = app
+    // Preserve raw section configs before _defaultsDeep mutates them
+    this._rawSections = opts.sections
+      ? Object.fromEntries(
+          Object.entries(opts.sections).map(([k, v]) => [k, { ...v }])
+        )
+      : {}
     this.mainOpts = _defaultsDeep(opts, DEFAULT_OPTIONS)
 
     if (typeof this.mainOpts.el === 'string') {
@@ -702,6 +708,59 @@ export default class FixedHeader {
       Math.abs(this.currentScrollY - this.lastKnownScrollY) >=
       this.opts.tolerance
     )
+  }
+
+  /**
+   * Reconfigure the header for a new section/page.
+   * Call this after a view transition or SPA navigation
+   * to re-resolve section options and reset scroll state.
+   */
+  reconfigure() {
+    const section = document.body.getAttribute('data-script')
+
+    // Build a fresh opts object from raw sections so function
+    // offsets that were previously resolved to numbers are restored
+    const freshOpts = {
+      ...this.mainOpts,
+      sections: Object.fromEntries(
+        Object.entries(this._rawSections).map(([k, v]) => [k, { ...v }])
+      )
+    }
+    this.opts = this._getOptionsForSection(section, freshOpts)
+
+    // Re-resolve dynamic offsets
+    if (typeof this.opts.offsetBg === 'string') {
+      const offsetBgElm = document.querySelector(this.opts.offsetBg)
+      this.opts.offsetBg = offsetBgElm ? offsetBgElm.offsetTop : 200
+    } else if (typeof this.opts.offsetBg === 'function') {
+      this.opts.offsetBg = this.opts.offsetBg(this) - 1
+    }
+
+    if (typeof this.opts.offset === 'string') {
+      const offsetElm = document.querySelector(this.opts.offset)
+      this.opts.offset = offsetElm ? offsetElm.offsetTop - 1 : 0
+    } else if (typeof this.opts.offset === 'function') {
+      this.opts.offset = this.opts.offset(this) - 1
+    }
+
+    if (typeof this.opts.offsetSmall === 'string') {
+      const offsetSmallElm = document.querySelector(this.opts.offsetSmall)
+      this.opts.offsetSmall = offsetSmallElm ? offsetSmallElm.offsetTop - 1 : 50
+    } else if (typeof this.opts.offsetSmall === 'function') {
+      this.opts.offsetSmall = this.opts.offsetSmall(this) - 1
+    }
+
+    // Reset scroll tracking to prevent the scroll-height-change
+    // guard from bailing out after content swap
+    this.lastKnownScrollY = this.getScrollY()
+    this.lastKnownScrollHeight = document.body.scrollHeight
+    this.currentScrollY = this.lastKnownScrollY
+    this.currentScrollHeight = this.lastKnownScrollHeight
+
+    // Re-check current state
+    this.checkSize(true)
+    this.checkBg(true)
+    this.checkTop(true)
   }
 
   _getOptionsForSection(section, opts) {
