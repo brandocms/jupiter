@@ -1,3 +1,8 @@
+#### 5.0.0-beta.12
+
+- Add `peek` option to Looper — centers viewport on the gap between two items (half | full | full | half)
+- Warn when `[data-looper]` has `overflow-x: clip` which hides looped items
+
 #### 5.0.0-beta.11
 
 - Add `reconfigure()` method to FixedHeader for SPA/view transition navigation — re-resolves section options, dynamic offsets, and resets scroll tracking state

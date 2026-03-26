@@ -18,6 +18,7 @@ import Dom from '../Dom'
 
 const DEFAULT_OPTIONS = {
   center: false,
+  peek: false, // Centers viewport on the gap between two items (half | full | full | half)
   snap: false, // Set to true to enable snap-to-item behavior
   crawl: true, // Continuous auto-scrolling
   loop: true, // Infinite looping (false for linear scrolling)
@@ -257,7 +258,15 @@ function horizontalLoop(app, items, config) {
 
     // Calculate max scroll for non-looping based on endAlignment
     if (!shouldLoop && originalItemCount > 0) {
-      if (config.centerSlide) {
+      if (config.peek) {
+        // Peek mode: max scroll where gap after last item is at viewport center
+        const lastItemIndex = originalItemCount - 1
+        const lastItemRightEdge = offsetLefts[lastItemIndex] + widths[lastItemIndex] - startX
+        const viewportCenter = containerWidth / 2
+        const idealMaxScroll = lastItemRightEdge + gap / 2 - viewportCenter
+        const absoluteMax = lastItemRightEdge - containerWidth
+        maxScrollPosition = Math.max(0, Math.min(idealMaxScroll, absoluteMax))
+      } else if (config.centerSlide) {
         // Center mode: max scroll is where last item's center is at viewport center
         // But clamped so we don't show empty space
         const lastItemIndex = originalItemCount - 1
@@ -294,7 +303,13 @@ function horizontalLoop(app, items, config) {
         const curX = (xPercents[i] / 100) * widths[i]
         let snapPos
 
-        if (config.centerSlide) {
+        if (config.peek) {
+          // Peek mode: viewport center at the gap AFTER this item
+          // This shows: half(i) | gap | full(i+1) | gap | full(i+2) | gap | half(i+3)
+          const itemRightEdge = item.offsetLeft + curX + widths[i] - startX
+          const viewportCenter = containerWidth / 2
+          snapPos = itemRightEdge + gap / 2 - viewportCenter
+        } else if (config.centerSlide) {
           // Center mode: item's center at viewport's center
           const itemCenter = item.offsetLeft + curX + widths[i] / 2 - startX
           const viewportCenter = containerWidth / 2
@@ -314,7 +329,12 @@ function horizontalLoop(app, items, config) {
       const curX = (xPercents[i] / 100) * widths[i]
       let snapPos
 
-      if (config.centerSlide) {
+      if (config.peek) {
+        // Peek mode: viewport center at the gap AFTER this item
+        const itemRightEdge = item.offsetLeft + curX + widths[i] - startX
+        const viewportCenter = containerWidth / 2
+        snapPos = itemRightEdge + gap / 2 - viewportCenter
+      } else if (config.centerSlide) {
         // Center mode: item's center at viewport's center
         const itemCenter = item.offsetLeft + curX + widths[i] / 2 - startX
         const viewportCenter = containerWidth / 2
@@ -554,6 +574,19 @@ function horizontalLoop(app, items, config) {
     // Measure everything
     populateWidths()
     populateSnapTimes()
+
+    // Warn if [data-looper] has overflow-x: clip — this clips wrapped items
+    // whose individual translateX positions fall outside the container's bounds,
+    // even when they are visually positioned within the viewport.
+    // Apply overflow-x: clip on a parent element instead.
+    const itemsContainer = items[0].parentElement
+    const containerOverflow = getComputedStyle(itemsContainer).overflowX
+    if (containerOverflow === 'clip') {
+      console.warn(
+        `[Looper] ⚠️ [data-looper] has overflow-x: clip which will hide looped items. Apply overflow-x: clip on a parent wrapper element instead.`,
+        itemsContainer
+      )
+    }
 
     // Set initial container position
     const containerElement = items[0].parentElement
@@ -1614,6 +1647,12 @@ export default class Looper {
       const centerValue = looperEl?.getAttribute('data-looper-center')
       const shouldCenterSlide = centerValue === 'false' ? false : hasCenterAttr
 
+      // Peek: data-looper-peek or data-looper-peek="false"
+      // Centers viewport on the gap between two items (half | full | full | half)
+      const hasPeekAttr = looperEl?.hasAttribute('data-looper-peek')
+      const peekValue = looperEl?.getAttribute('data-looper-peek')
+      const shouldPeek = peekValue === 'false' ? false : hasPeekAttr || this.opts.peek
+
       // Create stub for Moonwalk compatibility
       const stubLoop = {
         play: () => {},
@@ -1633,7 +1672,8 @@ export default class Looper {
           repeat: -1,
           draggable: this.opts.draggable,
           center: this.opts.center,
-          centerSlide: shouldCenterSlide,
+          centerSlide: shouldCenterSlide || shouldPeek,
+          peek: shouldPeek,
           snap: shouldSnap,
           speed,
           reversed: isReverse,
