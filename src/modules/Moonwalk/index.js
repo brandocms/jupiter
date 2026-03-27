@@ -166,6 +166,20 @@ const DEFAULT_OPTIONS = {
 }
 
 /**
+ * Normalize alphaTween config into a consistent object form.
+ * Returns a new object (never mutates the original).
+ */
+function normalizeAlphaTween(alphaTween, duration) {
+  if (typeof alphaTween === 'object' && alphaTween !== null) {
+    return { ...alphaTween, duration: alphaTween.duration || duration }
+  }
+  if (alphaTween === true) {
+    return { duration, ease: 'easeIn' }
+  }
+  return alphaTween
+}
+
+/**
  * Moonwalk animation system for scroll-based reveal animations
  */
 export default class Moonwalk {
@@ -464,7 +478,7 @@ export default class Moonwalk {
   setAttrs(element, val) {
     const affectedElements = []
 
-    Array.prototype.forEach.call(element.children, (c) => {
+    Array.from(element.children).forEach((c) => {
       c.setAttribute('data-moonwalk', val)
       affectedElements.push(c)
     })
@@ -614,16 +628,7 @@ export default class Moonwalk {
                 })
               } else {
                 // JS animation mode
-                if (typeof tween.alphaTween === 'object') {
-                  tween.alphaTween.duration = tween.alphaTween.duration
-                    ? tween.alphaTween.duration
-                    : tween.duration
-                } else if (tween.alphaTween === true) {
-                  tween.alphaTween = {
-                    duration: tween.duration,
-                    ease: 'easeIn',
-                  }
-                }
+                const resolvedAlpha = normalizeAlphaTween(tween.alphaTween, tween.duration)
 
                 // Extract ease from to values and convert for Motion.js
                 const { ease: tweenEase, ...toValues } = tween.transition.to
@@ -646,13 +651,13 @@ export default class Moonwalk {
 
                 animate(section.children, toValues, animationOptions)
 
-                if (tween.alphaTween) {
+                if (resolvedAlpha) {
                   animate(
                     section.children,
                     { opacity: 1 },
                     {
-                      duration: tween.alphaTween.duration,
-                      ease: convertEasing(tween.alphaTween.ease || 'easeIn'),
+                      duration: resolvedAlpha.duration,
+                      ease: convertEasing(resolvedAlpha.ease || 'easeIn'),
                       delay: stagger(tween.interval, {
                         startDelay: tween.startDelay || 0,
                       }),
@@ -666,7 +671,7 @@ export default class Moonwalk {
           }
         }
       },
-      { rootMargin: opts.rootMargin }
+      { rootMargin: opts.rootMargin, threshold: opts.threshold }
     )
   }
 
@@ -680,7 +685,7 @@ export default class Moonwalk {
       const orderA = a.getAttribute('data-moonwalk-order')
         ? parseInt(a.getAttribute('data-moonwalk-order'))
         : null
-      const orderB = a.getAttribute('data-moonwalk-order')
+      const orderB = b.getAttribute('data-moonwalk-order')
         ? parseInt(b.getAttribute('data-moonwalk-order'))
         : null
 
@@ -762,7 +767,7 @@ export default class Moonwalk {
     if (this.opts.initialDelay) {
       setTimeout(() => {
         this.ready()
-      }, this.opts.initialDelay)
+      }, this.opts.initialDelay * 1000)
     } else {
       this.ready()
     }
@@ -787,13 +792,13 @@ export default class Moonwalk {
       const run = this.runs[idx]
 
       if (!run) {
-        return
+        continue
       }
 
       // if this is the last section, set rootMargin to 0
       let rootMargin
 
-      if (idx === this.sections.length - 1) {
+      if (idx === this.runs.length - 1) {
         rootMargin = '0px'
       } else {
         if (run.rootMargin) {
@@ -852,58 +857,60 @@ export default class Moonwalk {
   }
 
   /**
+   * Get the viewport entry direction based on current scroll direction.
+   * When entering, elements appear from the opposite side of scroll direction.
+   *
+   * @param {boolean} isEntry - Whether this is an entry (true) or exit (false)
+   * @returns {string|null}
+   */
+  getScrollDirection(isEntry) {
+    if (!this.app.state || !this.app.state.scrollDirection) {
+      return null
+    }
+
+    const entryMap = { down: 'bottom', up: 'top', right: 'left', left: 'right' }
+    const exitMap = { down: 'top', up: 'bottom', right: 'right', left: 'left' }
+    const map = isEntry ? entryMap : exitMap
+
+    return map[this.app.state.scrollDirection] || null
+  }
+
+  /**
+   * Get the exit direction for an element, falling back to position-based
+   * detection when scroll direction is unavailable.
+   *
+   * @param {IntersectionObserverEntry} entry
+   * @returns {string|null}
+   */
+  getExitDirection(entry) {
+    const scrollDir = this.getScrollDirection(false)
+    if (scrollDir) {
+      return scrollDir
+    }
+
+    const { boundingClientRect: rect } = entry
+    if (rect.bottom <= 0) return 'top'
+    if (rect.top >= window.innerHeight) return 'bottom'
+    if (rect.right <= 0) return 'left'
+    if (rect.left >= window.innerWidth) return 'right'
+    return null
+  }
+
+  /**
    * Creates and returns the RUN observer for data-moonwalk-run elements
    *
    * @param {*} run
    * @param {*} rootMargin
    */
   runObserver(run, rootMargin) {
-    // Store the previous positions of observed elements to compare for exit direction
-    const elementPositions = new WeakMap()
-
     return new IntersectionObserver(
       (entries, self) => {
         for (let i = 0; i < entries.length; i += 1) {
           const entry = entries[i]
 
-          // Store the element's current position in the viewport
-          const boundingRect = entry.boundingClientRect
-          const viewportHeight = window.innerHeight
-          const viewportWidth = window.innerWidth
-
           if (entry.isIntersecting && run.callback) {
-            // Calculate entry direction
-            let meta = { direction: null }
-            
-            // Use the app's scroll direction for reliable detection
-            // If scrollDirection is null, the element was likely revealed on initial load
-            if (this.app.state && this.app.state.scrollDirection) {
-              // Map scroll direction to viewport entry direction
-              switch (this.app.state.scrollDirection) {
-                case 'down':
-                  meta.direction = 'bottom' // When scrolling down, elements enter from bottom
-                  break
-                case 'up':
-                  meta.direction = 'top' // When scrolling up, elements enter from top
-                  break
-                case 'right':
-                  meta.direction = 'left' // When scrolling right, elements enter from left
-                  break
-                case 'left':
-                  meta.direction = 'right' // When scrolling left, elements enter from right
-                  break
-              }
-            }
-            // If no scroll direction is available, direction remains null
-            
-            // Store the element's position when it enters the viewport
-            elementPositions.set(entry.target, {
-              top: boundingRect.top,
-              bottom: boundingRect.bottom,
-              left: boundingRect.left,
-              right: boundingRect.right
-            })
-            
+            const meta = { direction: this.getScrollDirection(true) }
+
             const runRepeated = entry.target.hasAttribute(
               'data-moonwalk-run-triggered'
             )
@@ -921,40 +928,8 @@ export default class Moonwalk {
                 'data-moonwalk-run-exit-triggered'
               )
               entry.target.setAttribute('data-moonwalk-run-exit-triggered', '')
-              
-              // Calculate exit direction
-              let meta = { direction: null }
-              
-              // Use the app's scroll direction for reliable detection
-              // For exit direction, it's the opposite of the entry direction for the same scroll
-              if (this.app.state && this.app.state.scrollDirection) {
-                // Map scroll direction to viewport exit direction
-                switch (this.app.state.scrollDirection) {
-                  case 'down':
-                    meta.direction = 'top' // When scrolling down, elements exit from top
-                    break
-                  case 'up':
-                    meta.direction = 'bottom' // When scrolling up, elements exit from bottom
-                    break
-                  case 'right':
-                    meta.direction = 'right' // When scrolling right, elements exit from right
-                    break
-                  case 'left':
-                    meta.direction = 'left' // When scrolling left, elements exit from left
-                    break
-                }
-              } else {
-                // If no scroll direction is available, use the simplest position-based check
-                if (boundingRect.bottom <= 0) {
-                  meta.direction = 'top'
-                } else if (boundingRect.top >= viewportHeight) {
-                  meta.direction = 'bottom'
-                } else if (boundingRect.right <= 0) {
-                  meta.direction = 'left'
-                } else if (boundingRect.left >= viewportWidth) {
-                  meta.direction = 'right'
-                }
-              }
+
+              const meta = { direction: this.getExitDirection(entry) }
 
               run.onExit(entry.target, runExited, meta)
               if (!run.repeated) {
@@ -1009,23 +984,12 @@ export default class Moonwalk {
             // Default interval to 0.15 if not specified (same as default walk)
             const interval = cfg.interval !== undefined ? cfg.interval : 0.15
 
-            let { alphaTween } = cfg
+            const alphaTween = normalizeAlphaTween(cfg.alphaTween, duration)
             let overlap = (duration - interval) * -1 // flip it
 
             if (section.stage.firstTween) {
               overlap = 0
               section.stage.firstTween = false
-            }
-
-            if (typeof alphaTween === 'object' && alphaTween !== null) {
-              alphaTween.duration = alphaTween.duration
-                ? alphaTween.duration
-                : duration
-            } else if (alphaTween === true) {
-              alphaTween = {
-                duration,
-                ease: 'easeIn',
-              }
             }
 
             const tweenFn = () => {
