@@ -1,7 +1,7 @@
 import { Application, Lazyload, Looper, Moonwalk } from '../../src/index.js'
 
 export function initLooper(opts = {}) {
-  const app = new Application({ debug: true })
+  const app = new Application({ debug: true, respectReducedMotion: true })
 
   if (opts.lazyload) {
     app.lazyload = new Lazyload(app, {

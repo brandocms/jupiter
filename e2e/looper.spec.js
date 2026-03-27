@@ -624,6 +624,95 @@ test.describe('Jupiter Looper Module', () => {
     })
   })
 
+  test.describe('Destroy and Cleanup', () => {
+    test.beforeEach(async ({ page }) => {
+      await gotoLooper(page, 'destroy', 'looper-destroy')
+    })
+
+    test('destroy removes clone elements from DOM', async ({ page }) => {
+      // Verify clones exist before destroy
+      const clonesBefore = await page.locator('[data-testid="looper-destroy"] [data-looper-clone]').count()
+      expect(clonesBefore).toBeGreaterThan(0)
+
+      // Destroy the looper
+      await page.locator('[data-testid="looper-destroy"]').evaluate(el => {
+        el.$loop.destroy()
+      })
+
+      // Verify clones are removed
+      const clonesAfter = await page.locator('[data-testid="looper-destroy"] [data-looper-clone]').count()
+      expect(clonesAfter).toBe(0)
+    })
+
+    test('destroy clears inline styles on track element', async ({ page }) => {
+      // Verify will-change is set
+      const willChangeBefore = await page.locator('[data-testid="looper-destroy"] [data-looper]').evaluate(
+        el => getComputedStyle(el).willChange
+      )
+      expect(willChangeBefore).toBe('transform')
+
+      // Destroy the looper
+      await page.locator('[data-testid="looper-destroy"]').evaluate(el => {
+        el.$loop.destroy()
+      })
+
+      // Verify will-change is cleared
+      const willChangeAfter = await page.locator('[data-testid="looper-destroy"] [data-looper]').evaluate(
+        el => el.style.willChange
+      )
+      expect(willChangeAfter).toBe('')
+    })
+
+    test('destroy stops crawl animation', async ({ page }) => {
+      // Record position
+      const positionBefore = await page.locator('[data-testid="looper-destroy"]').evaluate(el => {
+        return el.$loop.position.get()
+      })
+
+      // Destroy the looper
+      await page.locator('[data-testid="looper-destroy"]').evaluate(el => {
+        el.$loop.destroy()
+      })
+
+      // Wait and check position hasn't changed
+      await page.waitForTimeout(1000)
+
+      const positionAfter = await page.locator('[data-testid="looper-destroy"]').evaluate(el => {
+        // Position motionValue is destroyed, but we can check the track transform
+        const track = el.querySelector('[data-looper]')
+        return track.style.transform
+      })
+
+      // Track transform should be cleared after destroy
+      expect(positionAfter).toBe('')
+    })
+
+    test('no errors after destroy + interaction', async ({ page }) => {
+      const errors = []
+      page.on('pageerror', error => errors.push(error.message))
+
+      // Destroy the looper
+      await page.locator('[data-testid="looper-destroy"]').evaluate(el => {
+        el.$loop.destroy()
+      })
+
+      // Attempt drag gesture on the element
+      const box = await page.locator('[data-testid="looper-destroy"]').boundingBox()
+      const startX = box.x + box.width / 2
+      const startY = box.y + box.height / 2
+
+      await page.mouse.move(startX, startY)
+      await page.mouse.down()
+      await page.mouse.move(startX - 200, startY, { steps: 10 })
+      await page.mouse.up()
+
+      await page.waitForTimeout(500)
+
+      // Verify no console errors thrown
+      expect(errors).toHaveLength(0)
+    })
+  })
+
   test.describe('Many Items (No Clones)', () => {
     test.beforeEach(async ({ page }) => {
       await gotoLooper(page, 'many', 'looper-many')

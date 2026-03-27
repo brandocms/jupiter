@@ -1,6 +1,14 @@
 import { animate, motionValue, frame, cancelFrame } from 'motion'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import Dom from '../Dom'
+import prefersReducedMotion from '../../utils/prefersReducedMotion'
+
+// Named constants (M5)
+const CLONE_BUFFER_MULTIPLIER = 2.5
+const MIN_CRAWL_SPEED = 0.001
+const PING_PONG_PAUSE_MS = 200
+const VELOCITY_WINDOW_MS = 100
+const SPEED_RAMP_DURATION = 2
 
 /**
  * Looper Module
@@ -63,6 +71,7 @@ function horizontalLoop(app, items, config) {
 
   const shouldLoop = config.loop !== false
   const shouldDrag = config.draggable !== false
+  const reducedMotion = prefersReducedMotion() && app?.opts?.respectReducedMotion
 
   // Container setup
   const center = config.center
@@ -92,6 +101,7 @@ function horizontalLoop(app, items, config) {
   let containerWidth = 0 // Cache container width to avoid layout reads on every frame
   let itemWrapOffsets = [] // Cache current wrap offset for each item
   let isCloneCache = [] // Cache which items are clones (avoid hasAttribute checks)
+  let itemsHaveTransforms = null // Cache whether any original items have CSS transforms (H5)
 
   // Drag state and cleanup handlers
   let dragState = {}
@@ -102,6 +112,11 @@ function horizontalLoop(app, items, config) {
   let navAnimation = null // Track navigation animation (next/previous/toIndex)
   let positionUnsubscribe = null // Track position listener for cleanup
   let renderUnsubscribe = null // Track frame.render loop for cleanup
+  let indexUnsubscribe = null // Track index display position listener (C3)
+  let pingPongTimeout = null // Track ping-pong pause timeout (C4)
+  let resumeCrawlGeneration = 0 // Generation counter for resumeCrawl race condition (C7)
+  let hoverCleanup = null // Track hover effects cleanup function (C1/C9)
+  let startPingPongCrawl = null // Closure-scoped ping-pong starter (M2)
 
   // Scroll direction tracking for wrap logic
   let scrollDirection = 0 // -1 = backward, 0 = neutral, 1 = forward
@@ -110,6 +125,9 @@ function horizontalLoop(app, items, config) {
   // Display elements for index/count
   let indexElements = []
   let countElements = []
+
+  // Cache track element reference (M3)
+  const trackElement = items[0].parentElement
 
   /**
    * Measure total width of all items as currently laid out
@@ -165,7 +183,7 @@ function horizontalLoop(app, items, config) {
 
     // Use 2.5x container width to ensure plenty of buffer for wrapping
     // This prevents items from visibly moving to the back before they're off-screen
-    const minRequiredWidth = containerWidth * 2.5 + maxItemWidth
+    const minRequiredWidth = containerWidth * CLONE_BUFFER_MULTIPLIER + maxItemWidth
 
     // Store original count to prevent exponential growth
     const originalItemCount = items.length
@@ -228,17 +246,29 @@ function horizontalLoop(app, items, config) {
         const rect = el.getBoundingClientRect()
         widths[i] = rect.width
 
-        // Calculate xPercent based on current transform (expensive, only for originals)
-        const computedStyle = window.getComputedStyle(el)
-        const transform = computedStyle.transform
-        let currentX = 0
-
-        if (transform && transform !== 'none') {
-          const matrix = new DOMMatrix(transform)
-          currentX = matrix.m41
+        // Check transforms only if items have them (H5)
+        // Check once at first call, cache for subsequent calls
+        if (itemsHaveTransforms === null) {
+          itemsHaveTransforms = items.slice(0, originalItemCount || items.length).some(item => {
+            const t = window.getComputedStyle(item).transform
+            return t && t !== 'none'
+          })
         }
 
-        xPercents[i] = (currentX / widths[i]) * 100
+        if (itemsHaveTransforms) {
+          const computedStyle = window.getComputedStyle(el)
+          const transform = computedStyle.transform
+          let currentX = 0
+
+          if (transform && transform !== 'none') {
+            const matrix = new DOMMatrix(transform)
+            currentX = matrix.m41
+          }
+
+          xPercents[i] = (currentX / widths[i]) * 100
+        } else {
+          xPercents[i] = 0
+        }
       }
     })
 
@@ -292,64 +322,37 @@ function horizontalLoop(app, items, config) {
   }
 
   /**
+   * Calculate snap position for an item (M4 - shared between loop and non-loop paths)
+   */
+  function calculateSnapPos(item, i) {
+    const curX = (xPercents[i] / 100) * widths[i]
+
+    if (config.peek) {
+      const itemRightEdge = item.offsetLeft + curX + widths[i] - startX
+      const viewportCenter = containerWidth / 2
+      return itemRightEdge + gap / 2 - viewportCenter
+    } else if (config.centerSlide) {
+      const itemCenter = item.offsetLeft + curX + widths[i] / 2 - startX
+      const viewportCenter = containerWidth / 2
+      return itemCenter - viewportCenter
+    } else {
+      return item.offsetLeft + curX - startX
+    }
+  }
+
+  /**
    * Calculate time positions for snapping
    * These represent when each item hits the "start" position
    */
   function populateSnapTimes() {
-    if (!shouldLoop) {
-      // For non-looping, calculate based on actual item positions (pixels)
-      // This ensures snap and navigation work correctly
-      items.forEach((item, i) => {
-        const curX = (xPercents[i] / 100) * widths[i]
-        let snapPos
-
-        if (config.peek) {
-          // Peek mode: viewport center at the gap AFTER this item
-          // This shows: half(i) | gap | full(i+1) | gap | full(i+2) | gap | half(i+3)
-          const itemRightEdge = item.offsetLeft + curX + widths[i] - startX
-          const viewportCenter = containerWidth / 2
-          snapPos = itemRightEdge + gap / 2 - viewportCenter
-        } else if (config.centerSlide) {
-          // Center mode: item's center at viewport's center
-          const itemCenter = item.offsetLeft + curX + widths[i] / 2 - startX
-          const viewportCenter = containerWidth / 2
-          snapPos = itemCenter - viewportCenter
-        } else {
-          // Normal mode: item's left edge at viewport's left edge
-          snapPos = item.offsetLeft + curX - startX
-        }
-
-        times[i] = snapPos / pixelsPerSecond
-      })
-      return
-    }
-
-    // For looping, calculate based on item positions including gaps
     items.forEach((item, i) => {
-      const curX = (xPercents[i] / 100) * widths[i]
-      let snapPos
-
-      if (config.peek) {
-        // Peek mode: viewport center at the gap AFTER this item
-        const itemRightEdge = item.offsetLeft + curX + widths[i] - startX
-        const viewportCenter = containerWidth / 2
-        snapPos = itemRightEdge + gap / 2 - viewportCenter
-      } else if (config.centerSlide) {
-        // Center mode: item's center at viewport's center
-        const itemCenter = item.offsetLeft + curX + widths[i] / 2 - startX
-        const viewportCenter = containerWidth / 2
-        snapPos = itemCenter - viewportCenter
-      } else {
-        // Normal mode: item's left edge at viewport's left edge
-        snapPos = item.offsetLeft + curX - startX
-      }
-
-      times[i] = snapPos / pixelsPerSecond
+      times[i] = calculateSnapPos(item, i) / pixelsPerSecond
     })
 
-    // Adjust for container padding if present
-    const itemsContainer = items[0].parentNode
-    const containerPaddingLeft = parseFloat(getComputedStyle(itemsContainer).paddingLeft) || 0
+    if (!shouldLoop) return
+
+    // Adjust for container padding if present (looping only)
+    const containerPaddingLeft = parseFloat(getComputedStyle(trackElement).paddingLeft) || 0
 
     if (containerPaddingLeft > 0) {
       const paddingTime = containerPaddingLeft / pixelsPerSecond
@@ -434,8 +437,8 @@ function horizontalLoop(app, items, config) {
       const currentContainerWidth = container.offsetWidth
       const currentTotalWidth = getTotalWidthOfItems()
 
-      // Use same 2.5x buffer as replication logic
-      if (shouldLoop && currentTotalWidth < currentContainerWidth * 2.5) {
+      // Use same buffer multiplier as replication logic
+      if (shouldLoop && currentTotalWidth < currentContainerWidth * CLONE_BUFFER_MULTIPLIER) {
         replicateItemsIfNeeded()
         // Re-cache clone status for any new items
         isCloneCache = items.map((item, i) => i >= originalItemCount)
@@ -448,7 +451,7 @@ function horizontalLoop(app, items, config) {
       if (shouldLoop && !config.centerSlide) {
         position.set(originalItemsWidth)
         lastPositionForDirection = originalItemsWidth
-        items[0].parentElement.style.transform = `translateX(${-originalItemsWidth}px)`
+        trackElement.style.transform = `translateX(${-originalItemsWidth}px)`
       } else if (shouldLoop && config.centerSlide) {
         // For center mode, go to middle slide
         const middleIndex = Math.floor(originalItemCount / 2)
@@ -456,7 +459,7 @@ function horizontalLoop(app, items, config) {
         const initialPos = targetTime * pixelsPerSecond
         position.set(initialPos)
         lastPositionForDirection = initialPos
-        items[0].parentElement.style.transform = `translateX(${-initialPos}px)`
+        trackElement.style.transform = `translateX(${-initialPos}px)`
         curIndex = middleIndex
       }
 
@@ -562,6 +565,14 @@ function horizontalLoop(app, items, config) {
    * Initialize the loop animation
    */
   function init() {
+    // Inject CSS for drag pointer-events (H3) - once per page
+    if (!document.getElementById('looper-drag-style')) {
+      const style = document.createElement('style')
+      style.id = 'looper-drag-style'
+      style.textContent = '.looper-dragging [data-looper-item] { pointer-events: none; }'
+      document.head.appendChild(style)
+    }
+
     // Store original item count BEFORE replication
     originalItemCount = items.length
 
@@ -579,27 +590,25 @@ function horizontalLoop(app, items, config) {
     // whose individual translateX positions fall outside the container's bounds,
     // even when they are visually positioned within the viewport.
     // Apply overflow-x: clip on a parent element instead.
-    const itemsContainer = items[0].parentElement
-    const containerOverflow = getComputedStyle(itemsContainer).overflowX
+    const containerOverflow = getComputedStyle(trackElement).overflowX
     if (containerOverflow === 'clip') {
       console.warn(
-        `[Looper] ⚠️ [data-looper] has overflow-x: clip which will hide looped items. Apply overflow-x: clip on a parent wrapper element instead.`,
-        itemsContainer
+        `[Looper] [data-looper] has overflow-x: clip which will hide looped items. Apply overflow-x: clip on a parent wrapper element instead.`,
+        trackElement
       )
     }
 
     // Set initial container position
-    const containerElement = items[0].parentElement
-    containerElement.style.willChange = 'transform'
+    trackElement.style.willChange = 'transform'
 
     // For looping (non-center mode): start viewing first CLONE, not originals
     // This positions originals OFF-SCREEN LEFT so backward scroll reveals them smoothly
     if (shouldLoop && !config.centerSlide) {
       position.set(originalItemsWidth)
       lastPositionForDirection = originalItemsWidth
-      containerElement.style.transform = `translateX(${-originalItemsWidth}px)`
+      trackElement.style.transform = `translateX(${-originalItemsWidth}px)`
     } else {
-      containerElement.style.transform = 'translateX(0px)'
+      trackElement.style.transform = 'translateX(0px)'
     }
 
     // Set up RAF loop to update container position and wrap items
@@ -607,8 +616,6 @@ function horizontalLoop(app, items, config) {
     // This is Motion's optimized render loop - prevents layout thrashing
     function startRenderLoop() {
       if (renderUnsubscribe) return // Already running
-
-      const containerElement = items[0].parentElement
 
       // Track scroll direction for wrap logic
       const positionUnsubscribe = position.on('change', latest => {
@@ -622,7 +629,7 @@ function horizontalLoop(app, items, config) {
       renderUnsubscribe = frame.render(() => {
         // Use RAW position (no bounded) for container
         const currentPos = position.get()
-        containerElement.style.transform = `translateX(${-currentPos}px)`
+        trackElement.style.transform = `translateX(${-currentPos}px)`
 
         // Wrap items based on raw position
         updateItemPositions(currentPos)
@@ -637,26 +644,26 @@ function horizontalLoop(app, items, config) {
       startRenderLoop()
     } else {
       // Non-looping: simple position listener to update container transform
-      const containerElement = items[0].parentElement
       positionUnsubscribe = position.on('change', latest => {
-        containerElement.style.transform = `translateX(${-latest}px)`
+        trackElement.style.transform = `translateX(${-latest}px)`
       })
     }
 
     // Create animation by animating the position motionValue
-    if (shouldLoop && config.crawl) {
+    // Skip crawl entirely when reduced motion is preferred (H4)
+    if (shouldLoop && config.crawl && !reducedMotion) {
       const duration = totalWidth / pixelsPerSecond
 
       // Create initial animation (paused)
       animation = startLoopAnimation()
       animation.pause()
-    } else if (!shouldLoop && config.crawl) {
+    } else if (!shouldLoop && config.crawl && !reducedMotion) {
       // Non-looping: ping-pong animation (crawl to end, reverse to start)
       // Use maxScrollPosition (last item at right edge) instead of totalWidth
       const duration = maxScrollPosition / pixelsPerSecond
 
       // Create a ping-pong crawl animation
-      function startPingPongCrawl(fromStart = true) {
+      startPingPongCrawl = function pingPongCrawl(fromStart = true) {
         const currentPos = position.get()
         const target = fromStart ? maxScrollPosition : 0
         const remainingDist = Math.abs(target - currentPos)
@@ -672,16 +679,13 @@ function horizontalLoop(app, items, config) {
         // When reaching the end, reverse direction
         animation.then(() => {
           // Brief pause at boundary for visual clarity
-          setTimeout(() => {
+          pingPongTimeout = setTimeout(() => {
             if (animation && animation.speed !== 0) {
-              startPingPongCrawl(!fromStart)
+              pingPongCrawl(!fromStart)
             }
-          }, 200) // Slightly longer pause for smooth reversal
+          }, PING_PONG_PAUSE_MS)
         })
       }
-
-      // Store the ping-pong starter for later use
-      config.startPingPongCrawl = startPingPongCrawl
 
       // Create initial animation (starts paused)
       animation = animate(position, maxScrollPosition, {
@@ -696,8 +700,10 @@ function horizontalLoop(app, items, config) {
       setupDrag()
     }
 
-    // Setup hover effects
-    setupHoverEffects()
+    // Setup hover effects (skip in reduced motion - H4)
+    if (!reducedMotion) {
+      setupHoverEffects()
+    }
 
     // Setup slide index/count display elements
     if (config.wrapper) {
@@ -731,7 +737,7 @@ function horizontalLoop(app, items, config) {
         }
 
         // Update index display whenever position changes (closestIndex normalizes internally)
-        position.on('change', updateIndexOnChange)
+        indexUnsubscribe = position.on('change', updateIndexOnChange)
       }
     }
 
@@ -780,7 +786,6 @@ function horizontalLoop(app, items, config) {
     let startPosition = 0
     let velocityTracker = [] // Track recent movements for velocity calculation
     let hasDragged = false // Did movement exceed minimumMovement threshold?
-    let totalMovement = 0 // Total pixels moved (for click vs drag detection)
 
     /**
      * Calculate velocity from recent pointer movements
@@ -825,7 +830,6 @@ function horizontalLoop(app, items, config) {
       startPosition = position.get()
       velocityTracker = [{ x: e.clientX, time: Date.now() }]
       hasDragged = false // Reset - will be set true if movement exceeds threshold
-      totalMovement = 0
 
       // Stop autoplay on user interaction
       if (loopController && loopController.stopAutoplay) {
@@ -877,9 +881,7 @@ function horizontalLoop(app, items, config) {
         hasDragged = true
         // Now that we know it's a drag, change cursor and disable pointer events on items
         container.style.cursor = 'grabbing'
-        items.forEach(item => {
-          item.style.pointerEvents = 'none'
-        })
+        trackElement.classList.add('looper-dragging')
       }
 
       // Only update position if we've confirmed this is a drag
@@ -891,8 +893,8 @@ function horizontalLoop(app, items, config) {
       // Track for velocity calculation
       velocityTracker.push({ x: currentX, time: currentTime })
 
-      // Keep only recent movements (last 100ms)
-      while (velocityTracker.length > 0 && currentTime - velocityTracker[0].time > 100) {
+      // Keep only recent movements
+      while (velocityTracker.length > 0 && currentTime - velocityTracker[0].time > VELOCITY_WINDOW_MS) {
         velocityTracker.shift()
       }
 
@@ -945,9 +947,7 @@ function horizontalLoop(app, items, config) {
       // Reset cursor and re-enable hover effects (only if we actually dragged)
       if (hasDragged) {
         container.style.cursor = 'grab'
-        items.forEach(item => {
-          item.style.pointerEvents = ''
-        })
+        trackElement.classList.remove('looper-dragging')
       }
 
       // If this was a click (not a drag), trigger click on the element
@@ -990,7 +990,9 @@ function horizontalLoop(app, items, config) {
       // Note: This is ALWAYS opposite, regardless of reversed setting
       // (reversed only affects auto-crawl, not drag)
       // Apply velocity multiplier for tuning throw feel
-      const motionVelocity = -velocity * config.throwVelocityMultiplier
+      // Reduce inertia when reduced motion is preferred (H4)
+      const velocityMultiplier = reducedMotion ? config.throwVelocityMultiplier * 0.3 : config.throwVelocityMultiplier
+      const motionVelocity = -velocity * velocityMultiplier
 
       // Calculate estimated target based on inertia physics
       const power = config.throwPower
@@ -1094,6 +1096,24 @@ function horizontalLoop(app, items, config) {
      */
     function snapToNearest(velocity = 0) {
       const currentPos = position.get()
+
+      // Reduced motion: instant snap with short duration, no inertia (H4)
+      if (reducedMotion) {
+        const snapPos = findNearestSnapPoint(currentPos)
+        const clampedPos = shouldLoop ? snapPos : Math.max(0, Math.min(snapPos, maxScrollPosition))
+        snapAnimation = animate(position, clampedPos, {
+          duration: 0.15,
+          ease: 'easeOut',
+        })
+        snapAnimation
+          .then(() => {
+            snapAnimation = null
+            updateIndexDisplay()
+          })
+          .catch(() => { snapAnimation = null })
+        return
+      }
+
       // Apply both velocity multipliers for snapped loopers
       const motionVelocity =
         -velocity * config.throwVelocityMultiplier * config.snapVelocityMultiplier
@@ -1151,7 +1171,10 @@ function horizontalLoop(app, items, config) {
      * Reads current position and resumes infinite loop
      */
     function resumeCrawl() {
-      if (!config.crawl) return
+      if (!config.crawl || reducedMotion) return
+
+      // Increment generation to invalidate any pending .then() callbacks (C7)
+      const generation = ++resumeCrawlGeneration
 
       // Stop any existing animations
       if (animation) {
@@ -1168,7 +1191,10 @@ function horizontalLoop(app, items, config) {
       // Calculate position within current cycle (using originalItemsWidth)
       // Use proper modulo for negative positions (dragging right/backward)
       const cyclePos = ((currentPos % originalItemsWidth) + originalItemsWidth) % originalItemsWidth
-      const remainingDist = originalItemsWidth - cyclePos
+      // For reversed carousels, remaining distance to complete cycle backward is cyclePos (C6)
+      const remainingDist = config.reversed
+        ? (cyclePos || originalItemsWidth)
+        : (originalItemsWidth - cyclePos)
       const remainingDuration = remainingDist / pixelsPerSecond
 
       // Animate position to complete this cycle
@@ -1181,6 +1207,9 @@ function horizontalLoop(app, items, config) {
 
       // When cycle completes, restart infinite loop
       animation.then(() => {
+        // Check generation to avoid stale .then() callbacks (C7)
+        if (generation !== resumeCrawlGeneration) return
+
         // Capture current speed before replacing animation
         const currentSpeed = animation.speed
 
@@ -1203,9 +1232,8 @@ function horizontalLoop(app, items, config) {
         if (speedRampAnimation) {
           speedRampAnimation.stop()
           // Calculate remaining ramp duration based on current speed
-          // speed goes from 0.001 to 1.0, so progress = (currentSpeed - 0.001) / (1.0 - 0.001)
-          const rampProgress = (currentSpeed - 0.001) / 0.999
-          const remainingRampDuration = 2 * (1 - rampProgress)
+          const rampProgress = (currentSpeed - MIN_CRAWL_SPEED) / (1 - MIN_CRAWL_SPEED)
+          const remainingRampDuration = SPEED_RAMP_DURATION * (1 - rampProgress)
 
           speedRampAnimation = animate(
             animation,
@@ -1216,9 +1244,9 @@ function horizontalLoop(app, items, config) {
       })
 
       // Start at nearly-stopped speed and ramp up to full speed
-      // Use 0.001 instead of 0 to keep animation running (speed = 0 completely pauses)
-      animation.speed = 0.001
-      speedRampAnimation = animate(animation, { speed: 1 }, { duration: 2, ease: 'easeIn' })
+      // Use MIN_CRAWL_SPEED instead of 0 to keep animation running (speed = 0 completely pauses)
+      animation.speed = MIN_CRAWL_SPEED
+      speedRampAnimation = animate(animation, { speed: 1 }, { duration: SPEED_RAMP_DURATION, ease: 'easeIn' })
     }
 
     // Set up touch-action CSS for proper touch handling
@@ -1240,7 +1268,8 @@ function horizontalLoop(app, items, config) {
   }
 
   /**
-   * Setup hover slow-down effects
+   * Setup hover slow-down effects using event delegation on container (H1/C1/C5)
+   * Single listener pair on container covers all items including future clones
    */
   function setupHoverEffects() {
     if (!config.crawl || !animation) return
@@ -1252,37 +1281,48 @@ function horizontalLoop(app, items, config) {
     // Track hover animations to prevent accumulation
     let hoverAnimation = null
 
-    items.forEach(item => {
-      item.addEventListener('mouseenter', () => {
-        if (!animation) return
+    function onMouseEnter(e) {
+      if (!animation) return
+      if (!e.target.closest('[data-looper-item]')) return
 
-        // Stop previous hover animation before creating new one
-        if (hoverAnimation) {
-          hoverAnimation.stop()
-        }
+      if (hoverAnimation) {
+        hoverAnimation.stop()
+      }
 
-        hoverAnimation = animate(
-          animation,
-          { speed: hoverSpeed },
-          { duration: config.ease.mouseOver.duration, ease: 'easeOut' }
-        )
-      })
+      hoverAnimation = animate(
+        animation,
+        { speed: hoverSpeed },
+        { duration: config.ease.mouseOver.duration, ease: 'easeOut' }
+      )
+    }
 
-      item.addEventListener('mouseleave', () => {
-        if (!animation) return
+    function onMouseLeave(e) {
+      if (!animation) return
+      if (!e.target.closest('[data-looper-item]')) return
 
-        // Stop previous hover animation before creating new one
-        if (hoverAnimation) {
-          hoverAnimation.stop()
-        }
+      if (hoverAnimation) {
+        hoverAnimation.stop()
+      }
 
-        hoverAnimation = animate(
-          animation,
-          { speed: targetSpeed },
-          { duration: config.ease.mouseOut.duration, ease: 'easeOut' }
-        )
-      })
-    })
+      hoverAnimation = animate(
+        animation,
+        { speed: targetSpeed },
+        { duration: config.ease.mouseOut.duration, ease: 'easeOut' }
+      )
+    }
+
+    container.addEventListener('mouseenter', onMouseEnter, true)
+    container.addEventListener('mouseleave', onMouseLeave, true)
+
+    // Return cleanup function (C1/C9)
+    hoverCleanup = () => {
+      if (hoverAnimation) {
+        hoverAnimation.stop()
+        hoverAnimation = null
+      }
+      container.removeEventListener('mouseenter', onMouseEnter, true)
+      container.removeEventListener('mouseleave', onMouseLeave, true)
+    }
   }
 
   /**
@@ -1431,19 +1471,19 @@ function horizontalLoop(app, items, config) {
 
   const loopController = {
     position,
-    animation,
+    get animation() { return animation },
     items,
-    times,
+    get times() { return times },
     isReversed: config.reversed,
     isLooping: shouldLoop,
 
     play() {
-      if (!shouldLoop && config.crawl && config.startPingPongCrawl) {
+      if (!shouldLoop && config.crawl && startPingPongCrawl) {
         // Non-looping: start ping-pong crawl
         const currentPos = position.get()
         // Determine direction based on current position
         const goForward = currentPos < maxScrollPosition / 2
-        config.startPingPongCrawl(goForward)
+        startPingPongCrawl(goForward)
       } else if (animation) {
         animation.play()
       }
@@ -1544,17 +1584,51 @@ function horizontalLoop(app, items, config) {
       // Stop autoplay
       this.stopAutoplay()
 
-      // Stop animation
+      // Stop all animations (C9)
       if (animation) {
         animation.stop()
+        animation = null
+      }
+      if (speedRampAnimation) {
+        speedRampAnimation.stop()
+        speedRampAnimation = null
+      }
+      if (inertiaAnimation) {
+        inertiaAnimation.stop()
+        inertiaAnimation = null
+      }
+      if (snapAnimation) {
+        snapAnimation.stop()
+        snapAnimation = null
+      }
+      if (navAnimation) {
+        navAnimation.stop()
+        navAnimation = null
+      }
+
+      // Clear pending timeouts (C4)
+      if (pingPongTimeout) {
+        clearTimeout(pingPongTimeout)
+        pingPongTimeout = null
+      }
+
+      // Cleanup hover effects (C1/C9)
+      if (hoverCleanup) {
+        hoverCleanup()
+        hoverCleanup = null
       }
 
       // Stop frame.render loop
       stopRenderLoop()
 
-      // Cleanup position listener
+      // Cleanup position listeners (C3)
       if (positionUnsubscribe) {
         positionUnsubscribe()
+        positionUnsubscribe = null
+      }
+      if (indexUnsubscribe) {
+        indexUnsubscribe()
+        indexUnsubscribe = null
       }
 
       // Cleanup drag
@@ -1564,6 +1638,23 @@ function horizontalLoop(app, items, config) {
 
       // Cleanup resize listener
       window.removeEventListener('APPLICATION:RESIZE', handleResize)
+
+      // Remove clone elements from DOM (C10)
+      const clones = trackElement.querySelectorAll('[data-looper-clone]')
+      clones.forEach(clone => clone.remove())
+
+      // Clear inline styles on track element (C10)
+      trackElement.style.willChange = ''
+      trackElement.style.transform = ''
+
+      // Clear inline styles on container
+      container.style.touchAction = ''
+      container.style.cursor = ''
+
+      // Clear item wrap transforms
+      items.forEach(item => {
+        item.style.transform = ''
+      })
 
       // Destroy position value
       position.destroy()
@@ -1603,7 +1694,7 @@ export default class Looper {
 
       if (!wrapper) {
         console.error(
-          '[Looper] ⚠️ No wrapper element found (expected [data-looper-container] or .looper-wrapper)'
+          '[Looper] No wrapper element found (expected [data-looper-container] or .looper-wrapper)'
         )
       }
 
@@ -1720,21 +1811,25 @@ export default class Looper {
       // Replace stub with real loop
       element.$loop = loop
 
-      // Setup navigation buttons if present
+      // Setup navigation buttons if present (C2 - store refs for cleanup)
       const next = Dom.find(element, '[data-panner-next]')
       const previous = Dom.find(element, '[data-panner-previous]')
+      const navCleanups = []
 
       if (next) {
-        next.addEventListener('click', () => {
-          loop.next({ duration: 0.85, ease: 'easeInOut' })
-        })
+        const onNext = () => loop.next({ duration: 0.85, ease: 'easeInOut' })
+        next.addEventListener('click', onNext)
+        navCleanups.push(() => next.removeEventListener('click', onNext))
       }
 
       if (previous) {
-        previous.addEventListener('click', () => {
-          loop.previous({ duration: 0.85, ease: 'easeInOut' })
-        })
+        const onPrev = () => loop.previous({ duration: 0.85, ease: 'easeInOut' })
+        previous.addEventListener('click', onPrev)
+        navCleanups.push(() => previous.removeEventListener('click', onPrev))
       }
+
+      // Store nav cleanup on the loop controller
+      loop._navCleanups = navCleanups
 
       // Reveal lazyload images: immediately reveal off-screen items (no visible transition),
       // defer reveal of viewport items until after wrapper fade-in for a nice per-image fade
@@ -1770,7 +1865,14 @@ export default class Looper {
   }
 
   destroy() {
-    this.loopers.forEach(loop => loop.destroy())
+    this.loopers.forEach(loop => {
+      // Clean up navigation button listeners (C2)
+      if (loop._navCleanups) {
+        loop._navCleanups.forEach(fn => fn())
+        loop._navCleanups = null
+      }
+      loop.destroy()
+    })
     this.loopers = []
     this.pendingLoopers = []
   }
