@@ -1,3 +1,14 @@
+#### Unreleased
+
+- Dataloader: fix `replaceInnerHTML` Promise constructor anti-pattern
+- Dataloader: add error handling to `fetch()` — loading state now clears on failure
+- Dataloader: replace `innerHTML +=` with `insertAdjacentHTML` to preserve existing DOM state
+- Dataloader: add `AbortController` to cancel in-flight requests on new fetch
+- Dataloader: add `destroy()` method for full event listener and URL sync cleanup
+- Dataloader: add configurable `filterDebounce` option (default: 650ms)
+- Dataloader: refactor `onParam` into smaller handler methods
+- Dataloader: store bound handlers for proper cleanup and GC
+
 #### 5.0.0-beta.12
 
 - Add `peek` option to Looper — centers viewport on the gap between two items (half | full | full | half)

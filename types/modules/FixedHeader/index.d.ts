@@ -9,6 +9,58 @@ export default class FixedHeader {
      */
     constructor(app: any, opts?: FixedHeaderOptions);
     app: any;
+    _rawSections: {
+        [k: string]: {
+            /**
+             * - Whether to unpin header on window resize
+             */
+            unPinOnResize?: boolean;
+            /**
+             * - Scrolling element
+             */
+            canvas?: Window | HTMLElement;
+            /**
+             * - Selector for elements to check intersection with
+             */
+            intersects?: string | null;
+            /**
+             * - Called before header enters
+             */
+            beforeEnter?: Function;
+            /**
+             * - Called when header enters
+             */
+            enter?: Function;
+            /**
+             * - Delay before enter animation
+             */
+            enterDelay?: number;
+            /**
+             * - Scroll tolerance before triggering hide/show
+             */
+            tolerance?: number;
+            /**
+             * - Offset from top before triggering hide
+             */
+            offset?: number | string | Function;
+            /**
+             * - Offset from top before shrinking header
+             */
+            offsetSmall?: number | string | Function;
+            /**
+             * - Offset from top before changing background color
+             */
+            offsetBg?: number | string | Function;
+            /**
+             * - Regular background color
+             */
+            regBgColor?: string | null;
+            /**
+             * - Alternate background color
+             */
+            altBgColor?: string | null;
+        };
+    };
     mainOpts: any;
     el: any;
     opts: any;
@@ -69,6 +121,12 @@ export default class FixedHeader {
     getElementPhysicalHeight(el: any): number;
     getScrollY(): any;
     toleranceExceeded(): boolean;
+    /**
+     * Reconfigure the header for a new section/page.
+     * Call this after a view transition or SPA navigation
+     * to re-resolve section options and reset scroll state.
+     */
+    reconfigure(): void;
     _getOptionsForSection(section: any, opts: any): any;
     _bindMobileMenuListeners(): void;
     _onMobileMenuOpen(): void;

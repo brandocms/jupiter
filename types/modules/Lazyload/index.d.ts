@@ -29,7 +29,9 @@ export default class Lazyload {
     imageObserver: IntersectionObserver;
     lazyImages: any;
     initObserver(observer: any, setAttrs?: boolean): void;
-    forceLoad($container?: HTMLElement): void;
+    forceLoad($container?: HTMLElement, { reveal }?: {
+        reveal?: boolean;
+    }): void;
     initializeResizeObserver(): void;
     sizeObserver: ResizeObserver;
     flushSizeUpdates(): void;

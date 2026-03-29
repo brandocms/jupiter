@@ -190,6 +190,22 @@ export default class Moonwalk {
      */
     ready(): void;
     /**
+     * Get the viewport entry direction based on current scroll direction.
+     * When entering, elements appear from the opposite side of scroll direction.
+     *
+     * @param {boolean} isEntry - Whether this is an entry (true) or exit (false)
+     * @returns {string|null}
+     */
+    getScrollDirection(isEntry: boolean): string | null;
+    /**
+     * Get the exit direction for an element, falling back to position-based
+     * detection when scroll direction is unavailable.
+     *
+     * @param {IntersectionObserverEntry} entry
+     * @returns {string|null}
+     */
+    getExitDirection(entry: IntersectionObserverEntry): string | null;
+    /**
      * Creates and returns the RUN observer for data-moonwalk-run elements
      *
      * @param {*} run

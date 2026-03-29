@@ -445,6 +445,7 @@ Components can be placed outside the main dataloader element:
 - `page` - `number` - Initial page number (default: 0)
 - `loaderParam` - `object` - Initial parameters
 - `filter` - `string` - Initial filter value
+- `filterDebounce` - `number` - Debounce delay in ms for filter input (default: 650)
 - `onFetch` - `function` - Called after content is fetched
 - `urlSync` - `object` - URL synchronization configuration:
   - `templates` - Language-specific URL templates with `:param` placeholders
@@ -471,6 +472,12 @@ Components can be placed outside the main dataloader element:
 - `data-loader-filter-for="id"` - Filter for specific dataloader (split layout)
 - `data-loader-loading` - Added during loading
 - `data-loader-starved` - Added to load more button when no more content
+
+### Methods
+
+- `destroy()` - Remove all event listeners, abort pending fetches, and clean up URL sync
+- `updateBaseURL(url)` - Change the base API URL
+- `Dataloader.replaceInnerHTML(el, url)` - Static method to replace an element's innerHTML with fetched content
 
 ### API Response Headers
 
