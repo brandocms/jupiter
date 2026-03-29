@@ -3,8 +3,8 @@ export default class Application {
     debugType: number;
     debugOverlay: Element;
     userAgent: string;
-    _lastWindowHeight: number;
     breakpoint: any;
+    root: HTMLElement;
     language: string;
     size: {
         width: number;
@@ -28,19 +28,19 @@ export default class Application {
     };
     opts: any;
     focusableSelectors: any;
+    browser: any;
     featureTests: any;
     breakpoints: any;
     fontLoader: any;
-    fader: any;
     callbacks: {};
     SCROLL_LOCKED: boolean;
     SCROLLBAR_WIDTH: number;
     INITIALIZED: boolean;
     PREFERS_REDUCED_MOTION: boolean;
-    beforeInitializedEvent: CustomEvent<any>;
-    initializedEvent: CustomEvent<any>;
-    readyEvent: CustomEvent<any>;
-    revealedEvent: CustomEvent<any>;
+    beforeInitializedEvent: CustomEvent<this>;
+    initializedEvent: CustomEvent<this>;
+    readyEvent: CustomEvent<this>;
+    revealedEvent: CustomEvent<this>;
     /**
      * Main init. Called from client application on DOMReady.
      */
@@ -110,7 +110,6 @@ export default class Application {
      * Ugly hacks
      */
     hacks(): void;
-    getIOSCurrentInnerHeight(): number;
     getIOSInnerHeightMax(): number;
     /**
      * Event emitters
@@ -144,7 +143,7 @@ export default class Application {
     onScroll(e: any): void;
     onVisibilityChange(e: any): void;
     pollForElement(selector: any, time?: number, callback?: () => void): void;
-    pollForVar(variable: any, time?: number, callback?: () => void): void;
+    pollForVar(getter: any, time?: number, callback?: () => void): void;
     setupDebug(): void;
     toggleDebug(): void;
     /**

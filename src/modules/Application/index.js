@@ -10,7 +10,7 @@ import Fontloader from '../Fontloader'
 import Dom from '../Dom'
 import { set, clearProps } from '../../utils/motion-helpers'
 
-window.onpageshow = event => {
+window.addEventListener('pageshow', event => {
   // Fix for hash anchor navigation issues
   // When navigating to a page with #anchor, ensure overlay is removed and content is visible
   const hasHash = window.location.hash
@@ -60,7 +60,7 @@ window.onpageshow = event => {
       setTimeout(fixVisibility, 500)
     }
   }
-}
+})
 
 const DEFAULT_OPTIONS = {
   respectReducedMotion: false,
@@ -123,8 +123,8 @@ export default class Application {
     this.debugType = 1
     this.debugOverlay = null
     this.userAgent = navigator.userAgent
-    this._lastWindowHeight = 0
     this.breakpoint = null
+    this.root = document.documentElement
     this.language = document.documentElement.lang
 
     this.size = {
@@ -160,6 +160,7 @@ export default class Application {
     this.opts.breakpointConfig = breakpointConfig || DEFAULT_OPTIONS.breakpointConfig
 
     this.focusableSelectors = this.opts.focusableSelectors
+    this.browser = null
     this.featureTests = new FeatureTests(this, this.opts.featureTests)
 
     if (typeof this.opts.breakpointConfig === 'object') {
@@ -174,7 +175,6 @@ export default class Application {
     this.setDims()
     this.fontLoader = new Fontloader(this)
 
-    this.fader = null
     this.callbacks = {}
 
     this.SCROLL_LOCKED = false
@@ -190,10 +190,10 @@ export default class Application {
     }
     window.addEventListener(Events.BREAKPOINT_CHANGE, this.onBreakpointChanged.bind(this))
 
-    this.beforeInitializedEvent = new window.CustomEvent(Events.APPLICATION_PRELUDIUM, this)
-    this.initializedEvent = new window.CustomEvent(Events.APPLICATION_INITIALIZED, this)
-    this.readyEvent = new window.CustomEvent(Events.APPLICATION_READY, this)
-    this.revealedEvent = new window.CustomEvent(Events.APPLICATION_REVEALED, this)
+    this.beforeInitializedEvent = new window.CustomEvent(Events.APPLICATION_PRELUDIUM, { detail: this })
+    this.initializedEvent = new window.CustomEvent(Events.APPLICATION_INITIALIZED, { detail: this })
+    this.readyEvent = new window.CustomEvent(Events.APPLICATION_READY, { detail: this })
+    this.revealedEvent = new window.CustomEvent(Events.APPLICATION_REVEALED, { detail: this })
 
     /**
      * Grab common events and defer
@@ -204,14 +204,14 @@ export default class Application {
       passive: true,
     })
 
-    if (opts.bindScroll) {
+    if (this.opts.bindScroll) {
       window.addEventListener('scroll', rafCallback(this.onScroll.bind(this)), {
         capture: false,
         passive: true,
       })
     }
 
-    if (opts.bindResize) {
+    if (this.opts.bindResize) {
       window.addEventListener('resize', rafCallback(this.onResize.bind(this)), {
         capture: false,
         passive: true,
@@ -364,7 +364,7 @@ export default class Application {
       return
     }
     const currentScrollbarWidth = this.getCurrentScrollBarWidth()
-    const ev = new window.CustomEvent(Events.APPLICATION_SCROLL_LOCKED, this)
+    const ev = new window.CustomEvent(Events.APPLICATION_SCROLL_LOCKED, { detail: this })
     this._scrollPaddedElements = [document.body, ...extraPaddedElements]
     window.dispatchEvent(ev)
     this.SCROLL_LOCKED = true
@@ -379,7 +379,7 @@ export default class Application {
     if (!this.SCROLL_LOCKED) {
       return
     }
-    const ev = new window.CustomEvent(Events.APPLICATION_SCROLL_RELEASED, this)
+    const ev = new window.CustomEvent(Events.APPLICATION_SCROLL_RELEASED, { detail: this })
     window.dispatchEvent(ev)
     this.SCROLL_LOCKED = false
     set(document.body, { overflow: defaultOverflow })
@@ -440,12 +440,18 @@ export default class Application {
     const duration = time * 1000 // convert to milliseconds
     const startTime = performance.now()
 
-    const easeInOut = t => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t)
+    const easingFns = {
+      linear: t => t,
+      easeIn: t => t * t,
+      easeOut: t => t * (2 - t),
+      easeInOut: t => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t),
+    }
+    const easeFn = easingFns[ease] || easingFns.easeInOut
 
     const animateScroll = currentTime => {
       const elapsed = currentTime - startTime
       const progress = Math.min(elapsed / duration, 1)
-      const eased = easeInOut(progress)
+      const eased = easeFn(progress)
       const currentY = startY + distance * eased
 
       window.scrollTo(0, currentY)
@@ -525,10 +531,6 @@ export default class Application {
     }
   }
 
-  getIOSCurrentInnerHeight() {
-    return window.innerHeight
-  }
-
   getIOSInnerHeightMax() {
     if (!navigator.userAgent.match(/iphone|ipod|ipad/i)) {
       return window.innerHeight
@@ -597,7 +599,7 @@ export default class Application {
   }
 
   setDims() {
-    const root = document.querySelector(':root')
+    const root = this.root
 
     this.size.initialInnerHeight = window.innerHeight
     this.size.initialOuterHeight = window.outerHeight
@@ -625,13 +627,13 @@ export default class Application {
   }
 
   setFontBaseVw() {
-    const root = document.querySelector(':root')
+    const root = this.root
     this.size.baseVW = this._getBaseVW()
     root.style.setProperty('--font-base-vw', `${this.size.baseVW}`)
   }
 
   setZoom() {
-    const root = document.querySelector(':root')
+    const root = this.root
     root.style.setProperty('--ec-zoom', `${this.size.zoom}`)
   }
 
@@ -639,14 +641,14 @@ export default class Application {
    * Inner height of mobiles may change when showing hiding bottom bar.
    */
   setvh100() {
-    const root = document.querySelector(':root')
+    const root = this.root
     const height = this.featureTests.results.ios ? screen.height : window.innerHeight
     root.style.setProperty('--vp-100vh', `${height}px`)
     root.style.setProperty('--vp-1vh', `${height * 0.01}px`)
   }
 
   setvw100() {
-    const root = document.querySelector(':root')
+    const root = this.root
     root.style.setProperty('--vp-100vw', `${window.innerWidth}px`)
     root.style.setProperty('--vp-1vw', `${window.innerWidth * 0.01}px`)
   }
@@ -655,7 +657,7 @@ export default class Application {
    * Get the max 100vh for iOS
    */
   setvh100Max() {
-    const root = document.querySelector(':root')
+    const root = this.root
     const vh100 = this.featureTests.results.ios
       ? this.getIOSInnerHeightMax()
       : this.size.initialInnerHeight
@@ -664,7 +666,7 @@ export default class Application {
   }
 
   setScrollHeight() {
-    const root = document.querySelector(':root')
+    const root = this.root
     root.style.setProperty('--scroll-h', `${document.body.scrollHeight}px`)
   }
 
@@ -702,7 +704,6 @@ export default class Application {
    */
   onScroll(e) {
     if (this.SCROLL_LOCKED) {
-      e.preventDefault()
       return
     }
 
@@ -737,14 +738,14 @@ export default class Application {
   }
 
   onVisibilityChange(e) {
-    let evt = new CustomEvent(Events.APPLICATION_VISIBILITY_CHANGE, e)
+    let evt = new CustomEvent(Events.APPLICATION_VISIBILITY_CHANGE, { detail: e })
     window.dispatchEvent(evt)
 
     if (document.visibilityState === 'hidden') {
-      evt = new CustomEvent(Events.APPLICATION_HIDDEN, e)
+      evt = new CustomEvent(Events.APPLICATION_HIDDEN, { detail: e })
       window.dispatchEvent(evt)
     } else if (document.visibilityState === 'visible') {
-      evt = new CustomEvent(Events.APPLICATION_VISIBLE, e)
+      evt = new CustomEvent(Events.APPLICATION_VISIBLE, { detail: e })
       window.dispatchEvent(evt)
     }
   }
@@ -760,12 +761,13 @@ export default class Application {
     }
   }
 
-  pollForVar(variable, time = 500, callback = () => {}) {
-    if (variable !== null) {
-      callback(variable)
+  pollForVar(getter, time = 500, callback = () => {}) {
+    const value = getter()
+    if (value !== null && value !== undefined) {
+      callback(value)
     } else {
       setTimeout(() => {
-        this.pollForVar(variable, time, callback)
+        this.pollForVar(getter, time, callback)
       }, time)
     }
   }
@@ -790,8 +792,7 @@ export default class Application {
 
     span.addEventListener('click', () => {
       const copyText = userAgent.querySelector('b')
-      const textArea = document.createElement('textarea')
-      textArea.value = `
+      const text = `
 ${copyText.textContent}
 SCREEN >> ${window.screen.width}x${window.screen.height}
 WINDOW >> ${windowWidth}x${windowHeight}
@@ -799,10 +800,21 @@ WINDOW >> ${windowWidth}x${windowHeight}
 FEATURES >>
 ${JSON.stringify(this.featureTests.results, undefined, 2)}
       `
-      document.body.appendChild(textArea)
-      textArea.select()
-      document.execCommand('Copy')
-      textArea.remove()
+
+      const copyWithFallback = str => {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          return navigator.clipboard.writeText(str)
+        }
+        const textArea = document.createElement('textarea')
+        textArea.value = str
+        document.body.appendChild(textArea)
+        textArea.select()
+        document.execCommand('Copy')
+        textArea.remove()
+        return Promise.resolve()
+      }
+
+      copyWithFallback(text)
       span.innerHTML = 'OK!'
       setTimeout(() => {
         span.innerHTML = 'KOPIER'
@@ -905,7 +917,7 @@ ${JSON.stringify(this.featureTests.results, undefined, 2)}
         }
       }
     }
-    document.onkeydown = gridKeyPressed
+    document.addEventListener('keydown', gridKeyPressed)
   }
 
   /**
