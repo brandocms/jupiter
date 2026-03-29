@@ -5,171 +5,584 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Jupiter Test Pages</title>
   <style>
-    body {
-      font-family: system-ui, sans-serif;
-      line-height: 1.5;
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 2rem;
-    }
-    
-    h1 {
-      border-bottom: 2px solid #333;
-      padding-bottom: 0.5rem;
-    }
-    
-    ul {
-      list-style-type: none;
+    * {
+      margin: 0;
       padding: 0;
+      box-sizing: border-box;
     }
-    
-    li {
-      margin-bottom: 1rem;
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, sans-serif;
+      line-height: 1.5;
+      background: #f8f8f8;
+      color: #171717;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
     }
-    
-    a {
+
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 260px;
+      height: 100vh;
+      overflow-y: auto;
+      border-right: 1px solid #e6e6e6;
+      background: #fff;
+      padding: 20px 0;
+    }
+
+    .sidebar-header {
+      padding: 0 16px 16px;
+      border-bottom: 1px solid #e6e6e6;
+      margin-bottom: 8px;
+    }
+
+    .sidebar-header h1 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #171717;
+      letter-spacing: -0.01em;
+    }
+
+    .sidebar-header p {
+      font-size: 12px;
+      color: #999;
+      margin-top: 2px;
+    }
+
+    .nav-section {
+      padding: 12px 8px 4px;
+    }
+
+    .nav-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0 8px 6px;
+    }
+
+    .nav-list {
+      list-style: none;
+    }
+
+    .nav-list li a {
       display: block;
-      padding: 1rem;
-      background-color: #f5f5f5;
-      color: #333;
-      text-decoration: none;
-      border-radius: 4px;
-      font-weight: bold;
-      transition: background-color 0.2s;
-    }
-    
-    a:hover {
-      background-color: #e5e5e5;
-    }
-    
-    .description {
-      font-size: 0.9rem;
+      padding: 5px 8px;
+      border-radius: 5px;
       color: #666;
-      margin-top: 0.5rem;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 400;
+      transition: background 0.1s, color 0.1s;
+    }
+
+    .nav-list li a:hover {
+      background: #f0f0f0;
+      color: #171717;
+    }
+
+    .nav-group > a {
+      color: #171717 !important;
+      font-weight: 500 !important;
+    }
+
+    .nav-sublist {
+      list-style: none;
+      margin: 2px 0 4px;
+      padding-left: 12px;
+      border-left: 1px solid #e6e6e6;
+      margin-left: 12px;
+    }
+
+    .nav-sublist li a {
+      font-size: 12px;
+      padding: 3px 8px;
+      color: #999;
+    }
+
+    .nav-sublist li a:hover {
+      color: #3ecf8e;
+      background: rgba(62, 207, 142, 0.06);
+    }
+
+    .main {
+      margin-left: 260px;
+      padding: 48px;
+      max-width: 1100px;
+    }
+
+    .main-header {
+      margin-bottom: 32px;
+    }
+
+    .main-header h2 {
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: #171717;
+    }
+
+    .main-header p {
+      font-size: 14px;
+      color: #999;
+      margin-top: 4px;
+    }
+
+    .section-group {
+      margin-bottom: 32px;
+    }
+
+    .section-group-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e6e6e6;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e6e6e6;
+      border-radius: 8px;
+      padding: 16px 18px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      text-decoration: none;
+      display: block;
+    }
+
+    .card:hover {
+      border-color: #ccc;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+      min-height: 36px;
+    }
+
+    .card-header > div:last-child {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      line-height: 1.2;
+    }
+
+    .card-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .card-icon svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .card-icon--core { background: #eff6ff; color: #3b82f6; }
+    .card-icon--core svg { stroke: #3b82f6; fill: none; }
+    .card-icon--media { background: #fef3f2; color: #ef4444; }
+    .card-icon--media svg { stroke: #ef4444; fill: none; }
+    .card-icon--nav { background: #f0fdf4; color: #22c55e; }
+    .card-icon--nav svg { stroke: #22c55e; fill: none; }
+    .card-icon--anim { background: #faf5ff; color: #a855f7; }
+    .card-icon--anim svg { stroke: #a855f7; fill: none; }
+
+    .card-badge {
+      display: inline-block;
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 1px 5px;
+      border-radius: 3px;
+      line-height: 1.4;
+      width: fit-content;
+    }
+
+    .card-badge--core { background: #eff6ff; color: #3b82f6; }
+    .card-badge--media { background: #fef3f2; color: #ef4444; }
+    .card-badge--nav { background: #f0fdf4; color: #22c55e; }
+    .card-badge--anim { background: #faf5ff; color: #a855f7; }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: #171717;
+      line-height: 1.2;
+    }
+
+    .card-desc {
+      font-size: 13px;
+      color: #999;
+      line-height: 1.5;
+    }
+
+    .card-sublinks {
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid #f0f0f0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .card-sublinks a {
+      font-size: 11px;
+      color: #666;
+      text-decoration: none;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: #f8f8f8;
+      border: 1px solid #e6e6e6;
+      transition: all 0.12s;
+    }
+
+    .card-sublinks a:hover {
+      color: #3ecf8e;
+      border-color: #3ecf8e;
+      background: rgba(62, 207, 142, 0.04);
+    }
+
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; padding: 24px 16px; }
     }
   </style>
 </head>
 <body>
-  <h1>Jupiter Test Pages</h1>
-  <p>Select a test page to view:</p>
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <h1>Jupiter</h1>
+      <p>Test Pages</p>
+    </div>
 
-  <ul>
-    <li>
-      <a href="/application.html">Application Test</a>
-      <p class="description">Tests for the core Application module - scrollTo, scroll locking, debug grid, events, and viewport info.</p>
-    </li>
-    <li>
-      <a href="/moonwalk.html">Moonwalk Test</a>
-      <p class="description">Tests for the Moonwalk animation module.</p>
-    </li>
-    <li>
-      <a href="/lazyload.html">Lazyload Test</a>
-      <p class="description">Tests for the Lazyload module with responsive images.</p>
-    </li>
-    <li>
-      <a href="/toggler.html">Toggler Test</a>
-      <p class="description">Tests for the Toggler module for showing/hiding content.</p>
-    </li>
-    <li>
-      <a href="/breakpoints.html">Breakpoints Test</a>
-      <p class="description">Tests for the Breakpoints module for responsive design.</p>
-    </li>
-    <li>
-      <a href="/typography.html">Typography Test</a>
-      <p class="description">Tests for the Typography module for orphan prevention and text formatting.</p>
-    </li>
-    <li>
-      <a href="/popover.html">Popover Test</a>
-      <p class="description">Tests for the Popover module for tooltips and information popovers.</p>
-    </li>
-    <li>
-      <a href="/popup.html">Popup Test</a>
-      <p class="description">Tests for the Popup module for modal dialogs and popups.</p>
-    </li>
-    <li>
-      <a href="/dataloader.html">Dataloader Test</a>
-      <p class="description">Tests for the Dataloader module for loading content via AJAX.</p>
-    </li>
-    <li>
-      <a href="/dropdown.html">Dropdown Test</a>
-      <p class="description">Tests for the Dropdown module with Motion.js - viewport positioning, multiple modes, and external triggers.</p>
-    </li>
-    <li>
-      <a href="/cookies.html">Cookies Test</a>
-      <p class="description">Tests for the Cookies module for cookie consent and management.</p>
-    </li>
-    <li>
-      <a href="/coveroverlay.html">CoverOverlay Test</a>
-      <p class="description">Tests for the CoverOverlay module for video player overlays.</p>
-    </li>
-    <li>
-      <a href="/parallax.html">Parallax Test</a>
-      <p class="description">Tests for the Parallax module for scroll-based parallax effects.</p>
-    </li>
-    <li>
-      <a href="/looper.html">Looper Test</a>
-      <p class="description">Tests for the Looper module for building interactive carousels and sliders.</p>
-    </li>
-    <li>
-      <a href="/marquee.html">Marquee Test</a>
-      <p class="description">Tests for the Marquee module for continuous scrolling text.</p>
-    </li>
-    <li>
-      <a href="/hero-video.html">HeroVideo Test</a>
-      <p class="description">Tests for the HeroVideo module for fullscreen background videos.</p>
-    </li>
-    <li>
-      <a href="/hero-slider.html">HeroSlider Test</a>
-      <p class="description">Tests for the HeroSlider module with parallax and fade transitions.</p>
-    </li>
-    <li>
-      <a href="/stacked-boxes.html">StackedBoxes Test</a>
-      <p class="description">Tests for the StackedBoxes module for parallax stacking effects.</p>
-    </li>
-    <li>
-      <a href="/equal-height-elements.html">EqualHeightElements Test</a>
-      <p class="description">Tests for the EqualHeightElements module for matching card heights.</p>
-    </li>
-    <li>
-      <a href="/equal-height-images.html">EqualHeightImages Test</a>
-      <p class="description">Tests for the EqualHeightImages module for equal height image galleries.</p>
-    </li>
-    <li>
-      <a href="/lightbox.html">Lightbox Test</a>
-      <p class="description">Tests for the Lightbox module for image gallery overlays.</p>
-    </li>
-    <li>
-      <a href="/links.html">Links Test</a>
-      <p class="description">Tests for the Links module for smooth scrolling and page transitions.</p>
-    </li>
-    <li>
-      <a href="/mobile-menu.html">MobileMenu Test</a>
-      <p class="description">Tests for the MobileMenu module for animated hamburger menus.</p>
-    </li>
-    <li>
-      <a href="/fontloader.html">Fontloader Test</a>
-      <p class="description">Tests for the Fontloader module for Promise-based font loading with visual feedback.</p>
-    </li>
-    <li>
-      <a href="/fixed-header.html">FixedHeader Test</a>
-      <p class="description">Tests for the FixedHeader module - position: fixed header that hides on scroll down and reveals on scroll up.</p>
-    </li>
-    <li>
-      <a href="/sticky-header.html">StickyHeader Test</a>
-      <p class="description">Tests for the StickyHeader module - position: sticky header that hides on scroll down and reveals on scroll up (stays in document flow).</p>
-    </li>
-    <li>
-      <a href="/double-header.html">DoubleHeader Test</a>
-      <p class="description">Tests for the DoubleHeader module - dual-header that clones the original header, using IntersectionObserver to detect visibility.</p>
-    </li>
-    <li>
-      <a href="/scrollspy.html">ScrollSpy Test</a>
-      <p class="description">Tests for the ScrollSpy module for automatic navigation highlighting based on scroll position.</p>
-    </li>
-  </ul>
-  
+    <div class="nav-section">
+      <div class="nav-section-title">Core</div>
+      <ul class="nav-list">
+        <li><a href="/application.html">Application</a></li>
+        <li><a href="/breakpoints.html">Breakpoints</a></li>
+        <li><a href="/cookies.html">Cookies</a></li>
+        <li><a href="/dataloader.html">Dataloader</a></li>
+        <li><a href="/fontloader.html">Fontloader</a></li>
+        <li><a href="/links.html">Links</a></li>
+        <li><a href="/typography.html">Typography</a></li>
+      </ul>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Media</div>
+      <ul class="nav-list">
+        <li><a href="/hero-slider.html">HeroSlider</a></li>
+        <li><a href="/hero-video.html">HeroVideo</a></li>
+        <li><a href="/lazyload.html">Lazyload</a></li>
+        <li><a href="/lightbox.html">Lightbox</a></li>
+        <li><a href="/marquee.html">Marquee</a></li>
+      </ul>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Navigation / UI</div>
+      <ul class="nav-list">
+        <li><a href="/coveroverlay.html">CoverOverlay</a></li>
+        <li><a href="/double-header.html">DoubleHeader</a></li>
+        <li><a href="/dropdown.html">Dropdown</a></li>
+        <li><a href="/fixed-header.html">FixedHeader</a></li>
+        <li><a href="/mobile-menu.html">MobileMenu</a></li>
+        <li><a href="/popover.html">Popover</a></li>
+        <li><a href="/popup.html">Popup</a></li>
+        <li><a href="/scrollspy.html">ScrollSpy</a></li>
+        <li><a href="/sticky-header.html">StickyHeader</a></li>
+        <li><a href="/toggler.html">Toggler</a></li>
+      </ul>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Animation</div>
+      <ul class="nav-list">
+        <li><a href="/equal-height-elements.html">EqualHeightElements</a></li>
+        <li><a href="/equal-height-images.html">EqualHeightImages</a></li>
+        <li class="nav-group">
+          <a href="/looper.html">Looper</a>
+          <ul class="nav-sublist">
+            <li><a href="/looper/basic.html">Basic</a></li>
+            <li><a href="/looper/autoplay.html">Autoplay</a></li>
+            <li><a href="/looper/center.html">Center</a></li>
+            <li><a href="/looper/drag.html">Drag</a></li>
+            <li><a href="/looper/snap.html">Snap</a></li>
+            <li><a href="/looper/nonloop.html">Non-loop</a></li>
+            <li><a href="/looper/navigation.html">Navigation</a></li>
+            <li><a href="/looper/many.html">Many items</a></li>
+            <li><a href="/looper/lazyload.html">Lazyload</a></li>
+            <li><a href="/looper/destroy.html">Destroy</a></li>
+          </ul>
+        </li>
+        <li><a href="/moonwalk.html">Moonwalk</a></li>
+        <li><a href="/parallax.html">Parallax</a></li>
+        <li><a href="/stacked-boxes.html">StackedBoxes</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="main">
+    <div class="main-header">
+      <h2>Test Pages</h2>
+      <p>Select a module to view its test page.</p>
+    </div>
+
+    <div class="section-group">
+      <div class="section-group-title">Core</div>
+      <div class="card-grid">
+        <a class="card" href="/application.html">
+          <div class="card-header">
+            <div class="card-icon card-icon--core"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 9h6v6H9z"/></svg></div>
+            <div><div class="card-title">Application</div><span class="card-badge card-badge--core">Core</span></div>
+          </div>
+          <div class="card-desc">scrollTo, scroll locking, debug grid, events, and viewport info.</div>
+        </a>
+        <a class="card" href="/breakpoints.html">
+          <div class="card-header">
+            <div class="card-icon card-icon--core"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div>
+            <div><div class="card-title">Breakpoints</div><span class="card-badge card-badge--core">Core</span></div>
+          </div>
+          <div class="card-desc">Responsive design breakpoint detection and events.</div>
+        </a>
+        <a class="card" href="/cookies.html">
+          <div class="card-header">
+            <div class="card-icon card-icon--core"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-5-5 4 4 0 0 1-5-5"/><path d="M8.5 8.5v.01M16 15.5v.01M12 12v.01M11 17v.01M7 14v.01"/></svg></div>
+            <div><div class="card-title">Cookies</div><span class="card-badge card-badge--core">Core</span></div>
+          </div>
+          <div class="card-desc">Cookie consent and management.</div>
+        </a>
+        <a class="card" href="/dataloader.html">
+          <div class="card-header">
+            <div class="card-icon card-icon--core"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
+            <div><div class="card-title">Dataloader</div><span class="card-badge card-badge--core">Core</span></div>
+          </div>
+          <div class="card-desc">Loading content via AJAX with caching and error handling.</div>
+        </a>
+        <a class="card" href="/fontloader.html">
+          <div class="card-header">
+            <div class="card-icon card-icon--core"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg></div>
+            <div><div class="card-title">Fontloader</div><span class="card-badge card-badge--core">Core</span></div>
+          </div>
+          <div class="card-desc">Promise-based font loading with visual feedback.</div>
+        </a>
+        <a class="card" href="/links.html">
+          <div class="card-header">
+            <div class="card-icon card-icon--core"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
+            <div><div class="card-title">Links</div><span class="card-badge card-badge--core">Core</span></div>
+          </div>
+          <div class="card-desc">Smooth scrolling and page transitions.</div>
+        </a>
+        <a class="card" href="/typography.html">
+          <div class="card-header">
+            <div class="card-icon card-icon--core"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg></div>
+            <div><div class="card-title">Typography</div><span class="card-badge card-badge--core">Core</span></div>
+          </div>
+          <div class="card-desc">Orphan prevention and text formatting.</div>
+        </a>
+      </div>
+    </div>
+
+    <div class="section-group">
+      <div class="section-group-title">Media</div>
+      <div class="card-grid">
+        <a class="card" href="/hero-slider.html">
+          <div class="card-header">
+            <div class="card-icon card-icon--media"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18"/><path d="M7 2v20M17 2v20"/></svg></div>
+            <div><div class="card-title">HeroSlider</div><span class="card-badge card-badge--media">Media</span></div>
+          </div>
+          <div class="card-desc">Fullscreen slider with parallax and fade transitions.</div>
+        </a>
+        <a class="card" href="/hero-video.html">
+          <div class="card-header">
+            <div class="card-icon card-icon--media"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
+            <div><div class="card-title">HeroVideo</div><span class="card-badge card-badge--media">Media</span></div>
+          </div>
+          <div class="card-desc">Fullscreen background videos.</div>
+        </a>
+        <a class="card" href="/lazyload.html">
+          <div class="card-header">
+            <div class="card-icon card-icon--media"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></div>
+            <div><div class="card-title">Lazyload</div><span class="card-badge card-badge--media">Media</span></div>
+          </div>
+          <div class="card-desc">Lazy loading for responsive images.</div>
+        </a>
+        <a class="card" href="/lightbox.html">
+          <div class="card-header">
+            <div class="card-icon card-icon--media"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M14 10l6.1-6.1M9 21H3v-6M10 14l-6.1 6.1"/></svg></div>
+            <div><div class="card-title">Lightbox</div><span class="card-badge card-badge--media">Media</span></div>
+          </div>
+          <div class="card-desc">Image gallery overlays.</div>
+        </a>
+        <a class="card" href="/marquee.html">
+          <div class="card-header">
+            <div class="card-icon card-icon--media"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3l4 4-4 4"/><path d="M3 11h18"/><path d="M7 21l-4-4 4-4"/><path d="M21 13H3"/></svg></div>
+            <div><div class="card-title">Marquee</div><span class="card-badge card-badge--media">Media</span></div>
+          </div>
+          <div class="card-desc">Continuous scrolling text.</div>
+        </a>
+      </div>
+    </div>
+
+    <div class="section-group">
+      <div class="section-group-title">Navigation / UI</div>
+      <div class="card-grid">
+        <a class="card" href="/coveroverlay.html">
+          <div class="card-header">
+            <div class="card-icon card-icon--nav"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M10 8l6 4-6 4V8z"/></svg></div>
+            <div><div class="card-title">CoverOverlay</div><span class="card-badge card-badge--nav">Nav / UI</span></div>
+          </div>
+          <div class="card-desc">Video player overlays.</div>
+        </a>
+        <a class="card" href="/double-header.html">
+          <div class="card-header">
+            <div class="card-icon card-icon--nav"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18"/></svg></div>
+            <div><div class="card-title">DoubleHeader</div><span class="card-badge card-badge--nav">Nav / UI</span></div>
+          </div>
+          <div class="card-desc">Dual-header with IntersectionObserver visibility detection.</div>
+        </a>
+        <a class="card" href="/dropdown.html">
+          <div class="card-header">
+            <div class="card-icon card-icon--nav"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></div>
+            <div><div class="card-title">Dropdown</div><span class="card-badge card-badge--nav">Nav / UI</span></div>
+          </div>
+          <div class="card-desc">Motion.js dropdowns with viewport positioning and multiple modes.</div>
+        </a>
+        <a class="card" href="/fixed-header.html">
+          <div class="card-header">
+            <div class="card-icon card-icon--nav"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3H3v4h18V3z"/><path d="M12 11v8"/><path d="m8 15 4 4 4-4"/></svg></div>
+            <div><div class="card-title">FixedHeader</div><span class="card-badge card-badge--nav">Nav / UI</span></div>
+          </div>
+          <div class="card-desc">Fixed header that hides on scroll down, reveals on scroll up.</div>
+        </a>
+        <a class="card" href="/mobile-menu.html">
+          <div class="card-header">
+            <div class="card-icon card-icon--nav"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></div>
+            <div><div class="card-title">MobileMenu</div><span class="card-badge card-badge--nav">Nav / UI</span></div>
+          </div>
+          <div class="card-desc">Animated hamburger menus.</div>
+        </a>
+        <a class="card" href="/popover.html">
+          <div class="card-header">
+            <div class="card-icon card-icon--nav"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+            <div><div class="card-title">Popover</div><span class="card-badge card-badge--nav">Nav / UI</span></div>
+          </div>
+          <div class="card-desc">Tooltips and information popovers.</div>
+        </a>
+        <a class="card" href="/popup.html">
+          <div class="card-header">
+            <div class="card-icon card-icon--nav"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 9h-3"/><path d="M15 15h-3"/></svg></div>
+            <div><div class="card-title">Popup</div><span class="card-badge card-badge--nav">Nav / UI</span></div>
+          </div>
+          <div class="card-desc">Modal dialogs and popups.</div>
+        </a>
+        <a class="card" href="/scrollspy.html">
+          <div class="card-header">
+            <div class="card-icon card-icon--nav"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div>
+            <div><div class="card-title">ScrollSpy</div><span class="card-badge card-badge--nav">Nav / UI</span></div>
+          </div>
+          <div class="card-desc">Automatic navigation highlighting based on scroll position.</div>
+        </a>
+        <a class="card" href="/sticky-header.html">
+          <div class="card-header">
+            <div class="card-icon card-icon--nav"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg></div>
+            <div><div class="card-title">StickyHeader</div><span class="card-badge card-badge--nav">Nav / UI</span></div>
+          </div>
+          <div class="card-desc">Sticky header that hides on scroll down, reveals on scroll up.</div>
+        </a>
+        <a class="card" href="/toggler.html">
+          <div class="card-header">
+            <div class="card-icon card-icon--nav"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="5" width="22" height="14" rx="7"/><circle cx="16" cy="12" r="3"/></svg></div>
+            <div><div class="card-title">Toggler</div><span class="card-badge card-badge--nav">Nav / UI</span></div>
+          </div>
+          <div class="card-desc">Show/hide content with accordion support.</div>
+        </a>
+      </div>
+    </div>
+
+    <div class="section-group">
+      <div class="section-group-title">Animation</div>
+      <div class="card-grid">
+        <a class="card" href="/equal-height-elements.html">
+          <div class="card-header">
+            <div class="card-icon card-icon--anim"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/></svg></div>
+            <div><div class="card-title">EqualHeightElements</div><span class="card-badge card-badge--anim">Animation</span></div>
+          </div>
+          <div class="card-desc">Matching card heights across rows.</div>
+        </a>
+        <a class="card" href="/equal-height-images.html">
+          <div class="card-header">
+            <div class="card-icon card-icon--anim"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></div>
+            <div><div class="card-title">EqualHeightImages</div><span class="card-badge card-badge--anim">Animation</span></div>
+          </div>
+          <div class="card-desc">Equal height image galleries.</div>
+        </a>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon card-icon--anim"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3l4 4-4 4"/><path d="M3 11h18"/><path d="M7 21l-4-4 4-4"/><path d="M21 13H3"/></svg></div>
+            <div><div class="card-title">Looper</div><span class="card-badge card-badge--anim">Animation</span></div>
+          </div>
+          <div class="card-desc">Interactive carousels and sliders.</div>
+          <div class="card-sublinks">
+            <a href="/looper.html">All</a>
+            <a href="/looper/basic.html">Basic</a>
+            <a href="/looper/autoplay.html">Autoplay</a>
+            <a href="/looper/center.html">Center</a>
+            <a href="/looper/drag.html">Drag</a>
+            <a href="/looper/snap.html">Snap</a>
+            <a href="/looper/nonloop.html">Non-loop</a>
+            <a href="/looper/navigation.html">Navigation</a>
+            <a href="/looper/many.html">Many</a>
+            <a href="/looper/lazyload.html">Lazyload</a>
+            <a href="/looper/destroy.html">Destroy</a>
+          </div>
+        </div>
+        <a class="card" href="/moonwalk.html">
+          <div class="card-header">
+            <div class="card-icon card-icon--anim"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg></div>
+            <div><div class="card-title">Moonwalk</div><span class="card-badge card-badge--anim">Animation</span></div>
+          </div>
+          <div class="card-desc">Scroll-triggered entrance animations.</div>
+        </a>
+        <a class="card" href="/parallax.html">
+          <div class="card-header">
+            <div class="card-icon card-icon--anim"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v4a1 1 0 0 0 1 1h3"/><path d="M7 7v10"/><path d="M10 8v8a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1z"/><path d="M17 7v10"/><path d="M21 7v4a1 1 0 0 1-1 1h-3"/></svg></div>
+            <div><div class="card-title">Parallax</div><span class="card-badge card-badge--anim">Animation</span></div>
+          </div>
+          <div class="card-desc">Scroll-based parallax effects.</div>
+        </a>
+        <a class="card" href="/stacked-boxes.html">
+          <div class="card-header">
+            <div class="card-icon card-icon--anim"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.89 1.45l8 4A2 2 0 0 1 22 7.24v9.53a2 2 0 0 1-1.11 1.79l-8 4a2 2 0 0 1-1.79 0l-8-4a2 2 0 0 1-1.1-1.8V7.24a2 2 0 0 1 1.11-1.79l8-4a2 2 0 0 1 1.78 0z"/><polyline points="2.32 6.16 12 11 21.68 6.16"/><line x1="12" y1="22.76" x2="12" y2="11"/></svg></div>
+            <div><div class="card-title">StackedBoxes</div><span class="card-badge card-badge--anim">Animation</span></div>
+          </div>
+          <div class="card-desc">Parallax stacking effects.</div>
+        </a>
+      </div>
+    </div>
+  </main>
+
   <script type="module">
-    // This file is purely for navigation
     console.log('Jupiter test pages loaded');
   </script>
 </body>

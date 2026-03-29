@@ -381,14 +381,22 @@ function horizontalLoop(app, items, config) {
   function updateItemPositions(rawPos) {
     if (!shouldLoop) return
 
-    // Initialize wrap offsets cache if needed
-    if (itemWrapOffsets.length === 0) {
-      itemWrapOffsets = new Array(items.length).fill(0)
-    }
-
     // Items wrap by the full cycle distance (totalWidth) to maintain relative positions
     // This keeps all items within viewing distance as position grows/shrinks
     const cycleDistance = totalWidth
+
+    // Initialize wrap offsets - calculate correct cycle directly (not incrementally)
+    // so items land in the right place even when position is many cycles away
+    if (itemWrapOffsets.length === 0) {
+      itemWrapOffsets = new Array(items.length)
+      for (let i = 0; i < items.length; i++) {
+        const distance = offsetLefts[i] - rawPos
+        const offset = Math.round(distance / -cycleDistance) * cycleDistance
+        itemWrapOffsets[i] = offset
+        items[i].style.transform = offset !== 0 ? `translateX(${offset}px)` : 'none'
+      }
+      return
+    }
 
     // Wrap threshold: when an item is more than half a cycle from view, wrap it
     const wrapThreshold = cycleDistance / 2
@@ -430,22 +438,20 @@ function horizontalLoop(app, items, config) {
       animation.pause()
     }
 
-    if (deep && shouldLoop) {
-      // DEEP REFRESH: Reset everything for new dimensions
-      // Clear all item wrap offsets and transforms
-      for (let i = 0; i < items.length; i++) {
-        items[i].style.transform = 'none'
-        if (itemWrapOffsets[i] !== undefined) {
-          itemWrapOffsets[i] = 0
-        }
-      }
-      itemWrapOffsets = []
-    }
-
-    // Remeasure everything
-    populateWidths()
-
     if (deep) {
+      // Save pre-resize measurements for proportional position restore
+      const oldOriginalItemsWidth = originalItemsWidth
+      const oldMaxScrollPosition = maxScrollPosition
+      const oldPosition = position.get()
+
+      if (shouldLoop) {
+        // DEEP REFRESH: Reset wrap offset tracking (DOM transforms written by updateItemPositions init)
+        itemWrapOffsets = []
+      }
+
+      // Remeasure everything
+      populateWidths()
+
       // Check if we need to replicate more items
       const currentContainerWidth = container.offsetWidth
       const currentTotalWidth = getTotalWidthOfItems()
@@ -460,20 +466,33 @@ function horizontalLoop(app, items, config) {
 
       populateSnapTimes()
 
-      // Reset position to start at first clone (like initial state)
-      if (shouldLoop && !config.centerSlide) {
-        position.set(originalItemsWidth)
-        lastPositionForDirection = originalItemsWidth
-        trackElement.style.transform = `translateX(${-originalItemsWidth}px)`
-      } else if (shouldLoop && config.centerSlide) {
-        // For center mode, go to middle slide
-        const middleIndex = Math.floor(originalItemCount / 2)
-        const targetTime = times[middleIndex]
-        const initialPos = targetTime * pixelsPerSecond
-        position.set(initialPos)
-        lastPositionForDirection = initialPos
-        trackElement.style.transform = `translateX(${-initialPos}px)`
-        curIndex = middleIndex
+      // Restore position proportionally to preserve scroll progress across resize
+      let restoredPos
+      if (shouldLoop) {
+        const ratio = oldOriginalItemsWidth > 0
+          ? oldPosition / oldOriginalItemsWidth
+          : 1
+        restoredPos = ratio * originalItemsWidth
+      } else {
+        const ratio = oldMaxScrollPosition > 0
+          ? oldPosition / oldMaxScrollPosition
+          : 0
+        restoredPos = ratio * maxScrollPosition
+      }
+
+      position.set(restoredPos)
+      lastPositionForDirection = restoredPos
+
+      // Apply position and item wraps synchronously to avoid flash
+      // (frame.render is async so we must write DOM directly here)
+      trackElement.style.transform = `translateX(${-restoredPos}px)`
+      updateItemPositions(restoredPos)
+
+      // If snap is enabled, settle to nearest snap point
+      if (config.snap && !config.crawl) {
+        const snapPos = findNearestSnapPoint(restoredPos)
+        const clampedPos = shouldLoop ? snapPos : Math.max(0, Math.min(snapPos, maxScrollPosition))
+        animate(position, clampedPos, { duration: 0.3, ease: 'easeOut' })
       }
 
       // Recreate animation with new measurements
@@ -516,6 +535,7 @@ function horizontalLoop(app, items, config) {
       updateIndexDisplay()
     } else {
       // Light refresh - just update measurements
+      populateWidths()
       populateSnapTimes()
       // Update positions based on current scroll
       updateItemPositions(position.get())
