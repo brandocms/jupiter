@@ -3,6 +3,18 @@ import _defaultsDeep from 'lodash.defaultsdeep'
 import Dom from '../Dom'
 import prefersReducedMotion from '../../utils/prefersReducedMotion'
 
+/**
+ * Modulo that centers the result around zero: (-base/2, base/2]
+ * Useful for finding shortest distance on a cycle.
+ */
+function symmetricMod(value, base) {
+  let m = value % base
+  if (Math.abs(m) > base / 2) {
+    m = m > 0 ? m - base : m + base
+  }
+  return m
+}
+
 // Named constants (M5)
 const CLONE_BUFFER_MULTIPLIER = 2.5
 const MIN_CRAWL_SPEED = 0.001
@@ -117,6 +129,7 @@ function horizontalLoop(app, items, config) {
   let resumeCrawlGeneration = 0 // Generation counter for resumeCrawl race condition (C7)
   let hoverCleanup = null // Track hover effects cleanup function (C1/C9)
   let startPingPongCrawl = null // Closure-scoped ping-pong starter (M2)
+  let indexSetByNav = false // True when curIndex was set by toIndex, cleared on drag
 
   // Scroll direction tracking for wrap logic
   let scrollDirection = 0 // -1 = backward, 0 = neutral, 1 = forward
@@ -826,6 +839,7 @@ function horizontalLoop(app, items, config) {
       if (e.button !== undefined && e.button !== 0) return
 
       isDragging = true
+      indexSetByNav = false
       startX = e.clientX
       startPosition = position.get()
       velocityTracker = [{ x: e.clientX, time: Date.now() }]
@@ -1333,6 +1347,11 @@ function horizontalLoop(app, items, config) {
   function closestIndex(setCurrent = false) {
     if (!times || times.length === 0) return 0
 
+    // If curIndex was set by toIndex (nav button), trust it.
+    // Position-based lookup fails when maxScrollPosition clamps positions
+    // too close together to distinguish items.
+    if (indexSetByNav) return curIndex
+
     // Use bounded position to find what's actually visible
     const currentPos = position.get()
 
@@ -1348,21 +1367,14 @@ function horizontalLoop(app, items, config) {
 
     let closest = 0
     let closestDist = Infinity
+    const duration = shouldLoop ? originalItemsWidth / pixelsPerSecond : 0
 
     // Only check original items, not clones
     for (let i = 0; i < originalItemCount; i++) {
       const time = times[i]
-      let dist = Math.abs(time - currentTime)
-
-      // For looping, check wrapped distance
-      if (shouldLoop) {
-        const duration = originalItemsWidth / pixelsPerSecond
-        const wrappedDist = Math.min(
-          Math.abs(time + duration - currentTime),
-          Math.abs(time - duration - currentTime)
-        )
-        dist = Math.min(dist, wrappedDist)
-      }
+      const dist = shouldLoop
+        ? Math.abs(symmetricMod(time - currentTime, duration))
+        : Math.abs(time - currentTime)
 
       if (dist < closestDist) {
         closestDist = dist
@@ -1438,6 +1450,7 @@ function horizontalLoop(app, items, config) {
 
     // Update current index
     curIndex = targetIndex
+    indexSetByNav = true
 
     // Update display immediately
     updateIndexDisplay()
