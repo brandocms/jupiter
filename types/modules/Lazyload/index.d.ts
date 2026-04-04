@@ -29,6 +29,13 @@ export default class Lazyload {
     imageObserver: IntersectionObserver;
     lazyImages: any;
     initObserver(observer: any, setAttrs?: boolean): void;
+    /**
+     * Force load all lazyload elements within a container, bypassing intersection observers.
+     * Used by modules like Looper when dynamically adding content that needs immediate loading.
+     * @param {HTMLElement} [$container=document.body] - Container to search for lazyload elements
+     * @param {Object} [options]
+     * @param {boolean} [options.reveal=true] - Whether to also reveal (set data-ll-loaded) after loading
+     */
     forceLoad($container?: HTMLElement, { reveal }?: {
         reveal?: boolean;
     }): void;
@@ -36,12 +43,26 @@ export default class Lazyload {
     sizeObserver: ResizeObserver;
     flushSizeUpdates(): void;
     initializeSections(): void;
-    handleLoadEntries(elements: any): void;
-    handleRevealEntries(elements: any): void;
+    handleLoadEntries(entries: any): void;
+    handleRevealEntries(entries: any): void;
     loadPicture(picture: any): void;
-    revealPicture(picture: any): void;
-    lazyloadImages(elements: any): void;
+    /**
+     * Reveal a picture element by setting `data-ll-loaded` on its img child.
+     * @param {HTMLElement} picture - The picture element to reveal
+     */
+    revealPicture(picture: HTMLElement): void;
+    /**
+     * Swap source attributes on a picture element for the native lazyload path.
+     * Copies data-srcset to srcset on all sources and the img element.
+     * @param {HTMLElement} picture - The picture element to swap
+     */
+    swapPicture(picture: HTMLElement): void;
+    lazyloadImages(entries: any): void;
     swapImage(image: any): void;
+    /**
+     * Destroy the Lazyload instance, disconnecting all observers and freeing resources.
+     */
+    destroy(): void;
 }
 export type IntersectionObserverConfig = {
     /**
@@ -63,17 +84,9 @@ export type LazyloadOptions = {
      */
     loadIntersectionObserverConfig?: IntersectionObserverConfig;
     /**
-     * - Configuration for general intersection observers
-     */
-    intersectionObserverConfig?: IntersectionObserverConfig;
-    /**
      * - Whether to use native lazyloading if available
      */
     useNativeLazyloadIfAvailable?: boolean;
-    /**
-     * - Lazyload mode
-     */
-    mode?: string;
     /**
      * - Minimum size for auto sizing
      */
@@ -86,4 +99,8 @@ export type LazyloadOptions = {
      * - Whether to register a callback for APPLICATION_REVEALED event
      */
     registerCallback?: boolean;
+    /**
+     * - Container element to scope lazyloading to. Defaults to document.body
+     */
+    target?: HTMLElement | null;
 };

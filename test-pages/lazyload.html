@@ -161,6 +161,41 @@
       </picture>
     </figure>
 
+    <!-- Legacy data-ll-image element -->
+    <div class="spacer">
+      <p>Scroll down to see a legacy data-ll-image and lazyload section</p>
+    </div>
+
+    <img
+      data-ll-image
+      data-src="images/blue-400x300.svg"
+      src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27400%27%20height%3D%27300%27%20style%3D%27background%3Argba%280%2C0%2C0%2C0%29%27%2F%3E"
+      width="400"
+      height="300"
+      alt="Legacy lazyload image"
+      data-testid="legacy-image"
+    />
+
+    <!-- Container for forceLoad testing -->
+    <div data-testid="force-load-container" style="display:none">
+      <picture data-ll-srcset data-testid="force-load-picture">
+        <source
+          data-srcset="images/green-400x300.svg 400w"
+          type="image/svg+xml"
+        />
+        <img
+          data-ll-placeholder
+          data-ll-srcset-image
+          data-src="images/green-400x300.svg"
+          src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27400%27%20height%3D%27300%27%20style%3D%27background%3Argba%280%2C0%2C0%2C0%29%27%2F%3E"
+          width="400"
+          height="300"
+          alt="Force loaded image"
+          data-testid="force-load-image"
+        />
+      </picture>
+    </div>
+
     <!-- Lazyload section example -->
     <div class="spacer">
       <p>Scroll down to see a lazyload section</p>
@@ -228,6 +263,7 @@
           app.lazyload = new Lazyload(app, {
             useNativeLazyloadIfAvailable: false, // Force IntersectionObserver for testing
           });
+          window.__lazyload = app.lazyload;
         });
 
         // Start the application

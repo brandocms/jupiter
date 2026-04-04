@@ -1,5 +1,36 @@
-#### Unreleased
+#### 5.0.0-beta.13
 
+- Moonwalk: add `destroy()` method — disconnects all IntersectionObservers, removes event listeners, releases DOM references
+- Moonwalk: fix event listener leak — store bound handler for proper removal
+- Moonwalk: fix `on` option — use `null` instead of no-op function for non-body containers
+- Moonwalk: warn on unknown run names instead of silently returning null
+- Moonwalk: filter null runs during initialization instead of null-guarding in loops
+- Moonwalk: remove unused `animateAutoAlpha` import
+- Moonwalk: remove dead `section.running` flag (set but never read)
+- Moonwalk: replace `Math.random()` IDs with deterministic counter-based IDs
+- Moonwalk: extract shared `MOONWALK_ATTRS` constant for `removeAllWalks`/`removeFor`
+- Moonwalk: export `normalizeAlphaTween` for testability
+- Moonwalk: add `AlphaTweenConfig` and `MoonwalkRunMeta` types, refine callback signatures
+- Moonwalk: make `walks` optional and `transition` nullable in type definitions
+- Moonwalk: add JSDoc for `data-moonwalk-stage`, `data-moonwalk-order`, `data-moonwalk-children`, CSS-only mode, `alphaTween` object form
+- Application: fix `opts.bindScroll`/`opts.bindResize` reading raw input instead of merged opts
+- Application: fix `CustomEvent` constructor — second arg must be `{detail}`
+- Application: fix passive listener `preventDefault()` conflict
+- Application: fix `FeatureTests` `deviceLastTouched` typo
+- Application: replace broken `pollForVar` (pass-by-value) with getter function
+- Application: convert `window.onpageshow`/`document.onkeydown` to `addEventListener`
+- Application: wire up unused ease parameter in `scrollTo`
+- Application: replace deprecated `execCommand` with Clipboard API
+- Application: remove dead code (`fader`, `_lastWindowHeight`, `getIOSCurrentInnerHeight`)
+- Looper: preserve scroll position across resize instead of resetting to start
+- Looper: fix `next`/`prev` buttons on narrow scroll ranges via navigation index tracking
+- Looper: add `symmetricMod` for shortest-distance wrap calculation
+- Looper: fix hover/nav listener leaks — use event delegation, store cleanup refs
+- Looper: fix `resumeCrawl` race condition with generation counter
+- Looper: fix reversed crawl resume calculating wrong remaining distance
+- Looper: add `prefersReducedMotion` support (disable crawl, instant snaps, less inertia)
+- Looper: clean up clones, inline styles, and all animations in `destroy()`
+- Looper: replace magic numbers with named constants, remove dead code
 - Dataloader: fix `replaceInnerHTML` Promise constructor anti-pattern
 - Dataloader: add error handling to `fetch()` — loading state now clears on failure
 - Dataloader: replace `innerHTML +=` with `insertAdjacentHTML` to preserve existing DOM state

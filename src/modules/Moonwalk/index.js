@@ -11,13 +11,16 @@ import * as Events from '../../events'
 import prefersReducedMotion from '../../utils/prefersReducedMotion'
 import imageIsLoaded from '../../utils/imageIsLoaded'
 import imagesAreLoaded from '../../utils/imagesAreLoaded'
-import { set, animateAutoAlpha, delayedCall, convertEasing } from '../../utils/motion-helpers'
+import { set, delayedCall, convertEasing } from '../../utils/motion-helpers'
 import Dom from '../Dom'
 
 /**
  * Debug logging
  */
 const DEBUG = false
+let _idCounter = 0
+
+const MOONWALK_ATTRS = ['data-moonwalk', 'data-moonwalk-section', 'data-moonwalk-children']
 
 function logMoonwalk(category, message, data = {}) {
   if (DEBUG) {
@@ -41,29 +44,41 @@ function logComputedStyle(element, props = ['opacity', 'transform']) {
  */
 
 /**
+ * @typedef {Object} AlphaTweenConfig
+ * @property {number} [duration] - Duration of the alpha tween (defaults to walk duration)
+ * @property {string} [ease] - Easing function (defaults to 'easeIn')
+ * @property {number} [delay] - Additional delay before the alpha tween starts
+ */
+
+/**
  * @typedef {Object} MoonwalkWalk
  * @property {number} [startDelay=0] - Delay before the animation starts
  * @property {number} [interval=0.15] - Time between animations in a sequence
  * @property {number} [duration=0.65] - Duration of the animation
- * @property {boolean|Object} [alphaTween=false] - Whether to add a separate opacity tween
- * @property {MoonwalkTransition} transition - The transition configuration
- * @property {string} [sectionTargets] - CSS selector for targeting elements in named sections
+ * @property {boolean|AlphaTweenConfig} [alphaTween=false] - Whether to add a separate opacity tween. Pass `true` for defaults or an AlphaTweenConfig object for control.
+ * @property {MoonwalkTransition|null} transition - The transition configuration. Set to `null` for CSS-only mode (uses `data-moonwalked` attribute for CSS transitions).
+ * @property {string} [sectionTargets] - CSS selector for targeting elements in named sections (instead of using direct children)
+ */
+
+/**
+ * @typedef {Object} MoonwalkRunMeta
+ * @property {string|null} direction - The viewport entry/exit direction ('top', 'bottom', 'left', 'right', or null)
  */
 
 /**
  * @typedef {Object} MoonwalkRun
  * @property {number} [threshold=0] - IntersectionObserver threshold
- * @property {Function} callback - Function called when element enters viewport
- * @property {Function} [onExit] - Function called when element exits viewport
+ * @property {(el: HTMLElement, repeated: boolean, meta: MoonwalkRunMeta) => void} callback - Function called when element enters viewport
+ * @property {(el: HTMLElement, exited: boolean, meta: MoonwalkRunMeta) => void} [onExit] - Function called when element exits viewport
  * @property {boolean} [repeated=false] - Whether the run should repeat
  * @property {string} [rootMargin] - IntersectionObserver rootMargin
- * @property {Function} [initialize] - Function called during initialization
- * @property {Function} [onReady] - Function called when APPLICATION_REVEALED fires, before viewport observers start
+ * @property {(el: HTMLElement) => void} [initialize] - Function called during initialization
+ * @property {(el: HTMLElement) => void} [onReady] - Function called when APPLICATION_REVEALED fires, before viewport observers start
  */
 
 /**
  * @typedef {Object} MoonwalkOptions
- * @property {string|Function} [on=Events.APPLICATION_REVEALED] - Event to trigger animations
+ * @property {string|null} [on=Events.APPLICATION_REVEALED] - Event name to trigger animations. Set to `null` to trigger manually via `ready()`.
  * @property {number} [initialDelay=0.1] - Delay before starting animations
  * @property {boolean} [clearLazyload=false] - Clear data-ll-srcset attributes
  * @property {boolean} [clearNestedSections=true] - Remove nested data-moonwalk-section attributes
@@ -75,7 +90,7 @@ function logComputedStyle(element, props = ['opacity', 'transform']) {
  * @property {boolean} [uniqueIds=false] - Generate unique IDs for moonwalk elements
  * @property {boolean} [addIndexes=false] - Add index attributes to elements
  * @property {Object.<string, MoonwalkRun>} [runs={}] - Run configurations
- * @property {Object.<string, MoonwalkWalk>} walks - Walk configurations
+ * @property {Object.<string, MoonwalkWalk>} [walks] - Walk configurations
  */
 
 /** @type {MoonwalkOptions} */
@@ -169,7 +184,7 @@ const DEFAULT_OPTIONS = {
  * Normalize alphaTween config into a consistent object form.
  * Returns a new object (never mutates the original).
  */
-function normalizeAlphaTween(alphaTween, duration) {
+export function normalizeAlphaTween(alphaTween, duration) {
   if (typeof alphaTween === 'object' && alphaTween !== null) {
     return { ...alphaTween, duration: alphaTween.duration || duration }
   }
@@ -180,7 +195,36 @@ function normalizeAlphaTween(alphaTween, duration) {
 }
 
 /**
- * Moonwalk animation system for scroll-based reveal animations
+ * Moonwalk animation system for scroll-based reveal animations.
+ *
+ * ## HTML attributes
+ *
+ * - `data-moonwalk` / `data-moonwalk="{walkName}"` — marks an element for scroll-triggered animation
+ * - `data-moonwalk-section` / `data-moonwalk-section="{walkName}"` — groups elements; unnamed sections
+ *   animate children individually, named sections stagger-reveal all children at once
+ * - `data-moonwalk-children` / `data-moonwalk-children="{walkName}"` — converts direct children
+ *   into `data-moonwalk` (or `data-moonwalk="{walkName}"`) elements automatically
+ * - `data-moonwalk-stage="{walkName}"` — applies a walk transition to the section element itself
+ *   before its children animate (e.g. fade in a container, then reveal items)
+ * - `data-moonwalk-order="{number}"` — overrides the DOM order of children inside a named section;
+ *   elements with order are sorted first, unordered elements keep their relative position
+ * - `data-moonwalk-run="{runName}"` — standalone observer-based callback (not part of walk system)
+ * - `data-placeholder` / `data-ll-placeholder` — skip waiting for image load before tweening
+ *
+ * ## CSS-only mode
+ *
+ * Set `transition: null` on a walk to use CSS-only animations. Moonwalk will stagger-add the
+ * `data-moonwalked` attribute instead of running JS tweens. Style the reveal via CSS:
+ * ```css
+ * [data-moonwalk="fade"] { opacity: 0; transition: opacity 0.5s; }
+ * [data-moonwalk="fade"][data-moonwalked] { opacity: 1; }
+ * ```
+ *
+ * ## alphaTween
+ *
+ * Can be `true` (defaults: duration from walk, ease `'easeIn'`) or an object:
+ * `{ duration?: number, ease?: string, delay?: number }` for fine-grained control
+ * over a separate opacity animation layered on top of the main transition.
  */
 export default class Moonwalk {
   /**
@@ -192,7 +236,7 @@ export default class Moonwalk {
     this.app = app
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
     if (container !== document.body) {
-      this.opts.on = () => {}
+      this.opts.on = null
     }
     this.initialize(container)
   }
@@ -228,6 +272,7 @@ export default class Moonwalk {
     }
 
     this.addClass()
+    this._observers = []
     this.sections = this.initializeSections(container)
     this.runs = this.initializeRuns(container)
 
@@ -239,8 +284,9 @@ export default class Moonwalk {
       this.removeAllWalks(container)
     }
 
-    if (this.opts.on) {
-      window.addEventListener(this.opts.on, this.onReady.bind(this))
+    if (this.opts.on && typeof this.opts.on === 'string') {
+      this._boundOnReady = this.onReady.bind(this)
+      window.addEventListener(this.opts.on, this._boundOnReady)
     }
   }
 
@@ -289,12 +335,7 @@ export default class Moonwalk {
    * Remove all moonwalks. Useful for clients who prefer reduced motion
    */
   removeAllWalks(container = document.body) {
-    const keys = [
-      'data-moonwalk',
-      'data-moonwalk-section',
-      'data-moonwalk-children',
-    ]
-    keys.forEach((key) => {
+    MOONWALK_ATTRS.forEach((key) => {
       const elems = container.querySelectorAll(`[${key}]`)
       Array.from(elems).forEach((el) => el.removeAttribute(key))
       container.removeAttribute(key)
@@ -302,12 +343,7 @@ export default class Moonwalk {
   }
 
   removeFor(container = document.body, selector) {
-    const keys = [
-      'data-moonwalk',
-      'data-moonwalk-section',
-      'data-moonwalk-children',
-    ]
-    keys.forEach((key) => {
+    MOONWALK_ATTRS.forEach((key) => {
       const elems = container.querySelectorAll(`${selector}[${key}]`)
       Array.from(elems).forEach((el) => el.removeAttribute(key))
     })
@@ -338,10 +374,7 @@ export default class Moonwalk {
    */
   addIds(section) {
     Array.from(section.querySelectorAll('[data-moonwalk]')).forEach((el) => {
-      el.setAttribute(
-        'data-moonwalk-id',
-        Math.random().toString(36).substring(7)
-      )
+      el.setAttribute('data-moonwalk-id', `mw-${++_idCounter}`)
     })
   }
 
@@ -359,7 +392,7 @@ export default class Moonwalk {
       Array.from(elements).forEach((element, index) => {
         element.setAttribute('data-moonwalk-idx', index + 1)
       })
-    }, this)
+    })
   }
 
   /**
@@ -369,25 +402,27 @@ export default class Moonwalk {
   initializeRuns(container = document.body) {
     const runs = container.querySelectorAll('[data-moonwalk-run]')
     return Array.from(runs).map((run) => {
-      const foundRun = this.opts.runs[run.getAttribute('data-moonwalk-run')]
-      if (foundRun) {
-        if (foundRun.initialize) {
-          foundRun.initialize(run)
-        }
-        return {
-          el: run,
-          threshold: foundRun.threshold || 0,
-          initialize: foundRun.initialize,
-          onReady: foundRun.onReady,
-          callback: foundRun.callback,
-          onExit: foundRun.onExit,
-          repeated: foundRun.repeated,
-          rootMargin: foundRun.rootMargin,
-        }
+      const runName = run.getAttribute('data-moonwalk-run')
+      const foundRun = this.opts.runs[runName]
+      if (!foundRun) {
+        console.warn(`==> JUPITER/MOONWALK: Unknown run "${runName}" — not found in opts.runs`)
+        return null
       }
 
-      return null
-    })
+      if (foundRun.initialize) {
+        foundRun.initialize(run)
+      }
+      return {
+        el: run,
+        threshold: foundRun.threshold || 0,
+        initialize: foundRun.initialize,
+        onReady: foundRun.onReady,
+        callback: foundRun.callback,
+        onExit: foundRun.onExit,
+        repeated: foundRun.repeated,
+        rootMargin: foundRun.rootMargin,
+      }
+    }).filter(Boolean)
   }
 
   /**
@@ -422,7 +457,7 @@ export default class Moonwalk {
     }
 
     return {
-      id: Math.random().toString(36).substring(7),
+      id: `mw-${++_idCounter}`,
       el: section,
       name: section.getAttribute('data-moonwalk-section') || null,
       animation: {
@@ -562,6 +597,8 @@ export default class Moonwalk {
     }
 
     const observer = this.sectionObserver(section)
+    section.observer = observer
+    this._observers.push(observer)
     observer.observe(section.el)
   }
 
@@ -763,6 +800,36 @@ export default class Moonwalk {
     })
   }
 
+  destroy() {
+    if (this.opts.on && typeof this.opts.on === 'string' && this._boundOnReady) {
+      window.removeEventListener(this.opts.on, this._boundOnReady)
+      this._boundOnReady = null
+    }
+
+    if (this._observers) {
+      this._observers.forEach(obs => obs.disconnect())
+      this._observers = []
+    }
+
+    if (this.sections) {
+      this.sections.forEach(section => {
+        section.el = null
+        section.elements = []
+        section.children = null
+        section.observer = null
+      })
+      this.sections = []
+    }
+
+    if (this.runs) {
+      this.runs.forEach(run => {
+        run.el = null
+        run.observer = null
+      })
+      this.runs = []
+    }
+  }
+
   onReady() {
     if (this.opts.initialDelay) {
       setTimeout(() => {
@@ -783,17 +850,13 @@ export default class Moonwalk {
     // Execute onReady callbacks for all runs
     for (let idx = 0; idx < this.runs.length; idx += 1) {
       const run = this.runs[idx]
-      if (run && run.onReady) {
+      if (run.onReady) {
         run.onReady(run.el)
       }
     }
 
     for (let idx = 0; idx < this.runs.length; idx += 1) {
       const run = this.runs[idx]
-
-      if (!run) {
-        continue
-      }
 
       // if this is the last section, set rootMargin to 0
       let rootMargin
@@ -809,6 +872,8 @@ export default class Moonwalk {
       }
 
       const runObserver = this.runObserver(run, rootMargin)
+      run.observer = runObserver
+      this._observers.push(runObserver)
       runObserver.observe(run.el)
     }
 
@@ -827,6 +892,7 @@ export default class Moonwalk {
 
       if (!section.name) {
         section.observer = this.observer(section, rootMargin)
+        this._observers.push(section.observer)
       }
 
       section.elements = section.el.querySelectorAll('[data-moonwalk]')
@@ -962,8 +1028,6 @@ export default class Moonwalk {
           const entry = entries[i]
 
           if (entry.isIntersecting || entry.intersectionRatio > 0) {
-            section.running = true
-
             const walkName = entry.target.getAttribute('data-moonwalk')
             const targetId =
               entry.target.getAttribute('data-testid') ||
@@ -985,7 +1049,7 @@ export default class Moonwalk {
             const interval = cfg.interval !== undefined ? cfg.interval : 0.15
 
             const alphaTween = normalizeAlphaTween(cfg.alphaTween, duration)
-            let overlap = (duration - interval) * -1 // flip it
+            let overlap = interval - duration
 
             if (section.stage.firstTween) {
               overlap = 0
@@ -1068,6 +1132,7 @@ export default class Moonwalk {
    * @param {*} section
    * @param {*} target
    * @param {*} tweenDuration
+   * @param {*} tweenInterval
    * @param {*} tweenTransition
    * @param {*} tweenOverlap
    * @param {*} alphaTween
@@ -1172,9 +1237,10 @@ export default class Moonwalk {
    *
    * @param {*} section
    * @param {*} target
-   * @param {*} duration
-   * @param {*} transition
-   * @param {*} overlap
+   * @param {*} tweenDuration
+   * @param {*} tweenInterval
+   * @param {*} tweenTransition
+   * @param {*} tweenOverlap
    */
   tweenCSS(
     section,

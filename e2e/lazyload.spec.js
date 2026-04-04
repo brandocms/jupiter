@@ -108,4 +108,98 @@ test.describe('Jupiter Lazyload Module', () => {
     expect(newSizesValue).toBeTruthy()
     expect(newSizesValue).toMatch(/^\d+px$/)
   })
+
+  test('should swap legacy data-ll-image elements when scrolled into view', async ({
+    page,
+  }) => {
+    const legacyImage = page.locator('[data-testid="legacy-image"]')
+
+    // Before scrolling, should not be loaded
+    await expect(legacyImage).not.toHaveAttribute('data-ll-loaded')
+
+    // Scroll to the legacy image
+    await legacyImage.scrollIntoViewIfNeeded()
+
+    // Wait for image to be swapped
+    await expect(legacyImage).toHaveAttribute('data-ll-loaded', {
+      timeout: 10000,
+    })
+
+    // src should now be the real image
+    const src = await legacyImage.getAttribute('src')
+    expect(src).toContain('blue-400x300.svg')
+  })
+
+  test('should force load images in a container via forceLoad()', async ({
+    page,
+  }) => {
+    const forceLoadImage = page.locator('[data-testid="force-load-image"]')
+    const forceLoadPicture = page.locator('[data-testid="force-load-picture"]')
+
+    // Before forceLoad, image should not have ready/loaded attributes
+    await expect(forceLoadImage).not.toHaveAttribute('data-ll-ready')
+    await expect(forceLoadImage).not.toHaveAttribute('data-ll-loaded')
+
+    // Call forceLoad on the container
+    await page.evaluate(() => {
+      const container = document.querySelector('[data-testid="force-load-container"]')
+      window.__lazyload.forceLoad(container, { reveal: true })
+    })
+
+    // Wait for image to be loaded
+    await expect(forceLoadPicture).toHaveAttribute('data-ll-srcset-ready', {
+      timeout: 10000,
+    })
+
+    // With reveal: true, img should also have data-ll-loaded
+    await expect(forceLoadImage).toHaveAttribute('data-ll-loaded', {
+      timeout: 10000,
+    })
+  })
+
+  test('should force load without reveal when reveal: false', async ({
+    page,
+  }) => {
+    const forceLoadImage = page.locator('[data-testid="force-load-image"]')
+
+    // Call forceLoad with reveal: false
+    await page.evaluate(() => {
+      const container = document.querySelector('[data-testid="force-load-container"]')
+      window.__lazyload.forceLoad(container, { reveal: false })
+    })
+
+    // Wait for sources to be swapped
+    await page.locator('[data-testid="force-load-picture"]').evaluate(el => {
+      return new Promise(resolve => {
+        const check = () => el.hasAttribute('data-ll-srcset-ready') ? resolve(true) : setTimeout(check, 50)
+        check()
+      })
+    })
+
+    // Image should NOT have data-ll-loaded since reveal was false
+    await expect(forceLoadImage).not.toHaveAttribute('data-ll-loaded')
+  })
+
+  test('should clean up observers on destroy()', async ({ page }) => {
+    // Verify lazyload is initialized
+    const firstPicture = page.locator('[data-testid="landscape-picture"]')
+    await expect(firstPicture).toHaveAttribute('data-ll-srcset-initialized')
+
+    // Call destroy
+    await page.evaluate(() => {
+      window.__lazyload.destroy()
+    })
+
+    // Verify observers are disconnected by checking the instance state
+    const state = await page.evaluate(() => {
+      const ll = window.__lazyload
+      return {
+        rafId: ll.rafId,
+        resizePendingSize: ll.resizePending.size,
+      }
+    })
+
+    expect(state.rafId).toBeNull()
+    expect(state.resizePendingSize).toBe(0)
+  })
 })

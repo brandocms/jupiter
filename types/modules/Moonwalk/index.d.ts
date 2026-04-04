@@ -1,5 +1,39 @@
 /**
- * Moonwalk animation system for scroll-based reveal animations
+ * Normalize alphaTween config into a consistent object form.
+ * Returns a new object (never mutates the original).
+ */
+export function normalizeAlphaTween(alphaTween: any, duration: any): any;
+/**
+ * Moonwalk animation system for scroll-based reveal animations.
+ *
+ * ## HTML attributes
+ *
+ * - `data-moonwalk` / `data-moonwalk="{walkName}"` — marks an element for scroll-triggered animation
+ * - `data-moonwalk-section` / `data-moonwalk-section="{walkName}"` — groups elements; unnamed sections
+ *   animate children individually, named sections stagger-reveal all children at once
+ * - `data-moonwalk-children` / `data-moonwalk-children="{walkName}"` — converts direct children
+ *   into `data-moonwalk` (or `data-moonwalk="{walkName}"`) elements automatically
+ * - `data-moonwalk-stage="{walkName}"` — applies a walk transition to the section element itself
+ *   before its children animate (e.g. fade in a container, then reveal items)
+ * - `data-moonwalk-order="{number}"` — overrides the DOM order of children inside a named section;
+ *   elements with order are sorted first, unordered elements keep their relative position
+ * - `data-moonwalk-run="{runName}"` — standalone observer-based callback (not part of walk system)
+ * - `data-placeholder` / `data-ll-placeholder` — skip waiting for image load before tweening
+ *
+ * ## CSS-only mode
+ *
+ * Set `transition: null` on a walk to use CSS-only animations. Moonwalk will stagger-add the
+ * `data-moonwalked` attribute instead of running JS tweens. Style the reveal via CSS:
+ * ```css
+ * [data-moonwalk="fade"] { opacity: 0; transition: opacity 0.5s; }
+ * [data-moonwalk="fade"][data-moonwalked] { opacity: 1; }
+ * ```
+ *
+ * ## alphaTween
+ *
+ * Can be `true` (defaults: duration from walk, ease `'easeIn'`) or an object:
+ * `{ duration?: number, ease?: string, delay?: number }` for fine-grained control
+ * over a separate opacity animation layered on top of the main transition.
  */
 export default class Moonwalk {
     /**
@@ -11,7 +45,8 @@ export default class Moonwalk {
     app: any;
     opts: any;
     initialize(container?: HTMLElement): void;
-    sections: {
+    _observers: any[];
+    sections: any[] | {
         id: string;
         el: any;
         name: any;
@@ -28,7 +63,7 @@ export default class Moonwalk {
         };
         elements: any[];
     }[];
-    runs: {
+    runs: any[] | {
         el: Element;
         threshold: any;
         initialize: any;
@@ -38,6 +73,7 @@ export default class Moonwalk {
         repeated: any;
         rootMargin: any;
     }[];
+    _boundOnReady: any;
     /**
      * Add `moonwalk` class to html element to identify ourselves.
      */
@@ -183,6 +219,7 @@ export default class Moonwalk {
      * @param {*} duration - The duration of the animation
      */
     updateAnimationState(section: any, delay: any, duration: any): void;
+    destroy(): void;
     onReady(): void;
     /**
      * Called on `APPLICATION_READY` event, if `config.fireOnReady`.
@@ -226,6 +263,7 @@ export default class Moonwalk {
      * @param {*} section
      * @param {*} target
      * @param {*} tweenDuration
+     * @param {*} tweenInterval
      * @param {*} tweenTransition
      * @param {*} tweenOverlap
      * @param {*} alphaTween
@@ -236,9 +274,10 @@ export default class Moonwalk {
      *
      * @param {*} section
      * @param {*} target
-     * @param {*} duration
-     * @param {*} transition
-     * @param {*} overlap
+     * @param {*} tweenDuration
+     * @param {*} tweenInterval
+     * @param {*} tweenTransition
+     * @param {*} tweenOverlap
      */
     tweenCSS(section: any, target: any, tweenDuration: any, tweenInterval: any, tweenTransition: any, tweenOverlap: any): void;
 }
@@ -251,6 +290,20 @@ export type MoonwalkTransition = {
      * - Ending properties for the transition
      */
     to: any;
+};
+export type AlphaTweenConfig = {
+    /**
+     * - Duration of the alpha tween (defaults to walk duration)
+     */
+    duration?: number;
+    /**
+     * - Easing function (defaults to 'easeIn')
+     */
+    ease?: string;
+    /**
+     * - Additional delay before the alpha tween starts
+     */
+    delay?: number;
 };
 export type MoonwalkWalk = {
     /**
@@ -266,17 +319,23 @@ export type MoonwalkWalk = {
      */
     duration?: number;
     /**
-     * - Whether to add a separate opacity tween
+     * - Whether to add a separate opacity tween. Pass `true` for defaults or an AlphaTweenConfig object for control.
      */
-    alphaTween?: boolean | any;
+    alphaTween?: boolean | AlphaTweenConfig;
     /**
-     * - The transition configuration
+     * - The transition configuration. Set to `null` for CSS-only mode (uses `data-moonwalked` attribute for CSS transitions).
      */
-    transition: MoonwalkTransition;
+    transition: MoonwalkTransition | null;
     /**
-     * - CSS selector for targeting elements in named sections
+     * - CSS selector for targeting elements in named sections (instead of using direct children)
      */
     sectionTargets?: string;
+};
+export type MoonwalkRunMeta = {
+    /**
+     * - The viewport entry/exit direction ('top', 'bottom', 'left', 'right', or null)
+     */
+    direction: string | null;
 };
 export type MoonwalkRun = {
     /**
@@ -286,11 +345,11 @@ export type MoonwalkRun = {
     /**
      * - Function called when element enters viewport
      */
-    callback: Function;
+    callback: (el: HTMLElement, repeated: boolean, meta: MoonwalkRunMeta) => void;
     /**
      * - Function called when element exits viewport
      */
-    onExit?: Function;
+    onExit?: (el: HTMLElement, exited: boolean, meta: MoonwalkRunMeta) => void;
     /**
      * - Whether the run should repeat
      */
@@ -302,17 +361,17 @@ export type MoonwalkRun = {
     /**
      * - Function called during initialization
      */
-    initialize?: Function;
+    initialize?: (el: HTMLElement) => void;
     /**
      * - Function called when APPLICATION_REVEALED fires, before viewport observers start
      */
-    onReady?: Function;
+    onReady?: (el: HTMLElement) => void;
 };
 export type MoonwalkOptions = {
     /**
-     * - Event to trigger animations
+     * - Event name to trigger animations. Set to `null` to trigger manually via `ready()`.
      */
-    on?: string | Function;
+    on?: string | null;
     /**
      * - Delay before starting animations
      */
@@ -362,7 +421,7 @@ export type MoonwalkOptions = {
     /**
      * - Walk configurations
      */
-    walks: {
+    walks?: {
         [x: string]: MoonwalkWalk;
     };
 };
