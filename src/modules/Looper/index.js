@@ -821,6 +821,15 @@ function horizontalLoop(app, items, config) {
     let hasDragged = false // Did movement exceed minimumMovement threshold?
 
     /**
+     * Capture-phase click handler that prevents link navigation after a drag.
+     * Added once per drag and auto-removes via { once: true }.
+     */
+    function swallowClick(e) {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+
+    /**
      * Calculate velocity from recent pointer movements
      * Uses weighted average of last few movements
      * @returns {number} Velocity in pixels per second
@@ -982,6 +991,10 @@ function horizontalLoop(app, items, config) {
       if (hasDragged) {
         container.style.cursor = 'grab'
         trackElement.classList.remove('looper-dragging')
+
+        // Swallow the next click event so links don't navigate after a drag.
+        // The browser fires click after pointerup — capture it before it reaches any <a>.
+        container.addEventListener('click', swallowClick, { capture: true, once: true })
       }
 
       // If this was a click (not a drag), trigger click on the element
@@ -1294,6 +1307,7 @@ function horizontalLoop(app, items, config) {
     dragState = {
       cleanup: () => {
         container.removeEventListener('pointerdown', onPointerDown)
+        container.removeEventListener('click', swallowClick, { capture: true })
         window.removeEventListener('pointermove', onPointerMove)
         window.removeEventListener('pointerup', onPointerUp)
         window.removeEventListener('pointercancel', onPointerUp)
