@@ -79,7 +79,7 @@ function logComputedStyle(element, props = ['opacity', 'transform']) {
 /**
  * @typedef {Object} MoonwalkOptions
  * @property {string|null} [on=Events.APPLICATION_REVEALED] - Event name to trigger animations. Set to `null` to trigger manually via `ready()`.
- * @property {number} [initialDelay=0.1] - Delay before starting animations
+ * @property {number} [initialDelay=100] - Delay in ms before starting animations
  * @property {boolean} [clearLazyload=false] - Clear data-ll-srcset attributes
  * @property {boolean} [clearNestedSections=true] - Remove nested data-moonwalk-section attributes
  * @property {boolean} [clearNestedWalks=true] - Remove nested data-moonwalk attributes
@@ -108,7 +108,7 @@ const DEFAULT_OPTIONS = {
    * Set a delay for the initial reveal. Could be useful if you want the reveal to happen
    * after for instance a header has been revealed
    */
-  initialDelay: 0.1,
+  initialDelay: 100,
 
   /**
    * Clear out all `data-ll-srcset` from moonwalk elements
@@ -834,7 +834,7 @@ export default class Moonwalk {
     if (this.opts.initialDelay) {
       setTimeout(() => {
         this.ready()
-      }, this.opts.initialDelay * 1000)
+      }, this.opts.initialDelay)
     } else {
       this.ready()
     }
