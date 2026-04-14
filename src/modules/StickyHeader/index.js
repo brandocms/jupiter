@@ -576,6 +576,7 @@ export default class StickyHeader {
     this._pinned = false
     this.el.setAttribute('data-header-unpinned', '')
     this.el.removeAttribute('data-header-pinned')
+    this._updateHeaderHeight()
     this.opts.onUnpin(this)
   }
 
@@ -586,6 +587,7 @@ export default class StickyHeader {
     this._pinned = true
     this.el.setAttribute('data-header-pinned', '')
     this.el.removeAttribute('data-header-unpinned')
+    this._updateHeaderHeight()
     this.opts.onPin(this)
   }
 
@@ -593,6 +595,7 @@ export default class StickyHeader {
     this._small = false
     this.el.setAttribute('data-header-big', '')
     this.el.removeAttribute('data-header-small')
+    this._updateHeaderHeight()
     this.opts.onNotSmall(this)
   }
 
@@ -600,7 +603,17 @@ export default class StickyHeader {
     this._small = true
     this.el.setAttribute('data-header-small', '')
     this.el.removeAttribute('data-header-big')
+    this._updateHeaderHeight()
     this.opts.onSmall(this)
+  }
+
+  /**
+   * Update the --header-height CSS variable on :root.
+   * Set to the header's current height when pinned, 0px when unpinned.
+   */
+  _updateHeaderHeight() {
+    const height = this._pinned ? `${this.el.clientHeight}px` : '0px'
+    document.documentElement.style.setProperty('--header-height', height)
   }
 
   notAltBg() {

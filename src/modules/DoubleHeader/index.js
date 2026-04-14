@@ -418,6 +418,7 @@ export default class DoubleHeader {
   unpin() {
     if (!this.preventUnpin) {
       this._pinned = false
+      this._updateHeaderHeight()
       this.opts.onUnpin(this)
     }
   }
@@ -425,6 +426,7 @@ export default class DoubleHeader {
   pin() {
     if (!this.preventPin) {
       this._pinned = true
+      this._updateHeaderHeight()
       this.opts.onSmall(this)
       this.opts.onPin(this)
     }
@@ -434,6 +436,7 @@ export default class DoubleHeader {
     this._small = false
     this.auxEl.setAttribute('data-header-big', '')
     this.auxEl.removeAttribute('data-header-small')
+    this._updateHeaderHeight()
     this.opts.onNotSmall(this)
   }
 
@@ -441,7 +444,18 @@ export default class DoubleHeader {
     this._small = true
     this.auxEl.setAttribute('data-header-small', '')
     this.auxEl.removeAttribute('data-header-big')
+    this._updateHeaderHeight()
     this.opts.onSmall(this)
+  }
+
+  /**
+   * Update the --header-height CSS variable on :root.
+   * Uses el height when pinned (el is the main header, auxEl is secondary).
+   * Set to 0px when unpinned.
+   */
+  _updateHeaderHeight() {
+    const height = this._pinned ? `${this.el.clientHeight}px` : '0px'
+    document.documentElement.style.setProperty('--header-height', height)
   }
 
   shouldUnpin(toleranceExceeded) {

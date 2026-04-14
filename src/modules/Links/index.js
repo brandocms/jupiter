@@ -29,7 +29,7 @@ const DEFAULT_OPTIONS = {
     if (links.opts.scrollOffsetNav) {
       const header = document.querySelector('header[data-nav]')
       const headerHeight = header ? header.clientHeight : 0
-      target = { y: target, offsetY: headerHeight }
+      target = { y: target, offsetY: -headerHeight }
     }
     links.app.scrollTo(target, links.opts.scrollDuration, links.opts.triggerEvents)
   },
