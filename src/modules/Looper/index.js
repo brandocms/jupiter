@@ -19,7 +19,7 @@ function symmetricMod(value, base) {
 const CLONE_BUFFER_MULTIPLIER = 2.5
 const MIN_CRAWL_SPEED = 0.001
 const PING_PONG_PAUSE_MS = 200
-const VELOCITY_WINDOW_MS = 100
+const VELOCITY_WINDOW_MS = 150
 const SPEED_RAMP_DURATION = 2
 
 /**
@@ -44,7 +44,8 @@ const DEFAULT_OPTIONS = {
   loop: true, // Infinite looping (false for linear scrolling)
   draggable: true, // Enable drag interaction
   endAlignment: 'right', // For non-looping: 'right' = last item at viewport right edge, 'start' = last item at viewport left edge
-  minimumMovement: 3, // Pixels - movement below this is treated as click, above as drag
+  minimumMovement: 3, // Pixels for mouse - movement below this is treated as click, above as drag
+  touchMinimumMovement: 10, // Pixels for touch - higher threshold for finger imprecision
 
   // Inertia/throw configuration (when dragging and releasing)
   throwResistance: 325, // Time constant for deceleration (lower = more resistance/faster stop, higher = less resistance/longer glide)
@@ -819,6 +820,8 @@ function horizontalLoop(app, items, config) {
     let startPosition = 0
     let velocityTracker = [] // Track recent movements for velocity calculation
     let hasDragged = false // Did movement exceed minimumMovement threshold?
+    let stoppedAnimation = false // Was an animation stopped by this pointer down? (tap-to-stop)
+    let activeMinimumMovement = config.minimumMovement // Adjusted per pointer type (touch vs mouse)
 
     /**
      * Capture-phase click handler that prevents link navigation after a drag.
@@ -837,8 +840,8 @@ function horizontalLoop(app, items, config) {
     function getVelocity() {
       if (velocityTracker.length < 2) return 0
 
-      // Use last 5 movements for smoothing
-      const recent = velocityTracker.slice(-5)
+      // Use last 6 movements for smoothing
+      const recent = velocityTracker.slice(-6)
       let totalVelocity = 0
       let totalWeight = 0
 
@@ -871,13 +874,26 @@ function horizontalLoop(app, items, config) {
       indexSetByNav = false
       startX = e.clientX
       startPosition = position.get()
-      velocityTracker = [{ x: e.clientX, time: Date.now() }]
+      velocityTracker = [{ x: e.clientX, time: e.timeStamp }]
       hasDragged = false // Reset - will be set true if movement exceeds threshold
+
+      // Use higher threshold for touch to prevent accidental drags from finger imprecision
+      activeMinimumMovement = e.pointerType === 'touch'
+        ? config.touchMinimumMovement
+        : config.minimumMovement
 
       // Stop autoplay on user interaction
       if (loopController && loopController.stopAutoplay) {
         loopController.stopAutoplay()
       }
+
+      // Detect if we're stopping a running animation (tap-to-stop)
+      stoppedAnimation = !!(
+        inertiaAnimation ||
+        snapAnimation ||
+        (animation && animation.speed !== 0) ||
+        speedRampAnimation
+      )
 
       // Stop any ongoing animations
       if (inertiaAnimation) {
@@ -901,10 +917,13 @@ function horizontalLoop(app, items, config) {
       // We'll manually trigger click in onPointerUp if it wasn't a real drag
       e.preventDefault()
 
-      // Add move/up listeners to window for better tracking
-      window.addEventListener('pointermove', onPointerMove, { passive: false })
-      window.addEventListener('pointerup', onPointerUp)
-      window.addEventListener('pointercancel', onPointerUp)
+      // Capture pointer to prevent events being lost when finger moves outside container
+      try { container.setPointerCapture(e.pointerId) } catch (err) { /* ignore */ }
+
+      // Add move/up listeners to container (pointer capture routes events here)
+      container.addEventListener('pointermove', onPointerMove, { passive: false })
+      container.addEventListener('pointerup', onPointerUp)
+      container.addEventListener('pointercancel', onPointerUp)
     }
 
     /**
@@ -914,13 +933,13 @@ function horizontalLoop(app, items, config) {
       if (!isDragging) return
 
       const currentX = e.clientX
-      const currentTime = Date.now()
+      const currentTime = e.timeStamp
 
       // Track total movement for click vs drag detection
       const movementDelta = Math.abs(currentX - startX)
 
       // Check if this is now a real drag (exceeded minimum movement threshold)
-      if (!hasDragged && movementDelta > config.minimumMovement) {
+      if (!hasDragged && movementDelta > activeMinimumMovement) {
         hasDragged = true
         // Now that we know it's a drag, change cursor and disable pointer events on items
         container.style.cursor = 'grabbing'
@@ -958,23 +977,6 @@ function horizontalLoop(app, items, config) {
     }
 
     /**
-     * Calculate where inertia would land based on velocity
-     * Uses same physics as startInertia to predict landing position
-     * Motion.js inertia formula: distance = velocity * timeConstant * (power / (1 - power))
-     * @param {number} velocity - Cursor velocity in pixels per second
-     * @returns {number} Predicted landing position
-     */
-    function calculateInertiaTarget(velocity) {
-      const currentPos = position.get()
-      const motionVelocity = -velocity
-      const power = config.throwPower
-      const timeConstant = config.throwResistance / 1000
-      // Motion.js inertia distance formula
-      const estimatedDistance = motionVelocity * timeConstant * (power / (1 - power))
-      return currentPos + estimatedDistance
-    }
-
-    /**
      * Handle pointer up - end drag and start inertia
      */
     function onPointerUp(e) {
@@ -982,10 +984,13 @@ function horizontalLoop(app, items, config) {
 
       isDragging = false
 
+      // Release pointer capture
+      try { container.releasePointerCapture(e.pointerId) } catch (err) { /* ignore */ }
+
       // Clean up listeners
-      window.removeEventListener('pointermove', onPointerMove)
-      window.removeEventListener('pointerup', onPointerUp)
-      window.removeEventListener('pointercancel', onPointerUp)
+      container.removeEventListener('pointermove', onPointerMove)
+      container.removeEventListener('pointerup', onPointerUp)
+      container.removeEventListener('pointercancel', onPointerUp)
 
       // Reset cursor and re-enable hover effects (only if we actually dragged)
       if (hasDragged) {
@@ -997,14 +1002,26 @@ function horizontalLoop(app, items, config) {
         container.addEventListener('click', swallowClick, { capture: true, once: true })
       }
 
-      // If this was a click (not a drag), trigger click on the element
+      // If this was a click (not a drag):
+      // - If we stopped a running animation, silently stop (like native iOS scroll tap-to-stop)
+      // - Otherwise, forward the click to the element under the pointer
       if (!hasDragged) {
-        // Find the element under the pointer and trigger a click
-        const clickedElement = document.elementFromPoint(e.clientX, e.clientY)
-        if (clickedElement) {
-          clickedElement.click()
+        if (!stoppedAnimation) {
+          const clickedElement = document.elementFromPoint(e.clientX, e.clientY)
+          if (clickedElement) {
+            clickedElement.click()
+          }
+        }
+        if (stoppedAnimation && config.crawl) {
+          resumeCrawl()
         }
         return
+      }
+
+      // Record final position at release time for accurate velocity
+      velocityTracker.push({ x: e.clientX, time: e.timeStamp })
+      while (velocityTracker.length > 0 && e.timeStamp - velocityTracker[0].time > VELOCITY_WINDOW_MS) {
+        velocityTracker.shift()
       }
 
       // Calculate final velocity
@@ -1041,10 +1058,10 @@ function horizontalLoop(app, items, config) {
       const velocityMultiplier = reducedMotion ? config.throwVelocityMultiplier * 0.3 : config.throwVelocityMultiplier
       const motionVelocity = -velocity * velocityMultiplier
 
-      // Calculate estimated target based on inertia physics
+      // Estimate target for Motion.js (it recomputes internally for type: 'inertia',
+      // but we pass a reasonable target to avoid a zero-distance animation)
       const power = config.throwPower
-      const timeConstant = config.throwResistance / 1000 // Convert to seconds
-      const estimatedDistance = motionVelocity * timeConstant * 0.5
+      const estimatedDistance = power * motionVelocity
       const targetPos = currentPos + estimatedDistance
 
       // Animate position motionValue with inertia
@@ -1308,9 +1325,9 @@ function horizontalLoop(app, items, config) {
       cleanup: () => {
         container.removeEventListener('pointerdown', onPointerDown)
         container.removeEventListener('click', swallowClick, { capture: true })
-        window.removeEventListener('pointermove', onPointerMove)
-        window.removeEventListener('pointerup', onPointerUp)
-        window.removeEventListener('pointercancel', onPointerUp)
+        container.removeEventListener('pointermove', onPointerMove)
+        container.removeEventListener('pointerup', onPointerUp)
+        container.removeEventListener('pointercancel', onPointerUp)
       },
     }
   }
@@ -1827,6 +1844,7 @@ export default class Looper {
           snapDuration: this.opts.snapDuration,
           snapBounce: this.opts.snapBounce,
           minimumMovement: this.opts.minimumMovement,
+          touchMinimumMovement: this.opts.touchMinimumMovement,
         },
       })
     })
