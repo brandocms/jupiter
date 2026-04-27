@@ -50,7 +50,7 @@ const DEFAULT_OPTIONS = {
   // Inertia/throw configuration (when dragging and releasing)
   throwResistance: 325, // Time constant for deceleration (lower = more resistance/faster stop, higher = less resistance/longer glide)
   throwPower: 0.8, // Deceleration curve (0-1, higher = more gradual slowdown)
-  throwVelocityMultiplier: 1.0, // Scale velocity for all throws (0.5 = half speed, 2.0 = double)
+  throwVelocityMultiplier: 0.8, // Scale velocity for all throws (0.5 = half speed, 2.0 = double)
   snapVelocityMultiplier: 0.8, // Additional scaling for snapped loopers (stacks with throwVelocityMultiplier)
 
   // Snap animation configuration (when snap: true)
@@ -817,10 +817,13 @@ function horizontalLoop(app, items, config) {
   function setupDrag() {
     // isDragging is now module-level so wrap detection can see it
     let startX = 0
+    let startY = 0
     let startPosition = 0
     let velocityTracker = [] // Track recent movements for velocity calculation
     let hasDragged = false // Did movement exceed minimumMovement threshold?
+    let axisDecided = false // Has the drag axis been determined? (horizontal vs vertical)
     let stoppedAnimation = false // Was an animation stopped by this pointer down? (tap-to-stop)
+    let resumeTimeout = null // Delayed crawl resume after tap-to-stop
     let activeMinimumMovement = config.minimumMovement // Adjusted per pointer type (touch vs mouse)
 
     /**
@@ -873,9 +876,11 @@ function horizontalLoop(app, items, config) {
       isDragging = true
       indexSetByNav = false
       startX = e.clientX
+      startY = e.clientY
       startPosition = position.get()
       velocityTracker = [{ x: e.clientX, time: e.timeStamp }]
       hasDragged = false // Reset - will be set true if movement exceeds threshold
+      axisDecided = false // Reset - will be decided on first significant movement
 
       // Use higher threshold for touch to prevent accidental drags from finger imprecision
       activeMinimumMovement = e.pointerType === 'touch'
@@ -886,6 +891,9 @@ function horizontalLoop(app, items, config) {
       if (loopController && loopController.stopAutoplay) {
         loopController.stopAutoplay()
       }
+
+      // Cancel any pending resume from a previous tap-to-stop
+      clearTimeout(resumeTimeout)
 
       // Detect if we're stopping a running animation (tap-to-stop)
       stoppedAnimation = !!(
@@ -913,9 +921,12 @@ function horizontalLoop(app, items, config) {
         speedRampAnimation = null
       }
 
-      // Prevent default to stop native drag behavior on links/images
-      // We'll manually trigger click in onPointerUp if it wasn't a real drag
-      e.preventDefault()
+      // For mouse: prevent default to stop native drag behavior on links/images
+      // For touch: don't preventDefault here — we need the browser to be able to scroll
+      // if the gesture turns out to be vertical. CSS touch-action: pan-y handles horizontal.
+      if (e.pointerType === 'mouse') {
+        e.preventDefault()
+      }
 
       // Capture pointer to prevent events being lost when finger moves outside container
       try { container.setPointerCapture(e.pointerId) } catch (err) { /* ignore */ }
@@ -935,19 +946,38 @@ function horizontalLoop(app, items, config) {
       const currentX = e.clientX
       const currentTime = e.timeStamp
 
-      // Track total movement for click vs drag detection
-      const movementDelta = Math.abs(currentX - startX)
+      // Axis locking: when movement first exceeds threshold, check if primarily
+      // horizontal or vertical. If vertical, abort drag and let the browser scroll.
+      if (!axisDecided) {
+        const deltaX = Math.abs(currentX - startX)
+        const deltaY = Math.abs(e.clientY - startY)
+        const maxDelta = Math.max(deltaX, deltaY)
 
-      // Check if this is now a real drag (exceeded minimum movement threshold)
-      if (!hasDragged && movementDelta > activeMinimumMovement) {
+        // Wait until enough movement to decide
+        if (maxDelta < activeMinimumMovement) return
+
+        axisDecided = true
+
+        // If clearly vertical, abort — release pointer and let browser scroll.
+        // Bias toward carousel interaction: vertical must be 1.2x horizontal to abort.
+        if (deltaY > deltaX * 1.2) {
+          isDragging = false
+          try { container.releasePointerCapture(e.pointerId) } catch (err) { /* ignore */ }
+          container.removeEventListener('pointermove', onPointerMove)
+          container.removeEventListener('pointerup', onPointerUp)
+          container.removeEventListener('pointercancel', onPointerUp)
+          // Resume crawl if we stopped it on pointerdown
+          if (stoppedAnimation && config.crawl) {
+            resumeCrawl()
+          }
+          return
+        }
+
+        // Horizontal — commit to drag
         hasDragged = true
-        // Now that we know it's a drag, change cursor and disable pointer events on items
         container.style.cursor = 'grabbing'
         trackElement.classList.add('looper-dragging')
       }
-
-      // Only update position if we've confirmed this is a drag
-      if (!hasDragged) return
 
       // Prevent default only for actual drags (not clicks)
       e.preventDefault()
@@ -1004,6 +1034,7 @@ function horizontalLoop(app, items, config) {
 
       // If this was a click (not a drag):
       // - If we stopped a running animation, silently stop (like native iOS scroll tap-to-stop)
+      //   then resume crawl after a delay so it doesn't feel jittery
       // - Otherwise, forward the click to the element under the pointer
       if (!hasDragged) {
         if (!stoppedAnimation) {
@@ -1013,19 +1044,27 @@ function horizontalLoop(app, items, config) {
           }
         }
         if (stoppedAnimation && config.crawl) {
-          resumeCrawl()
+          clearTimeout(resumeTimeout)
+          resumeTimeout = setTimeout(() => resumeCrawl(), 5000)
         }
         return
       }
 
-      // Record final position at release time for accurate velocity
-      velocityTracker.push({ x: e.clientX, time: e.timeStamp })
-      while (velocityTracker.length > 0 && e.timeStamp - velocityTracker[0].time > VELOCITY_WINDOW_MS) {
-        velocityTracker.shift()
-      }
+      // Calculate velocity from pointermove samples only.
+      // Do NOT use pointerup/pointercancel clientX — iOS Safari often reports 0
+      // on pointercancel which corrupts velocity and direction calculations.
+      let velocity = getVelocity()
 
-      // Calculate final velocity
-      const velocity = getVelocity()
+      // Use last reliable pointermove position for direction check (not e.clientX
+      // which may be 0 from a pointercancel event on iOS)
+      const lastTrackedX = velocityTracker.length > 0
+        ? velocityTracker[velocityTracker.length - 1].x
+        : e.clientX
+      const overallDelta = lastTrackedX - startX
+
+      // Sanity check: velocity direction must match overall drag direction.
+      if (overallDelta > 0 && velocity < 0) velocity = 0
+      if (overallDelta < 0 && velocity > 0) velocity = 0
 
       // If snap is enabled, always use it (GSAP-style: snap modifies inertia target)
       // Otherwise use old logic: inertia if velocity, or resume crawl
