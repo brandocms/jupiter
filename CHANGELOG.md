@@ -1,3 +1,19 @@
+#### 5.0.0-beta.14
+
+- Looper: fix tap-to-stop firing unwanted clicks on mobile (silent stop like native iOS scroll)
+- Looper: fix velocity reversal on iOS caused by pointercancel reporting clientX=0
+- Looper: fix "super fast" inertia from small diagonal gestures by using last pointermove for direction
+- Looper: add axis locking — vertical swipes pass through to page scroll, horizontal commits to drag
+- Looper: add pointer capture for reliable drag tracking when finger leaves container bounds
+- Looper: add touch-specific drag threshold (10px vs 3px for mouse) to prevent accidental drags
+- Looper: improve velocity tracking — use e.timeStamp, widen sample window to 150ms, 6-point average
+- Looper: reduce throwVelocityMultiplier to 0.8 for more natural inertia feel on release
+- Looper: delay crawl resume by 5s after tap-to-stop instead of immediately restarting
+- Looper: only preventDefault on pointerdown for mouse (allows browser scroll on touch)
+- Looper: remove dead `calculateInertiaTarget` function and fix inertia target formula
+- Looper: remove dead `scrollDirection` tracking (set but never read)
+- Looper: remove unused test-pages/looper.html, update index links
+
 #### 5.0.0-beta.13
 
 - Moonwalk: add `destroy()` method — disconnects all IntersectionObservers, removes event listeners, releases DOM references
