@@ -1,3 +1,8 @@
+#### 5.0.0-beta.15
+
+- Looper: replace pointer capture with window-level event listeners for reliable drag tracking
+- Looper: add `onReveal` callback option for custom reveal animation control
+
 #### 5.0.0-beta.14
 
 - Looper: fix tap-to-stop firing unwanted clicks on mobile (silent stop like native iOS scroll)

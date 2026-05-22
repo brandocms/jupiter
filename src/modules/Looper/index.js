@@ -67,6 +67,10 @@ const DEFAULT_OPTIONS = {
     mouseOut: { speed: 1, duration: 0.75 },
   },
 
+  // Called when the looper is ready to reveal. Receives (wrapper, loop) args.
+  // Override to control the reveal animation yourself. Default fades in the wrapper.
+  onReveal: null,
+
   selector: '[data-moonwalk-run="loop"]',
 }
 
@@ -928,13 +932,11 @@ function horizontalLoop(app, items, config) {
         e.preventDefault()
       }
 
-      // Capture pointer to prevent events being lost when finger moves outside container
-      try { container.setPointerCapture(e.pointerId) } catch (err) { /* ignore */ }
-
-      // Add move/up listeners to container (pointer capture routes events here)
-      container.addEventListener('pointermove', onPointerMove, { passive: false })
-      container.addEventListener('pointerup', onPointerUp)
-      container.addEventListener('pointercancel', onPointerUp)
+      // Add move/up listeners to window so events are never lost
+      // (pointer capture can silently fail or be released mid-drag)
+      window.addEventListener('pointermove', onPointerMove, { passive: false })
+      window.addEventListener('pointerup', onPointerUp)
+      window.addEventListener('pointercancel', onPointerUp)
     }
 
     /**
@@ -962,10 +964,9 @@ function horizontalLoop(app, items, config) {
         // Bias toward carousel interaction: vertical must be 1.2x horizontal to abort.
         if (deltaY > deltaX * 1.2) {
           isDragging = false
-          try { container.releasePointerCapture(e.pointerId) } catch (err) { /* ignore */ }
-          container.removeEventListener('pointermove', onPointerMove)
-          container.removeEventListener('pointerup', onPointerUp)
-          container.removeEventListener('pointercancel', onPointerUp)
+          window.removeEventListener('pointermove', onPointerMove)
+          window.removeEventListener('pointerup', onPointerUp)
+          window.removeEventListener('pointercancel', onPointerUp)
           // Resume crawl if we stopped it on pointerdown
           if (stoppedAnimation && config.crawl) {
             resumeCrawl()
@@ -1014,13 +1015,10 @@ function horizontalLoop(app, items, config) {
 
       isDragging = false
 
-      // Release pointer capture
-      try { container.releasePointerCapture(e.pointerId) } catch (err) { /* ignore */ }
-
       // Clean up listeners
-      container.removeEventListener('pointermove', onPointerMove)
-      container.removeEventListener('pointerup', onPointerUp)
-      container.removeEventListener('pointercancel', onPointerUp)
+      window.removeEventListener('pointermove', onPointerMove)
+      window.removeEventListener('pointerup', onPointerUp)
+      window.removeEventListener('pointercancel', onPointerUp)
 
       // Reset cursor and re-enable hover effects (only if we actually dragged)
       if (hasDragged) {
@@ -1364,9 +1362,9 @@ function horizontalLoop(app, items, config) {
       cleanup: () => {
         container.removeEventListener('pointerdown', onPointerDown)
         container.removeEventListener('click', swallowClick, { capture: true })
-        container.removeEventListener('pointermove', onPointerMove)
-        container.removeEventListener('pointerup', onPointerUp)
-        container.removeEventListener('pointercancel', onPointerUp)
+        window.removeEventListener('pointermove', onPointerMove)
+        window.removeEventListener('pointerup', onPointerUp)
+        window.removeEventListener('pointercancel', onPointerUp)
       },
     }
   }
@@ -1937,7 +1935,14 @@ export default class Looper {
 
       // Reveal lazyload images: immediately reveal off-screen items (no visible transition),
       // defer reveal of viewport items until after wrapper fade-in for a nice per-image fade
-      if (this.app?.lazyload && wrapper) {
+      if (this.opts.onReveal) {
+        // Custom reveal callback — caller handles animation and lazyload
+        if (this.app?.lazyload && wrapper) {
+          const pictures = Dom.all(wrapper, '[data-ll-srcset]')
+          pictures.forEach(picture => this.app.lazyload.revealPicture(picture))
+        }
+        this.opts.onReveal(wrapper, loop)
+      } else if (this.app?.lazyload && wrapper) {
         const wrapperRect = wrapper.getBoundingClientRect()
         const pictures = Dom.all(wrapper, '[data-ll-srcset]')
         const viewportPictures = []
