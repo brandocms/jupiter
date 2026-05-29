@@ -64,11 +64,7 @@ export default class Marquee {
     const holderWidth = this.elements.$holder.offsetWidth
     const $allHolders = Dom.all(this.elements.$el, '[data-marquee-holder]')
     const marqueeWidth = holderWidth * $allHolders.length
-    // Cap duration at 40s to prevent precision issues at slow speeds
-    this.duration = Math.min(
-      (holderWidth + marqueeWidth) / this.opts.speed,
-      40
-    )
+    this.duration = holderWidth / this.opts.speed
 
     set(this.elements.$marquee, { width: marqueeWidth })
     this.initializeTween()
@@ -84,13 +80,13 @@ export default class Marquee {
   }
 
   killTweens() {
-    if (this.timeline) {
-      this.timeline.stop()
-      this.timeline = null
-    }
     if (this.speedAnimation) {
       this.speedAnimation.stop()
       this.speedAnimation = null
+    }
+    if (this.timeline) {
+      this.timeline.stop()
+      this.timeline = null
     }
   }
 
@@ -128,6 +124,8 @@ export default class Marquee {
       this.speedAnimation.stop()
     }
 
+    if (!this.timeline) return
+
     if (rampUp) {
       this.timeline.play()
       const state = { speed: this.timeline.speed || 0 }
@@ -138,7 +136,7 @@ export default class Marquee {
           duration: 0.8,
           ease: 'easeIn',
           onUpdate: () => {
-            this.timeline.speed = state.speed
+            if (this.timeline) this.timeline.speed = state.speed
           }
         }
       )
@@ -150,6 +148,7 @@ export default class Marquee {
 
   pause() {
     this.playing = false
+    if (!this.timeline) return
     const state = { speed: this.timeline.speed || 1 }
     this.speedAnimation = animate(
       state,
@@ -157,13 +156,12 @@ export default class Marquee {
       {
         duration: 0.8,
         onUpdate: () => {
-          this.timeline.speed = state.speed
+          if (this.timeline) this.timeline.speed = state.speed
         }
       }
     )
     this.speedAnimation.finished.then(() => {
-      // Only pause if we're still in paused state (haven't called play() in the meantime)
-      if (!this.playing) {
+      if (!this.playing && this.timeline) {
         this.timeline.pause()
       }
     })
@@ -173,6 +171,7 @@ export default class Marquee {
     if (this.speedAnimation) {
       this.speedAnimation.stop()
     }
+    if (!this.timeline) return
     const state = { speed: this.timeline.speed || 1 }
     this.speedAnimation = animate(
       state,
@@ -181,7 +180,7 @@ export default class Marquee {
         duration: 0.3,
         ease: [0.4, 0, 0.2, 1], // ease-out
         onUpdate: () => {
-          this.timeline.speed = state.speed
+          if (this.timeline) this.timeline.speed = state.speed
         }
       }
     )
@@ -191,6 +190,7 @@ export default class Marquee {
     if (this.speedAnimation) {
       this.speedAnimation.stop()
     }
+    if (!this.timeline) return
     const state = { speed: this.timeline.speed || 0.5 }
     this.speedAnimation = animate(
       state,
@@ -199,7 +199,7 @@ export default class Marquee {
         duration: 0.3,
         ease: [0.4, 0, 0.2, 1], // ease-out
         onUpdate: () => {
-          this.timeline.speed = state.speed
+          if (this.timeline) this.timeline.speed = state.speed
         }
       }
     )

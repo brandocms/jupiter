@@ -60,9 +60,20 @@ export function set(target, values) {
       element.style.transform = transformProps.join(' ')
     }
 
+    // Properties that are unitless (don't need 'px')
+    const unitless = new Set([
+      'opacity', 'zIndex', 'fontWeight', 'lineHeight', 'orphans',
+      'widows', 'order', 'flexGrow', 'flexShrink', 'columnCount',
+      'fillOpacity', 'strokeOpacity', 'tabSize',
+    ])
+
     // Apply other styles
     Object.entries(styleProps).forEach(([key, value]) => {
-      element.style[key] = value
+      if (typeof value === 'number' && !unitless.has(key)) {
+        element.style[key] = value + 'px'
+      } else {
+        element.style[key] = value
+      }
     })
   })
 }
