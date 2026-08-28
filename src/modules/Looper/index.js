@@ -148,6 +148,23 @@ function horizontalLoop(app, items, config) {
   const trackElement = items[0].parentElement
 
   /**
+   * The element the pointer actually lands on.
+   *
+   * `trackElement` is what gets translated, so once the carousel has been
+   * dragged its box has left the viewport — and with it the `pointerdown`
+   * listener, the `touch-action` and the `grab` cursor. The visible row is then
+   * made of item boxes with dead gaps between them: pressing a slide still
+   * works (the event bubbles up through the track) but pressing between two
+   * slides hits nothing. It reads as "drag works until you have dragged".
+   *
+   * So when `container` is the track itself, the surface moves to the wrapper,
+   * which stays put and spans the same visible area. When `center` gave us a
+   * separate container it is already stationary and keeps the job.
+   */
+  const dragSurface =
+    (container === trackElement ? config.wrapper : container) || container
+
+  /**
    * Measure total width of all items as currently laid out
    * @returns {number} Total width in pixels
    */
@@ -877,6 +894,18 @@ function horizontalLoop(app, items, config) {
       // Only handle primary pointer (left click, first touch)
       if (e.button !== undefined && e.button !== 0) return
 
+      // The drag surface is the wrapper, and next/previous buttons live inside
+      // it — pressing one must not also arm a drag, or the tap that follows
+      // snaps the row on top of the navigation the button just did. Slides are
+      // deliberately not exempt: a slide may be a link and still be draggable.
+      // `[data-looper-no-drag]` opts anything else in the wrapper out.
+      if (
+        e.target.closest &&
+        e.target.closest('[data-panner-next], [data-panner-previous], [data-looper-no-drag]')
+      ) {
+        return
+      }
+
       isDragging = true
       indexSetByNav = false
       startX = e.clientX
@@ -976,7 +1005,7 @@ function horizontalLoop(app, items, config) {
 
         // Horizontal — commit to drag
         hasDragged = true
-        container.style.cursor = 'grabbing'
+        dragSurface.style.cursor = 'grabbing'
         trackElement.classList.add('looper-dragging')
       }
 
@@ -1022,12 +1051,12 @@ function horizontalLoop(app, items, config) {
 
       // Reset cursor and re-enable hover effects (only if we actually dragged)
       if (hasDragged) {
-        container.style.cursor = 'grab'
+        dragSurface.style.cursor = 'grab'
         trackElement.classList.remove('looper-dragging')
 
         // Swallow the next click event so links don't navigate after a drag.
         // The browser fires click after pointerup — capture it before it reaches any <a>.
-        container.addEventListener('click', swallowClick, { capture: true, once: true })
+        dragSurface.addEventListener('click', swallowClick, { capture: true, once: true })
       }
 
       // If this was a click (not a drag):
@@ -1351,17 +1380,17 @@ function horizontalLoop(app, items, config) {
     }
 
     // Set up touch-action CSS for proper touch handling
-    container.style.touchAction = 'pan-y' // Allow vertical scroll, prevent horizontal
+    dragSurface.style.touchAction = 'pan-y' // Allow vertical scroll, prevent horizontal
 
     // Add pointer down listener
-    container.style.cursor = 'grab'
-    container.addEventListener('pointerdown', onPointerDown)
+    dragSurface.style.cursor = 'grab'
+    dragSurface.addEventListener('pointerdown', onPointerDown)
 
     // Store cleanup function
     dragState = {
       cleanup: () => {
-        container.removeEventListener('pointerdown', onPointerDown)
-        container.removeEventListener('click', swallowClick, { capture: true })
+        dragSurface.removeEventListener('pointerdown', onPointerDown)
+        dragSurface.removeEventListener('click', swallowClick, { capture: true })
         window.removeEventListener('pointermove', onPointerMove)
         window.removeEventListener('pointerup', onPointerUp)
         window.removeEventListener('pointercancel', onPointerUp)
@@ -1748,9 +1777,9 @@ function horizontalLoop(app, items, config) {
       trackElement.style.willChange = ''
       trackElement.style.transform = ''
 
-      // Clear inline styles on container
-      container.style.touchAction = ''
-      container.style.cursor = ''
+      // Clear inline styles on the drag surface
+      dragSurface.style.touchAction = ''
+      dragSurface.style.cursor = ''
 
       // Clear item wrap transforms
       items.forEach(item => {

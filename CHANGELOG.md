@@ -1,3 +1,8 @@
+#### 5.0.0-beta.16
+
+- Looper: bind drag listeners to the stationary wrapper — dragging translates the track, which took its hit area, `touch-action` and `grab` cursor out of the viewport and killed dragging between slides
+- Looper: don't arm a drag from `[data-panner-next]` / `[data-panner-previous]` — they sit inside the wrapper, which is now the drag surface. `[data-looper-no-drag]` opts out anything else placed there
+
 #### 5.0.0-beta.15
 
 - Looper: replace pointer capture with window-level event listeners for reliable drag tracking
