@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jupiter Marquee — Drag &amp; Throw</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        line-height: 1.5;
+        padding: 0;
+        margin: 0;
+      }
+
+      section {
+        padding: 2rem;
+      }
+
+      .marquee-container {
+        width: 100%;
+        margin: 2rem 0;
+        border: 2px solid #ddd;
+        overflow: hidden;
+      }
+
+      [data-marquee] {
+        opacity: 0;
+        background: linear-gradient(90deg, #4a90e2, #357abd);
+        color: white;
+        padding: 2rem 0;
+      }
+
+      [data-marquee-holder] {
+        display: inline-block;
+        white-space: nowrap;
+      }
+
+      [data-marquee-item] {
+        font-size: 2rem;
+        font-weight: bold;
+        display: inline-block;
+      }
+
+      [data-marquee-item] a {
+        color: #ffe;
+      }
+
+      /* Reversed row: mirror the whole thing, flip items back upright */
+      .marquee-container.is-reverse {
+        transform: scaleX(-1);
+      }
+      .marquee-container.is-reverse [data-marquee-item] {
+        transform: scaleX(-1);
+      }
+    </style>
+  </head>
+  <body>
+    <section>
+      <h2>Draggable Marquee (drag + throw)</h2>
+      <div class="marquee-container">
+        <div data-marquee data-testid="marquee-drag">
+          <div data-marquee-holder>
+            <div data-marquee-item>
+              Drag me &amp; throw me • Jupiter Marquee • Momentum &amp; Inertia •
+              <a href="#dragged-link">Item Link</a> • Smooth Physics • Motion Powered
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Reversed Marquee (mirrored, draggable)</h2>
+      <div class="marquee-container is-reverse">
+        <div data-marquee data-testid="marquee-reverse">
+          <div data-marquee-holder>
+            <div data-marquee-item>
+              Reversed &amp; mirrored • Drag should follow your finger • Jupiter Marquee • Motion Powered
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Reversed via option (no CSS mirror, draggable)</h2>
+      <div class="marquee-container">
+        <div data-marquee data-testid="marquee-revopt" data-reversed>
+          <div data-marquee-holder>
+            <div data-marquee-item>
+              Reversed crawl via option • Readable text • Speed still controllable • Jupiter Marquee
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Static Marquee (no drag)</h2>
+      <div class="marquee-container">
+        <div data-marquee data-testid="marquee-static">
+          <div data-marquee-holder>
+            <div data-marquee-item>
+              You cannot drag this one • Plain Auto-Crawl • Jupiter Marquee • Motion Powered
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <script type="module">
+      import { Application, Marquee } from '../../src/index.js'
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const app = new Application({
+          respectReducedMotion: false,
+        })
+
+        document.querySelectorAll('.marquee-container').forEach(container => {
+          const draggable = !container.querySelector('[data-testid="marquee-static"]')
+          // Expose the instance on the inner [data-marquee] element for tests
+          const inner = container.querySelector('[data-marquee]')
+          inner.$marquee = new Marquee(app, container, {
+            draggable,
+            reversed: inner.hasAttribute('data-reversed'),
+            slowDownOnHover: false,
+          })
+        })
+
+        app.initialize()
+      })
+    </script>
+  </body>
+</html>

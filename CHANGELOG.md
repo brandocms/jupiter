@@ -2,6 +2,13 @@
 
 - Looper: bind drag listeners to the stationary wrapper — dragging translates the track, which took its hit area, `touch-action` and `grab` cursor out of the viewport and killed dragging between slides
 - Looper: don't arm a drag from `[data-panner-next]` / `[data-panner-previous]` — they sit inside the wrapper, which is now the drag surface. `[data-looper-no-drag]` opts out anything else placed there
+- Marquee: add `draggable` option — pointer drag with throw/inertia, sharing Looper's velocity sampling, axis locking and touch thresholds. Off by default
+- Marquee: add `reversed` option for crawling rightward, and detect `scaleX(-1)` rows so drag and throw map to the marquee's own direction
+- Marquee: rebuild position handling on a single `motionValue` — crawl, drag and inertia all write to it, and a modulo transform keeps the loop seamless from any position
+- Marquee: duplicate holders until they cover the viewport plus one holder width instead of cloning exactly once
+- Marquee: add `destroy()` — stops animations, disconnects the observer, unsubscribes the position listener and removes drag and window listeners
+- Marquee: drop the 40s duration cap and derive duration from holder width alone
+- Marquee: guard every `this.timeline` access so a killed tween can't throw
 
 #### 5.0.0-beta.15
 
