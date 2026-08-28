@@ -9,6 +9,11 @@
 - Marquee: add `destroy()` — stops animations, disconnects the observer, unsubscribes the position listener and removes drag and window listeners
 - Marquee: drop the 40s duration cap and derive duration from holder width alone
 - Marquee: guard every `this.timeline` access so a killed tween can't throw
+- Marquee: `destroy()` now removes the `slowDownOnHover` listeners — they were bound inline and could not be detached, so hover kept animating a destroyed instance
+- Marquee: keep the hover slow-down across a drag or throw — the crawl is rebuilt from scratch on resume and used to ramp back to full speed while still hovered
+- Marquee: stop publishing `window.timeline` / `window.marquee` — debug globals that pointed at whichever instance initialised last and outlived `destroy()`
+- Marquee: catch the rejection from the pause ramp's `finished` promise, which is routinely stopped by `slowDown` / `play` / `resumeCrawl`
+- Types: regenerate `types/` — stale for Marquee, Moonwalk and the DoubleHeader/FixedHeader/StickyHeader `destroy()` methods
 
 #### 5.0.0-beta.15
 

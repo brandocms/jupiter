@@ -108,6 +108,11 @@ export default class FixedHeader {
     pin(): void;
     notSmall(): void;
     small(): void;
+    /**
+     * Update the --header-height CSS variable on :root.
+     * Set to the header's current height when pinned, 0px when unpinned.
+     */
+    _updateHeaderHeight(): void;
     notAltBg(): void;
     altBg(): void;
     shouldUnpin(toleranceExceeded: any): any;

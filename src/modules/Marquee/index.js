@@ -8,6 +8,8 @@ const VELOCITY_WINDOW_MS = 150
 // Speed the crawl ramps up from after a throw settles
 const MIN_CRAWL_SPEED = 0.001
 const SPEED_RAMP_DURATION = 1.2
+// Crawl speed while the pointer rests on the marquee (slowDownOnHover)
+const HOVER_SPEED = 0.5
 
 const DEFAULT_OPTIONS = {
   speed: 100,
@@ -57,9 +59,15 @@ export default class Marquee {
     this.observer = null
     this.playing = false
 
+    // Tracks whether the pointer is over the marquee, so a crawl recreated
+    // after a drag or throw resumes at the hover speed rather than full speed.
+    this.hovering = false
+
     // Bound handlers (stored so they can be removed in destroy)
     this._onResize = this.updateMarquee.bind(this)
     this._onReveal = this.revealMarquee.bind(this)
+    this._onMouseEnter = this.slowDown.bind(this)
+    this._onMouseLeave = this.speedUp.bind(this)
     this._positionUnsubscribe = null
     this._dragCleanup = null
 
@@ -80,8 +88,8 @@ export default class Marquee {
     this.setupObserver()
 
     if (this.opts.slowDownOnHover) {
-      this.elements.$el.addEventListener('mouseenter', this.slowDown.bind(this))
-      this.elements.$el.addEventListener('mouseleave', this.speedUp.bind(this))
+      this.elements.$el.addEventListener('mouseenter', this._onMouseEnter)
+      this.elements.$el.addEventListener('mouseleave', this._onMouseLeave)
     }
 
     if (this.opts.draggable) {
@@ -191,9 +199,6 @@ export default class Marquee {
 
     this.timeline = this.createCrawl()
     this.timeline.pause()
-
-    window.timeline = this.timeline
-    window.marquee = this
   }
 
   /**
@@ -214,6 +219,16 @@ export default class Marquee {
     })
   }
 
+  /**
+   * The speed the crawl should settle at. Half speed while the pointer rests
+   * on the marquee, so a crawl recreated after a drag or throw doesn't lose
+   * the hover slow-down.
+   * @returns {number}
+   */
+  targetSpeed() {
+    return this.opts.slowDownOnHover && this.hovering ? HOVER_SPEED : 1
+  }
+
   play(rampUp = false) {
     this.playing = true
     if (this.speedAnimation) {
@@ -230,11 +245,11 @@ export default class Marquee {
 
     if (rampUp) {
       this.timeline.play()
-      const state = { speed: 0 }
+      const state = { speed: MIN_CRAWL_SPEED }
       this.timeline.speed = MIN_CRAWL_SPEED
       this.speedAnimation = animate(
         state,
-        { speed: 1 },
+        { speed: this.targetSpeed() },
         {
           duration: 0.8,
           ease: 'easeIn',
@@ -244,7 +259,7 @@ export default class Marquee {
         }
       )
     } else {
-      this.timeline.speed = 1
+      this.timeline.speed = this.targetSpeed()
       this.timeline.play()
     }
   }
@@ -263,14 +278,19 @@ export default class Marquee {
         }
       }
     )
-    this.speedAnimation.finished.then(() => {
-      if (!this.playing && this.timeline) {
-        this.timeline.pause()
-      }
-    })
+    this.speedAnimation.finished
+      .then(() => {
+        if (!this.playing && this.timeline) {
+          this.timeline.pause()
+        }
+      })
+      // The ramp is routinely stopped by slowDown/play/resumeCrawl — that
+      // rejects `finished`, and an unhandled rejection is not our problem.
+      .catch(() => {})
   }
 
   slowDown() {
+    this.hovering = true
     if (this.speedAnimation) {
       this.speedAnimation.stop()
     }
@@ -278,7 +298,7 @@ export default class Marquee {
     const state = { speed: this.timeline.speed || 1 }
     this.speedAnimation = animate(
       state,
-      { speed: 0.5 },
+      { speed: HOVER_SPEED },
       {
         duration: 0.3,
         ease: [0.4, 0, 0.2, 1], // ease-out
@@ -290,11 +310,12 @@ export default class Marquee {
   }
 
   speedUp() {
+    this.hovering = false
     if (this.speedAnimation) {
       this.speedAnimation.stop()
     }
     if (!this.timeline) return
-    const state = { speed: this.timeline.speed || 0.5 }
+    const state = { speed: this.timeline.speed || HOVER_SPEED }
     this.speedAnimation = animate(
       state,
       { speed: 1 },
@@ -531,7 +552,7 @@ export default class Marquee {
     this.timeline.speed = MIN_CRAWL_SPEED
     this.speedAnimation = animate(
       state,
-      { speed: 1 },
+      { speed: this.targetSpeed() },
       {
         duration: SPEED_RAMP_DURATION,
         ease: 'easeIn',
@@ -633,6 +654,11 @@ export default class Marquee {
     if (this._dragCleanup) {
       this._dragCleanup()
       this._dragCleanup = null
+    }
+
+    if (this.opts.slowDownOnHover) {
+      this.elements.$el.removeEventListener('mouseenter', this._onMouseEnter)
+      this.elements.$el.removeEventListener('mouseleave', this._onMouseLeave)
     }
 
     window.removeEventListener('APPLICATION:RESIZE', this._onResize)

@@ -59,6 +59,23 @@ async function dragMarquee(page, testId, deltaX, steps = 10) {
   await page.mouse.up()
 }
 
+/**
+ * Scroll a marquee into view and wait for the IntersectionObserver to start it.
+ * Rows below the fold are paused, so hover and drag assertions need this first.
+ * Returns the clipping container's rect, in post-scroll viewport coordinates.
+ */
+async function revealRow(page, testId) {
+  const el = page.locator(`[data-testid="${testId}"]`)
+  await el.evaluate(e => e.closest('.marquee-container').scrollIntoView({ block: 'center' }))
+  await expect
+    .poll(() => el.evaluate(e => e.$marquee.playing), { timeout: 5000 })
+    .toBe(true)
+  return el.evaluate(e => {
+    const c = e.closest('.marquee-container').getBoundingClientRect()
+    return { y: c.y, height: c.height }
+  })
+}
+
 test.describe('Marquee', () => {
   test.beforeEach(async ({ page }) => {
     await gotoMarquee(page)
@@ -183,6 +200,69 @@ test.describe('Marquee', () => {
       const fast = await sample()
 
       expect(fast).toBeGreaterThan(slow)
+    })
+  })
+
+  test.describe('Hover slow-down', () => {
+    test('hovering halves the crawl speed', async ({ page }) => {
+      const el = page.locator('[data-testid="marquee-hover"]')
+      const box = await revealRow(page, 'marquee-hover')
+
+      await page.mouse.move(page.viewportSize().width / 2, box.y + box.height / 2)
+      // slowDown ramps over 0.3s
+      await page.waitForTimeout(500)
+
+      expect(await el.evaluate(e => e.$marquee.timeline.speed)).toBeLessThan(0.75)
+    })
+
+    test('survives a drag — the resumed crawl stays slowed while hovered', async ({ page }) => {
+      // resumeCrawl() builds a fresh crawl from scratch after a throw. It must
+      // ramp back to the hover speed, not full speed, while the pointer is
+      // still resting on the marquee.
+      const el = page.locator('[data-testid="marquee-hover"]')
+      await revealRow(page, 'marquee-hover')
+
+      await dragMarquee(page, 'marquee-hover', -200, 5)
+
+      // Wait for the throw to settle — the crawl is torn down for the whole
+      // drag + inertia, and only resumeCrawl() puts a timeline back.
+      await expect
+        .poll(() => el.evaluate(e => e.$marquee.inertiaAnimation === null && !!e.$marquee.timeline), {
+          timeout: 10000
+        })
+        .toBe(true)
+
+      // ...then let the speed ramp (SPEED_RAMP_DURATION, 1.2s) finish
+      await page.waitForTimeout(1600)
+
+      expect(await el.evaluate(e => e.$marquee.timeline.speed)).toBeLessThan(0.75)
+    })
+  })
+
+  test.describe('destroy()', () => {
+    test('freezes the marquee and detaches hover listeners', async ({ page }) => {
+      const el = page.locator('[data-testid="marquee-hover"]')
+      const box = await revealRow(page, 'marquee-hover')
+
+      await el.evaluate(e => e.$marquee.destroy())
+      const afterDestroy = await getPos(page, 'marquee-hover')
+
+      // Hovering a destroyed marquee must not restart anything
+      await page.mouse.move(page.viewportSize().width / 2, box.y + box.height / 2)
+      await page.waitForTimeout(600)
+
+      expect(await getPos(page, 'marquee-hover')).toBe(afterDestroy)
+      expect(await el.evaluate(e => e.$marquee.timeline)).toBe(null)
+    })
+
+    test('leaves no debug globals behind', async ({ page }) => {
+      // The module used to publish `window.timeline` / `window.marquee`, which
+      // pointed at whichever instance initialised last and outlived destroy().
+      const globals = await page.evaluate(() => ({
+        timeline: 'timeline' in window,
+        marquee: 'marquee' in window
+      }))
+      expect(globals).toEqual({ timeline: false, marquee: false })
     })
   })
 

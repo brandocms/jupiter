@@ -373,7 +373,7 @@ export type MoonwalkOptions = {
      */
     on?: string | null;
     /**
-     * - Delay before starting animations
+     * - Delay in ms before starting animations
      */
     initialDelay?: number;
     /**

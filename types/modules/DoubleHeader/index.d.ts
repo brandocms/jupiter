@@ -46,6 +46,12 @@ export default class DoubleHeader {
     pin(): void;
     notSmall(): void;
     small(): void;
+    /**
+     * Update the --header-height CSS variable on :root.
+     * Uses el height when pinned (el is the main header, auxEl is secondary).
+     * Set to 0px when unpinned.
+     */
+    _updateHeaderHeight(): void;
     shouldUnpin(toleranceExceeded: any): any;
     shouldPin(toleranceExceeded: any): any;
     isOutOfBounds(): boolean;

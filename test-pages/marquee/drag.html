@@ -96,6 +96,19 @@
     </section>
 
     <section>
+      <h2>Hover slow-down (draggable, slowDownOnHover)</h2>
+      <div class="marquee-container">
+        <div data-marquee data-testid="marquee-hover" data-hover>
+          <div data-marquee-holder>
+            <div data-marquee-item>
+              Hover me to slow the crawl &bull; Then drag &bull; Jupiter Marquee &bull; Motion Powered
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
       <h2>Static Marquee (no drag)</h2>
       <div class="marquee-container">
         <div data-marquee data-testid="marquee-static">
@@ -123,7 +136,7 @@
           inner.$marquee = new Marquee(app, container, {
             draggable,
             reversed: inner.hasAttribute('data-reversed'),
-            slowDownOnHover: false,
+            slowDownOnHover: inner.hasAttribute('data-hover'),
           })
         })
 
