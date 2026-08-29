@@ -12,7 +12,7 @@ runs:
 
     - name: Cache Playwright browsers
       id: playwright-cache
-      uses: actions/cache@v3
+      uses: actions/cache@v6
       with:
         path: ~/.cache/ms-playwright
         # Add the Playwright version *and* the browser-revision file to the key
