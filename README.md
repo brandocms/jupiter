@@ -994,6 +994,8 @@ Same options as FixedHeader - see FixedHeader documentation below.
 - `sections`
   - Here you can set a config per section (body[data-script="section"])
   - `unPinOnResize` - auto unpin while resizing
+  - `headerHeightTracksPin` - default `true`. Whether `--header-height` drops to `0px`
+    while the header is unpinned. Set `false` for a header that never retracts.
   - `offset` - when is header triggered
   - `offsetBg` - when is offset background triggered (i.e. if there's another bg for content)
   - events are same as under default.
@@ -1033,6 +1035,22 @@ Same options as FixedHeader - see FixedHeader documentation below.
     - Triggers when mobile menu opens
   - `onMobileMenuClose`
     - Triggers when mobile menu closes
+
+### CSS variables
+
+`--header-height` is kept up to date on `:root`, republished whenever the header pins,
+unpins or toggles small/big. By default it is how much header is *visible* — the
+measured height while pinned, `0px` while unpinned — so anything positioned under the
+bar follows it out of the way as it retracts.
+
+For a header that never retracts — through `preventUnpin`, or by no-opping
+`onPin`/`onUnpin` — set `headerHeightTracksPin: false`. The bar stays put, but the
+pinned state still flips on every change of scroll direction, so the variable would
+otherwise drop to `0px` and back while nothing moves. Any layout sized from it (a
+`padding-top` standing in for the fixed bar, say) then grows and shrinks the document
+under the reader. Scroll anchoring absorbs that mid-page, but not at the very bottom,
+where the scroll offset is clamped to the document and the page visibly jumps.
+`headerHeightTracksPin: false` publishes the measured height throughout.
 
  ```
  header[data-nav] {

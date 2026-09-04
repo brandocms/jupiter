@@ -1,3 +1,7 @@
+#### 5.0.0-beta.17
+
+- FixedHeader: add `headerHeightTracksPin` option — `--header-height` drops to `0px` while unpinned, which resizes the document under a header configured never to retract. Set `false` to publish the measured height throughout
+
 #### 5.0.0-beta.16
 
 - Looper: bind drag listeners to the stationary wrapper — dragging translates the track, which took its hit area, `touch-action` and `grab` cursor out of the viewport and killed dragging between slides

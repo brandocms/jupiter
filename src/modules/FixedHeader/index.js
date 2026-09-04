@@ -50,6 +50,7 @@ import { set } from '../../utils/motion-helpers'
 /**
  * @typedef {Object} FixedHeaderSectionOptions
  * @property {boolean} [unPinOnResize=true] - Whether to unpin header on window resize
+ * @property {boolean} [headerHeightTracksPin=true] - Whether --header-height drops to 0 when the header unpins. Set false for a header that never retracts.
  * @property {Window|HTMLElement} [canvas=window] - Scrolling element
  * @property {string|null} [intersects=null] - Selector for elements to check intersection with
  * @property {Function} [beforeEnter] - Called before header enters
@@ -153,6 +154,7 @@ const DEFAULT_OPTIONS = {
 
   default: {
     unPinOnResize: true,
+    headerHeightTracksPin: true,
     canvas: window,
     intersects: null,
     beforeEnter: (h) => {
@@ -612,10 +614,25 @@ export default class FixedHeader {
 
   /**
    * Update the --header-height CSS variable on :root.
-   * Set to the header's current height when pinned, 0px when unpinned.
+   *
+   * By default this is how much header is *visible* — the measured height when
+   * pinned, 0 when unpinned — so anything positioned under the bar follows it
+   * out of the way as it retracts.
+   *
+   * That is wrong for a header configured never to retract, whether through
+   * `preventUnpin` or by no-opping `onPin` / `onUnpin`. The bar stays put, but
+   * `_pinned` still flips on every change of scroll direction, so the variable
+   * drops to 0 and back while nothing moves. Any layout sized from it — a
+   * `padding-top` standing in for the fixed bar, say — then grows and shrinks
+   * the document under the reader. Scroll anchoring absorbs that mid-page, but
+   * not at the very bottom, where the scroll offset is clamped to the document
+   * and the page visibly jumps instead.
+   *
+   * `headerHeightTracksPin: false` publishes the measured height throughout.
    */
   _updateHeaderHeight() {
-    const height = this._pinned ? `${this.el.clientHeight}px` : '0px'
+    const tracksPin = this.opts.headerHeightTracksPin !== false
+    const height = tracksPin && !this._pinned ? '0px' : `${this.el.clientHeight}px`
     document.documentElement.style.setProperty('--header-height', height)
   }
 
