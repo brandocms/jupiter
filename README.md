@@ -949,6 +949,10 @@ when the original header is visible.
   - Pin header when scroll is forced (`application.scrollTo`, clicking anchors etc)
 - `unPinOnResize` - default `false`
   - Unpin header when window is resized
+- `headerHeightTracksPin` - default `true`
+  - Set per section (under `default` / `sections`). Whether `--header-height` drops
+    to `0px` while the header is unpinned. Set `false` for a header that never
+    retracts — see [CSS variables](#css-variables) under FixedHeader.
 
 - Events
   - `onMainVisible`
@@ -978,7 +982,8 @@ its space is still reserved.
 
 ### Options
 
-Same options as FixedHeader - see FixedHeader documentation below.
+Same options as FixedHeader - see FixedHeader documentation below, including
+`headerHeightTracksPin` and the [CSS variables](#css-variables) section.
 
 
 ## FixedHeader

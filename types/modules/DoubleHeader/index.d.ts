@@ -48,8 +48,21 @@ export default class DoubleHeader {
     small(): void;
     /**
      * Update the --header-height CSS variable on :root.
-     * Uses el height when pinned (el is the main header, auxEl is secondary).
-     * Set to 0px when unpinned.
+     *
+     * Measured from `el`, the main header — `auxEl` is the clone. By default this
+     * is how much header is *visible*, the measured height when pinned and 0 when
+     * unpinned, so anything positioned under the bar follows it out of the way as
+     * the clone retracts.
+     *
+     * That is wrong for a header configured never to retract, whether through
+     * `preventUnpin` or by no-opping `onPin` / `onUnpin`. The bar stays put, but
+     * `_pinned` still flips on every change of scroll direction, so the variable
+     * drops to 0 and back while nothing moves. Any layout sized from it then grows
+     * and shrinks the document under the reader. Scroll anchoring absorbs that
+     * mid-page, but not at the very bottom, where the scroll offset is clamped to
+     * the document and the page visibly jumps instead.
+     *
+     * `headerHeightTracksPin: false` publishes the measured height throughout.
      */
     _updateHeaderHeight(): void;
     shouldUnpin(toleranceExceeded: any): any;

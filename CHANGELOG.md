@@ -1,3 +1,8 @@
+#### 5.0.0-beta.18
+
+- StickyHeader, DoubleHeader: honour `headerHeightTracksPin` too — both published `--header-height` as `0px` while unpinned with no way to opt out, so a header that never retracts resized the document on every change of scroll direction
+- DoubleHeader: document `headerHeightTracksPin` in the README, and point StickyHeader's "same options as FixedHeader" note at it
+
 #### 5.0.0-beta.17
 
 - FixedHeader: add `headerHeightTracksPin` option — `--header-height` drops to `0px` while unpinned, which resizes the document under a header configured never to retract. Set `false` to publish the measured height throughout
