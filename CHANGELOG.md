@@ -1,3 +1,8 @@
+#### 5.0.0-beta.19
+
+- Looper: a throw into either end of a non-looping row keeps its speed, runs past the edge and springs back. The inertia used to clamp its target to the row, so Motion rescaled the whole throw to the shorter distance and crawled the last stretch on the exponential tail — over two seconds. It now reaches the edge in under 100ms and settles in about half a second. New options `edgeStiffness` (260) and `edgeDamping` (29)
+- Looper: dragging past either end of a non-looping row stretches with resistance instead of stopping dead, and a release past the edge springs back. The rubber band is iOS's curve; `edgeElasticity` (0.55) sets the give, `0` restores the hard stop. Grabbing the row mid-bounce continues from where it is shown
+
 #### 5.0.0-beta.18
 
 - StickyHeader, DoubleHeader: honour `headerHeightTracksPin` too — both published `--header-height` as `0px` while unpinned with no way to opt out, so a header that never retracts resized the document on every change of scroll direction

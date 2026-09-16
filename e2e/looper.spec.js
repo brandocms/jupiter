@@ -536,6 +536,70 @@ test.describe('Jupiter Looper Module', () => {
       expect(state.currentIndex).toBeGreaterThan(0)
     })
 
+    test('dragging past the end stretches with resistance and settles back', async ({ page }) => {
+      const id = 'looper-end-right'
+      await dragLooper(page, id, -3000)
+      await page.waitForTimeout(1500)
+      const end = (await getLooperState(page, id)).position
+
+      const box = await page.locator(`[data-testid="${id}"]`).boundingBox()
+      const x = box.x + box.width / 2
+      const y = box.y + box.height / 2
+      await page.mouse.move(x, y)
+      await page.mouse.down()
+      await page.mouse.move(x - 300, y, { steps: 15 })
+      await page.waitForTimeout(300)
+
+      // Holding 300px past the end: the row gives, but less than the pointer moved
+      const held = (await getLooperState(page, id)).position
+      expect(held - end).toBeGreaterThan(20)
+      expect(held - end).toBeLessThan(300)
+
+      await page.mouse.up()
+      await page.waitForTimeout(1000)
+      const settled = (await getLooperState(page, id)).position
+      expect(Math.abs(settled - end)).toBeLessThan(1)
+    })
+
+    test('throwing into the end overshoots and settles quickly', async ({ page }) => {
+      const id = 'looper-end-right'
+      await dragLooper(page, id, -3000)
+      await page.waitForTimeout(1500)
+      const end = (await getLooperState(page, id)).position
+      await dragLooper(page, id, 400)
+      await page.waitForTimeout(1500)
+
+      const box = await page.locator(`[data-testid="${id}"]`).boundingBox()
+      const x = box.x + box.width / 2
+      const y = box.y + box.height / 2
+      await page.mouse.move(x, y)
+      await page.mouse.down()
+      await page.mouse.move(x - 300, y, { steps: 3 })
+      await page.mouse.up()
+
+      // Sample the position every frame for 1.5s after release
+      const samples = await page.locator(`[data-testid="${id}"]`).evaluate(
+        el =>
+          new Promise(resolve => {
+            const out = []
+            const t0 = performance.now()
+            const tick = () => {
+              out.push([performance.now() - t0, el.$loop.position.get()])
+              if (performance.now() - t0 < 1500) requestAnimationFrame(tick)
+              else resolve(out)
+            }
+            requestAnimationFrame(tick)
+          })
+      )
+
+      expect(samples.every(([, p]) => Number.isFinite(p))).toBe(true)
+      // Runs past the edge rather than gliding up to it
+      expect(Math.max(...samples.map(([, p]) => p))).toBeGreaterThan(end + 5)
+      // And is back on the edge well within a second
+      const late = samples.filter(([t]) => t > 1000)
+      expect(late.every(([, p]) => Math.abs(p - end) < 1)).toBe(true)
+    })
+
     test('end alignment right keeps last item at right edge', async ({ page }) => {
       const nextButton = page.locator('[data-testid="looper-end-right"] [data-panner-next]')
       for (let i = 0; i < 5; i++) {

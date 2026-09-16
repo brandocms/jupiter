@@ -57,6 +57,12 @@ const DEFAULT_OPTIONS = {
   snapDuration: 0.5, // Duration of snap animation in seconds (0.3-1.0, lower = faster/snappier)
   snapBounce: 0.15, // Spring bounce amount (0-1, 0 = no bounce, higher = more bouncy)
 
+  // Edge spring (loop: false) — a throw past either end keeps its speed, runs
+  // past the edge and springs back, instead of gliding in slowly
+  edgeStiffness: 260, // Pull back towards the edge (higher = shorter overshoot)
+  edgeDamping: 29, // Damping of the pull (29 at 260 is just under critical: one overshoot, no wobble)
+  edgeElasticity: 0.55, // Dragging past an end follows the finger with this much give (0 = hard stop at the edge)
+
   speed: {
     sm: 0.1, // Speed for mobile (multiplier)
     lg: 0.35, // Speed for desktop (multiplier)
@@ -910,7 +916,9 @@ function horizontalLoop(app, items, config) {
       indexSetByNav = false
       startX = e.clientX
       startY = e.clientY
-      startPosition = position.get()
+      // Grabbed past an end (mid-bounce): continue from the drag distance that
+      // shows the row there, or the rubber band would jump
+      startPosition = shouldLoop ? position.get() : unstretch(position.get())
       velocityTracker = [{ x: e.clientX, time: e.timeStamp }]
       hasDragged = false // Reset - will be set true if movement exceeds threshold
       axisDecided = false // Reset - will be decided on first significant movement
@@ -1030,9 +1038,8 @@ function horizontalLoop(app, items, config) {
         // For looping, position grows freely - items wrap as groups
         position.set(newPosition)
       } else {
-        // For non-looping, clamp position to maxScrollPosition (last item at right edge)
-        const clampedPos = Math.max(0, Math.min(maxScrollPosition, newPosition))
-        position.set(clampedPos)
+        // For non-looping, past either end the row gives with resistance
+        position.set(stretch(newPosition))
       }
     }
 
@@ -1093,6 +1100,18 @@ function horizontalLoop(app, items, config) {
       if (overallDelta > 0 && velocity < 0) velocity = 0
       if (overallDelta < 0 && velocity > 0) velocity = 0
 
+      // Released past an end: always spring back to it, whatever the velocity
+      if (!shouldLoop && outOfBounds(position.get())) {
+        inertiaAnimation = throwPastEdge(-velocity * config.throwVelocityMultiplier)
+        inertiaAnimation
+          .then(() => {
+            inertiaAnimation = null
+            updateIndexDisplay()
+          })
+          .catch(() => { inertiaAnimation = null })
+        return
+      }
+
       // If snap is enabled, always use it (GSAP-style: snap modifies inertia target)
       // Otherwise use old logic: inertia if velocity, or resume crawl
       if (config.snap) {
@@ -1123,6 +1142,15 @@ function horizontalLoop(app, items, config) {
       // Reduce inertia when reduced motion is preferred (H4)
       const velocityMultiplier = reducedMotion ? config.throwVelocityMultiplier * 0.3 : config.throwVelocityMultiplier
       const motionVelocity = -velocity * velocityMultiplier
+
+      // A throw that would land past either end springs off the edge instead
+      if (!reducedMotion && throwsPastEdge(currentPos, motionVelocity)) {
+        inertiaAnimation = throwPastEdge(motionVelocity)
+        inertiaAnimation
+          .then(() => { inertiaAnimation = null })
+          .catch(() => { inertiaAnimation = null })
+        return
+      }
 
       // Estimate target for Motion.js (it recomputes internally for type: 'inertia',
       // but we pass a reasonable target to avoid a zero-distance animation)
@@ -1160,6 +1188,142 @@ function horizontalLoop(app, items, config) {
         .catch(() => {
           inertiaAnimation = null
         })
+    }
+
+    function outOfBounds(pos) {
+      return pos > maxScrollPosition || pos < 0
+    }
+
+    /**
+     * Rubber band for dragging past an end of a non-looping row — the curve
+     * iOS uses, (1 - 1 / (x·c/d + 1)) · d: the row follows the pointer at
+     * `edgeElasticity` of its speed at the edge, slower the further out, and
+     * never further than its own width. `stretch` maps drag distance to the
+     * shown position, `unstretch` inverts it, `stretchRate` is the slope.
+     */
+    function stretch(raw) {
+      const c = config.edgeElasticity
+      if (!c) return Math.max(0, Math.min(maxScrollPosition, raw))
+      const d = containerWidth || container.offsetWidth
+      const band = over => (1 - 1 / ((over * c) / d + 1)) * d
+      if (raw > maxScrollPosition) return maxScrollPosition + band(raw - maxScrollPosition)
+      if (raw < 0) return -band(-raw)
+      return raw
+    }
+
+    function unstretch(shown) {
+      const c = config.edgeElasticity
+      if (!c || !outOfBounds(shown)) return shown
+      const d = containerWidth || container.offsetWidth
+      const over = shown > maxScrollPosition ? shown - maxScrollPosition : -shown
+      const raw = (d / c) * (1 / (1 - Math.min(over, d - 1) / d) - 1)
+      return shown > maxScrollPosition ? maxScrollPosition + raw : -raw
+    }
+
+    function stretchRate(shown) {
+      const c = config.edgeElasticity
+      if (!c || !outOfBounds(shown)) return 1
+      const d = containerWidth || container.offsetWidth
+      const over = shown > maxScrollPosition ? shown - maxScrollPosition : -shown
+      // dy/dx = c / (x·c/d + 1)², written in terms of the shown overshoot
+      return c * (1 - over / d) ** 2
+    }
+
+    /**
+     * Whether a throw would come to rest past either end of a non-looping row.
+     * Uses Motion's own inertia arithmetic: it rests at origin + power * velocity.
+     */
+    function throwsPastEdge(currentPos, motionVelocity) {
+      if (shouldLoop) return false
+      if (outOfBounds(currentPos)) return true
+      const ideal = currentPos + config.throwPower * motionVelocity
+      return ideal > maxScrollPosition || ideal < 0
+    }
+
+    /**
+     * Throw into an end of a non-looping row: keep the speed, reach the edge,
+     * run past it and spring back.
+     *
+     * The plain inertia animations clamp their target to the row (snap via
+     * `modifyTarget`), and Motion then rescales the whole throw to that shorter
+     * distance — so a hard throw near the end crawled the last stretch on the
+     * exponential tail, two seconds of it. Motion's own `min`/`max` bounce
+     * cannot help: the clamped target never reaches the boundary, and its
+     * spring is handed a velocity in px/ms rather than px/s (see the TODO in
+     * motion-dom's inertia generator), so it barely overshoots when it does.
+     *
+     * Motion's inertia is closed-form — x(t) = target - A·e^(-t/τ), with
+     * A = power · velocity and target = origin + A — so the moment it crosses
+     * the edge, and its speed there, are known up front. Phase one is a tween
+     * to the edge whose easing *is* that curve; phase two a spring to the edge
+     * starting at that speed, which carries it past and back.
+     *
+     * Not a listener on the value: starting the spring from inside the decay's
+     * own `change` notification left the value NaN (the decay was mid-frame),
+     * and the row froze with every later drag computing from NaN.
+     *
+     * Returns Motion-like controls — `stop()` and a thenable — so
+     * `onPointerDown` interrupts it like any other animation.
+     */
+    function throwPastEdge(motionVelocity) {
+      const origin = position.get()
+      // Already past an end (released mid-stretch): back to that end, starting
+      // at the speed the row is actually moving on screen — the pointer's,
+      // slowed by the rubber band.
+      const outside = outOfBounds(origin)
+      const edge = outside
+        ? (origin > maxScrollPosition ? maxScrollPosition : 0)
+        : (motionVelocity > 0 ? maxScrollPosition : 0)
+      findNearestSnapPoint(edge) // lands on the last (or first) item: keep the index in step
+
+      const tau = config.throwResistance // ms
+      const amplitude = config.throwPower * motionVelocity
+      const beyond = origin + amplitude - edge // how far past the edge the decay would rest
+      // Time (ms) the decay takes to reach the edge, and its speed there (px/s)
+      const tEdge = outside ? 0 : Math.max(0, -tau * Math.log(beyond / amplitude))
+      const edgeVelocity = outside
+        ? motionVelocity * stretchRate(origin)
+        : (beyond / tau) * 1000
+
+      let current = null
+      let stopped = false
+      let resolve
+      const done = new Promise(r => { resolve = r })
+
+      const bounce = () => {
+        if (stopped) return
+        current = animate(position, edge, {
+          type: 'spring',
+          velocity: edgeVelocity,
+          stiffness: config.edgeStiffness,
+          damping: config.edgeDamping,
+          restSpeed: 10,
+          restDelta: 0.5,
+        })
+        current.then(resolve, resolve)
+      }
+
+      if (tEdge < 1 || edge === origin) {
+        bounce()
+      } else {
+        const span = edge - origin
+        current = animate(position, edge, {
+          duration: tEdge / 1000,
+          // The decay's own curve, normalised to 0..1 over the way to the edge
+          ease: p => (amplitude * (1 - Math.exp((-p * tEdge) / tau))) / span,
+        })
+        current.then(bounce, () => {})
+      }
+
+      return {
+        stop() {
+          stopped = true
+          current?.stop()
+          resolve()
+        },
+        then: (onResolve, onReject) => done.then(onResolve, onReject),
+        catch: onReject => done.catch(onReject),
+      }
     }
 
     /**
@@ -1247,6 +1411,18 @@ function horizontalLoop(app, items, config) {
       // Apply both velocity multipliers for snapped loopers
       const motionVelocity =
         -velocity * config.throwVelocityMultiplier * config.snapVelocityMultiplier
+
+      // A throw that would land past either end springs off the edge instead
+      if (throwsPastEdge(currentPos, motionVelocity)) {
+        snapAnimation = throwPastEdge(motionVelocity)
+        snapAnimation
+          .then(() => {
+            snapAnimation = null
+            updateIndexDisplay()
+          })
+          .catch(() => { snapAnimation = null })
+        return
+      }
 
       // Calculate ideal inertia target (Motion will recalculate, but we need a non-zero animation)
       // This ensures Motion starts the inertia physics
@@ -1909,6 +2085,9 @@ export default class Looper {
           snapVelocityMultiplier: this.opts.snapVelocityMultiplier,
           snapDuration: this.opts.snapDuration,
           snapBounce: this.opts.snapBounce,
+          edgeStiffness: this.opts.edgeStiffness,
+          edgeDamping: this.opts.edgeDamping,
+          edgeElasticity: this.opts.edgeElasticity,
           minimumMovement: this.opts.minimumMovement,
           touchMinimumMovement: this.opts.touchMinimumMovement,
         },
