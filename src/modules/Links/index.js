@@ -92,6 +92,9 @@ export default class Links {
   constructor(app, opts = {}) {
     this.app = app
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
+    this.transitioned = false
+
+    window.addEventListener('pageshow', this.onPageShow.bind(this))
 
     const links = document.querySelectorAll(this.opts.linkQuery)
     const anchors = document.querySelectorAll(this.opts.anchorQuery)
@@ -99,6 +102,29 @@ export default class Links {
     this.bindHeroLink()
     this.bindAnchors(anchors)
     this.bindLinks(links)
+  }
+
+  /**
+   * Restoring a page from the bfcache resumes the page transition's animations. Motion
+   * completes them on the first frame and renders `main` hidden again (`opacity: 0`,
+   * `y: 25`) over the Application's visibility fix, leaving a blank page between header
+   * and footer. Starting a new animation to the resting values replaces them and keeps
+   * Motion's own values in step, so nothing renders the hidden state back.
+   */
+  onPageShow(event) {
+    if (!event.persisted || !this.transitioned) {
+      return
+    }
+
+    this.transitioned = false
+
+    const main = document.querySelector('main')
+    const header = document.querySelector('header[data-nav]')
+    const footer = document.querySelector('footer')
+
+    if (main) animate(main, { opacity: 1, y: 0 }, { duration: 0 })
+    if (header) animate(header, { opacity: 1 }, { duration: 0 })
+    if (footer) animate(footer, { opacity: 1 }, { duration: 0 })
   }
 
   bindHeroLink() {
@@ -231,6 +257,8 @@ export default class Links {
           } else {
             // Different page or same page with/without hash change - do transition
             e.preventDefault()
+            // Only the default transition's animations are known, so only those are reset
+            this.transitioned = this.opts.onTransition === DEFAULT_OPTIONS.onTransition
             this.opts.onTransition(href, this.app)
           }
         }

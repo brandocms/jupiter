@@ -1,3 +1,7 @@
+#### 5.0.0-beta.20
+
+- Links: fix a blank page after the browser's back button. Leaving through the default page transition put the page into the bfcache with `main`'s 0.8s `y` animation still running; on restore Motion completed it on the first frame and rendered `main` back at `opacity: 0` over the Application's visibility fix, leaving only header and footer. Links now animates `main`, header and footer to their resting values when such a page is restored, so Motion's own values match what is shown. Custom `onTransition` handlers are left alone
+
 #### 5.0.0-beta.19
 
 - Looper: a throw into either end of a non-looping row keeps its speed, runs past the edge and springs back. The inertia used to clamp its target to the row, so Motion rescaled the whole throw to the shorter distance and crawled the last stretch on the exponential tail — over two seconds. It now reaches the edge in under 100ms and settles in about half a second. New options `edgeStiffness` (260) and `edgeDamping` (29)
