@@ -1,0 +1,83 @@
+<!doctype html>
+<html class="no-js" lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jupiter Moonwalk: missing walks and odd anchors</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 0;
+      }
+
+      section {
+        padding: 2rem;
+        min-height: 40vh;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- A named section whose walk is not in the config -->
+    <section data-moonwalk-section="ghost" data-testid="ghost-section">
+      <h2 data-moonwalk data-testid="ghost-walk">Unknown section walk</h2>
+    </section>
+
+    <!-- A stage whose walk is not in the config -->
+    <section data-moonwalk-section data-moonwalk-stage="phantom" data-testid="phantom-section">
+      <h2 data-moonwalk data-testid="phantom-walk">Unknown stage walk</h2>
+    </section>
+
+    <!-- An element walk that is not in the config, beside a known one -->
+    <section data-moonwalk-section data-testid="mixed-section">
+      <h2 data-moonwalk="nope" data-testid="unknown-walk">Unknown walk</h2>
+      <p data-moonwalk data-testid="known-walk">Known walk</p>
+    </section>
+
+    <!-- A named section after the broken ones -->
+    <section data-moonwalk-section="fade" data-testid="fade-section">
+      <p data-testid="fade-child-1">One</p>
+      <p data-testid="fade-child-2">Two</p>
+    </section>
+
+    <!-- An anchor target whose id is not a valid CSS selector -->
+    <section data-moonwalk-section id="1-intro" data-testid="anchor-section">
+      <h2 data-moonwalk data-testid="anchor-walk">Anchor target</h2>
+    </section>
+
+    <script type="module">
+      import { Application, Moonwalk } from "../src/index.js";
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const app = new Application({ respectReducedMotion: false });
+
+        app.moonwalk = new Moonwalk(app, {
+          initialDelay: 0.1,
+          rootMargin: "0px",
+          threshold: 0,
+          on: () => {},
+          walks: {
+            default: {
+              interval: 0.05,
+              duration: 0.2,
+              transition: {
+                from: { opacity: 0 },
+                to: { opacity: 1 },
+              },
+            },
+            fade: {
+              interval: 0.05,
+              duration: 0.2,
+              transition: {
+                from: { opacity: 0 },
+                to: { opacity: 1 },
+              },
+            },
+          },
+        });
+
+        app.initialize();
+        setTimeout(() => app.moonwalk.ready(), 200);
+      });
+    </script>
+  </body>
+</html>

@@ -227,6 +227,14 @@ export default class Moonwalk {
      */
     ready(): void;
     /**
+     * The walk config for a `data-moonwalk` value. An unknown name is reported
+     * once and falls back to the default walk, so the element still reveals.
+     *
+     * @param {string} walkName
+     */
+    walkConfig(walkName: string): any;
+    _missingWalks: any;
+    /**
      * Get the viewport entry direction based on current scroll direction.
      * When entering, elements appear from the opposite side of scroll direction.
      *

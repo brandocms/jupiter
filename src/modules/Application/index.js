@@ -125,6 +125,10 @@ export default class Application {
     this.userAgent = navigator.userAgent
     this.breakpoint = null
     this.root = document.documentElement
+    // Usually done by an inline script in <head>; a CSP can block that while
+    // this bundle still runs, which would leave `.no-js` rules applying.
+    this.root.classList.remove('no-js')
+    this.root.classList.add('js')
     this.language = document.documentElement.lang
 
     this.size = {

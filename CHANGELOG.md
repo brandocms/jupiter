@@ -1,3 +1,10 @@
+#### Unreleased
+
+- Moonwalk: a page loaded with a hash that is not a valid CSS selector (`#1-intro`) no longer throws in the constructor, which stopped Moonwalk for the whole page. The anchor is looked up by id
+- Moonwalk: a walk name missing from `walks` is logged instead of throwing. An element falls back to the `default` walk; a named section or a stage (also one whose walk has no `transition`) is treated as a plain section. Before, a missing section walk aborted `ready()` for every later section, and a missing element walk threw in the observer, skipping the other walks entering with it
+- Application: remove `no-js` and add `js` on `<html>` itself, so `.no-js` rules stop applying when a CSP blocks the inline head script that usually does it
+- README: correct Moonwalk's `clearMoonwalkOnAnchors` (default `true`, reveals up to the target) and `rootMargin` (`'-10% 0%'`, `'0px'` for the last section and run) defaults, and update the walk example to Motion easings and `transition: null`
+
 #### 5.0.0-beta.20
 
 - Links: fix a blank page after the browser's back button. Leaving through the default page transition put the page into the bfcache with `main`'s 0.8s `y` animation still running; on restore Motion completed it on the first frame and rendered `main` back at `opacity: 0` over the Application's visibility fix, leaving only header and footer. Links now animates `main`, header and footer to their resting values when such a page is restored, so Motion's own values match what is shown. Custom `onTransition` handlers are left alone
