@@ -1,4 +1,4 @@
-#### Unreleased
+#### 5.0.0-beta.21
 
 - Moonwalk: a page loaded with a hash that is not a valid CSS selector (`#1-intro`) no longer throws in the constructor, which stopped Moonwalk for the whole page. The anchor is looked up by id
 - Moonwalk: a walk name missing from `walks` is logged instead of throwing. An element falls back to the `default` walk; a named section or a stage (also one whose walk has no `transition`) is treated as a plain section. Before, a missing section walk aborted `ready()` for every later section, and a missing element walk threw in the observer, skipping the other walks entering with it
