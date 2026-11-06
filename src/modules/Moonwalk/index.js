@@ -303,8 +303,14 @@ export default class Moonwalk {
    * `data-moonwalk-section-ready` on `data-moonwalk-section` elements.
    */
   walkToThisPoint(hash) {
-    // Find the target element using the hash
-    const targetElement = document.querySelector(hash)
+    // The hash names an id, which need not be a valid CSS selector (`#1-intro`)
+    let id
+    try {
+      id = decodeURIComponent(hash.slice(1))
+    } catch {
+      return
+    }
+    const targetElement = id && document.getElementById(id)
     if (!targetElement) return // Exit if the element is not found
 
     // Get all elements with the 'data-moonwalk' attribute
@@ -531,13 +537,31 @@ export default class Moonwalk {
   setupNamesAndStages(section) {
     section.el.setAttribute('data-moonwalk-section-ready', '')
 
-    if (!section.stage.name && !section.name) {
-      return
-    }
-
     const {
       opts: { walks },
     } = this
+
+    // An unknown name would throw here or in the observers, stopping every
+    // later section: report it, and treat the section as a plain one.
+    if (section.name && !walks[section.name]) {
+      console.error(
+        '==> JUPITER/MOONWALK: MISSING referenced moonwalk section walk',
+        section.name
+      )
+      section.name = null
+    }
+
+    if (section.stage.name && !walks[section.stage.name]?.transition) {
+      console.error(
+        '==> JUPITER/MOONWALK: MISSING referenced moonwalk stage, or it has no transition',
+        section.stage.name
+      )
+      section.stage.name = null
+    }
+
+    if (!section.stage.name && !section.name) {
+      return
+    }
 
     if (section.name) {
       // set initial tweens
@@ -581,19 +605,12 @@ export default class Moonwalk {
     if (section.stage.name) {
       // reset the element to its `from` state.
       const stageTween = walks[section.stage.name]
-      if (!stageTween) {
-        console.error(
-          '==> JUPITER/MOONWALK: MISSING referenced moonwalk stage',
-          section.stage.name
-        )
-      } else {
-        logMoonwalk('InitialState', 'Setting stage initial state', {
-          stage: section.stage.name,
-          from: stageTween.transition.from,
-        })
-        set(section.el, stageTween.transition.from)
-        logComputedStyle(section.el)
-      }
+      logMoonwalk('InitialState', 'Setting stage initial state', {
+        stage: section.stage.name,
+        from: stageTween.transition.from,
+      })
+      set(section.el, stageTween.transition.from)
+      logComputedStyle(section.el)
     }
 
     const observer = this.sectionObserver(section)
@@ -634,12 +651,6 @@ export default class Moonwalk {
             /* named section. stagger reveal children */
             if (section.name) {
               const tween = walks[section.name]
-
-              if (!tween) {
-                console.error(
-                  `==> JUPITER: Walk [${section.name}] not found in config`
-                )
-              }
 
               logMoonwalk('SectionObserver', 'Named section triggered', {
                 sectionName: section.name,
@@ -903,9 +914,7 @@ export default class Moonwalk {
         // Set initial states for tweenJS elements BEFORE observing
         section.elements.forEach((element) => {
           const walkName = element.getAttribute('data-moonwalk')
-          const cfg = !walkName.length
-            ? opts.walks.default
-            : opts.walks[walkName]
+          const cfg = this.walkConfig(walkName)
 
           // Only set initial state if this uses tweenJS (has transition property)
           if (cfg && cfg.transition) {
@@ -920,6 +929,30 @@ export default class Moonwalk {
         section.elements.forEach((box) => section.observer.observe(box))
       }
     }
+  }
+
+  /**
+   * The walk config for a `data-moonwalk` value. An unknown name is reported
+   * once and falls back to the default walk, so the element still reveals.
+   *
+   * @param {string} walkName
+   */
+  walkConfig(walkName) {
+    if (!walkName.length) return this.opts.walks.default
+
+    const cfg = this.opts.walks[walkName]
+    if (cfg) return cfg
+
+    this._missingWalks = this._missingWalks || new Set()
+    if (!this._missingWalks.has(walkName)) {
+      this._missingWalks.add(walkName)
+      console.error(
+        '==> JUPITER/MOONWALK: MISSING referenced moonwalk walk, using the default walk',
+        walkName
+      )
+    }
+
+    return this.opts.walks.default
   }
 
   /**
@@ -1040,9 +1073,7 @@ export default class Moonwalk {
               isIntersecting: entry.isIntersecting,
               intersectionRatio: entry.intersectionRatio,
             })
-            const cfg = !walkName.length
-              ? opts.walks.default
-              : opts.walks[walkName]
+            const cfg = this.walkConfig(walkName)
 
             const { duration, transition, startDelay } = cfg
             // Default interval to 0.15 if not specified (same as default walk)

@@ -524,11 +524,13 @@ syntax. If no value is provided, we run the `default` walk.
 - `clearNestedSections` - default `true`
   - Clear nested `data-moonwalk-sections` since they usually just break functionality.
 
-- `clearMoonwalkOnAnchors` - default `false`
-  - Removes all moonwalks if called from a link with hash/anchor.
+- `clearMoonwalkOnAnchors` - default `true`
+  - When the page loads with a hash, marks every walk before the target element, the
+    target and its ancestors as revealed, and the sections before it as ready.
 
-- `rootMargin` - default `'-15%'`
-  - Determines how early the IntersectionObserver triggers
+- `rootMargin` - default `'-10% 0%'`
+  - Determines how early the IntersectionObserver triggers. The last section and the
+    last run on the page always use `'0px'`.
 
 - `threshold` - default `0`
   - How much of the element must be visible before IO trigger. From 0 to 1 where 1 is the entire element
@@ -554,28 +556,28 @@ syntax. If no value is provided, we run the `default` walk.
   - Call this with `<div data-moonwalk-run="heroAnimation">`
 
 - `walks`
-  - Configures tweens
+  - Configures tweens. A walk name used in the markup but missing here is logged
+    as an error; an element falls back to the `default` walk, and a named section
+    or stage is treated as a plain section.
   - Example:
   ```es6
   walks: {
     default: {
-      /* How long between multiple entries in a moonwalk section */
-      interval: 0.1,
+      /* How long between multiple entries in a moonwalk section (default 0.15) */
+      interval: 0.15,
       /* How long each tween is */
       duration: 0.65,
-      /* Add a separate tween for opacity/visibility.
+      /* Add a separate tween for opacity.
       Can be set to `true` for the default tween, or `false` to skip */
-      alphaTween: { ease: Sine.easeIn, duration: 1 },
-      /* The transitions that will be tweened */
+      alphaTween: { ease: 'easeIn', duration: 1 },
+      /* The transitions that will be tweened. `null` animates nothing: Moonwalk
+      only adds `data-moonwalked` (and the `moonwalked` class) and CSS does the rest */
       transition: {
         from: {
           y: 5
         },
         to: {
-          /* skip autoAlpha here, since we have our own alphaTween that sets it for us */
-          // autoAlpha: 1,
-          ease: 'sine.out',
-          force3D: true,
+          ease: 'easeOut',
           y: 0
         }
       }
