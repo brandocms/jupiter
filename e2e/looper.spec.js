@@ -253,6 +253,60 @@ test.describe('Jupiter Looper Module', () => {
     })
   })
 
+  test.describe('Peek Mode', () => {
+    test.beforeEach(async ({ page }) => {
+      await gotoLooper(page, 'peek', 'looper-peek')
+    })
+
+    /**
+     * Where the first original item and the gap after it sit relative to
+     * the looper's centre line
+     */
+    async function getPeekLayout(page, testId) {
+      return page.locator(`[data-testid="${testId}"]`).evaluate(el => {
+        const containerRect = el.getBoundingClientRect()
+        const viewportCenter = containerRect.left + containerRect.width / 2
+        const items = el.querySelectorAll('[data-looper-item]:not([data-looper-clone])')
+        const first = items[0].getBoundingClientRect()
+        const second = items[1].getBoundingClientRect()
+        // Visible items in on-screen order (looped items wrap out of DOM order)
+        const visible = Array.from(el.querySelectorAll('[data-looper-item]'))
+          .map(item => ({ item, rect: item.getBoundingClientRect() }))
+          .filter(({ rect }) => rect.right > containerRect.left && rect.left < containerRect.right)
+          .sort((a, b) => a.rect.left - b.rect.left)
+          .map(({ item }) => item.textContent.trim())
+
+        return {
+          firstLeft: first.left - containerRect.left,
+          firstRight: first.right - viewportCenter,
+          gapCenterOffset: (first.right + second.left) / 2 - viewportCenter,
+          visible,
+        }
+      })
+    }
+
+    test('loop: starts at the first item with the gap after it centred', async ({ page }) => {
+      const state = await getLooperState(page, 'looper-peek')
+      expect(state.currentIndex).toBe(0)
+
+      const layout = await getPeekLayout(page, 'looper-peek')
+      expect(Math.abs(layout.gapCenterOffset)).toBeLessThan(2)
+      // First item fully visible, left of centre
+      expect(layout.firstLeft).toBeGreaterThanOrEqual(0)
+      expect(layout.firstRight).toBeLessThanOrEqual(0)
+      // Last item peeks in from the left
+      expect(layout.visible[0]).toBe('5')
+    })
+
+    test('non-loop: starts at the first item, clamped to the start', async ({ page }) => {
+      const state = await getLooperState(page, 'looper-peek-nonloop')
+      expect(state.currentIndex).toBe(0)
+      expect(state.position).toBe(0)
+      const layout = await getPeekLayout(page, 'looper-peek-nonloop')
+      expect(layout.visible[0]).toBe('1')
+    })
+  })
+
   test.describe('Drag Interaction', () => {
     test.beforeEach(async ({ page }) => {
       await gotoLooper(page, 'drag', 'looper-basic')

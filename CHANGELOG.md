@@ -1,3 +1,7 @@
+#### 5.0.0-beta.22
+
+- Looper: peek mode starts at the first item instead of the middle one. Peek turns on center mode, which opened on item 3 of 5, so a newest-first carousel hid its newest item off-screen or cut off at the left edge. The viewport now centres on the gap after item 1, which is the first full card. With loop on, the last item peeks in on the left. Plain `data-looper-center` still starts at the middle item
+
 #### 5.0.0-beta.21
 
 - Moonwalk: a page loaded with a hash that is not a valid CSS selector (`#1-intro`) no longer throws in the constructor, which stopped Moonwalk for the whole page. The anchor is looked up by id

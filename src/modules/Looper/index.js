@@ -805,10 +805,12 @@ function horizontalLoop(app, items, config) {
     // Set initial position
     updateItemPositions(position.get())
 
-    // For center mode, start at middle slide
+    // Center mode starts at the middle slide. Peek mode (which also sets
+    // centerSlide) starts at the first slide: the viewport centres on the gap
+    // after item 0, so the first item is the first full card
     if (config.centerSlide && originalItemCount > 0) {
-      const middleIndex = Math.floor(originalItemCount / 2)
-      const targetTime = times[middleIndex]
+      const startIndex = config.peek ? 0 : Math.floor(originalItemCount / 2)
+      const targetTime = times[startIndex]
       let initialPos = targetTime * pixelsPerSecond
 
       // Clamp for non-looping
@@ -817,7 +819,7 @@ function horizontalLoop(app, items, config) {
       }
 
       position.set(initialPos)
-      curIndex = middleIndex
+      curIndex = startIndex
       updateIndexDisplay()
     }
 
