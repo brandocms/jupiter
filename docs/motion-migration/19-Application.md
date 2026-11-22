@@ -1,5 +1,7 @@
 # Migration: Application Module
 
+> Archived 2025 migration plan. See the [current Application implementation](../../src/modules/Application/index.js) and [migration status](STATUS.md).
+
 **Tier**: 3 (Complex) | **Complexity**: ⭐⭐⭐⭐⭐ | **Time**: 1-2 weeks | **File**: `src/modules/Application/index.js`
 
 ---

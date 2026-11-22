@@ -1,88 +1,26 @@
-# Jupiter Project: Build Commands and Code Style Guidelines
+# Developing Jupiter
 
-## Build and Test Commands
-```bash
-# Run all tests
-yarn test
+Use Node.js 24 and Yarn Classic 1.22.22 to match CI. Run these commands from the repository root.
 
-# Run a single test file
-yarn test __tests__/modules/Moonwalk.test.js
+| Task | Command |
+| --- | --- |
+| Install the locked dependencies | `yarn install --frozen-lockfile` |
+| Install Chromium for Playwright | `npx playwright install chromium` (on a fresh Linux CI host, add `--with-deps`) |
+| Browse the demos at `http://localhost:8448/` | `yarn vite` |
+| Run the Chromium suite | `yarn test` |
+| Run one spec | `yarn test e2e/moonwalk-contracts.spec.js` |
+| Debug interactively or open the HTML report | `yarn playwright:ui` or `yarn playwright:report` |
+| Regenerate declarations from source | `yarn types` |
+| Compile a strict TypeScript consumer of the npm tarball | `yarn verify:package` |
+| Rebuild the standalone ES and UMD files in `test-pages/dist/` | `yarn vite:build` |
+| Measure the package and production consumer bundles | `yarn size` |
 
-# Run tests with coverage
-yarn coverage
+Playwright starts the Vite demo server automatically. Module-specific test shortcuts are listed in [package.json](package.json). For versioning, generated artifacts and npm publication, follow the [release guide](RELEASE.md).
 
-# Generate TypeScript type definitions
-yarn types
+## Source conventions
 
-# Run Playwright E2E tests
-yarn playwright
-
-# Run Playwright tests with UI
-yarn playwright:ui
-
-# Show Playwright test report
-yarn playwright:report
-
-# Run specific module tests
-yarn playwright:moonwalk    # Test Moonwalk module
-yarn playwright:lazyload    # Test Lazyload module
-yarn playwright:toggler     # Test Toggler module
-
-# Vite development server (for E2E tests)
-yarn vite
-
-# Build for production
-yarn vite:build
-
-# Preview production build
-yarn vite:preview
-```
-
-## Publishing a New Version
-1. Update version in `package.json`
-2. Add changelog entry to `CHANGELOG.md`
-3. Commit changes with version as commit message (e.g., `5.0.0-beta.7`)
-4. Create a git tag matching the version: `git tag 5.0.0-beta.7`
-5. Push to GitHub with tags: `git push origin <branch> --tags`
-
-Publishing is triggered automatically when the tag is pushed to GitHub.
-
-## Code Style Guidelines
-
-### Imports
-- External packages first, then internal modules
-- Group imports by type (libraries, Jupiter modules, utils)
-- Use named imports for Jupiter events: `import * as Events from '../../events'`
-
-### Formatting
-- Use 2-space indentation
-- Use single quotes for strings
-- No semicolons at the end of statements
-- Use ES6 syntax (arrow functions, destructuring, etc.)
-
-### Naming Conventions
-- Use camelCase for variables, functions, and methods
-- Use PascalCase for classes and class-based components
-- Use UPPER_CASE for constants
-
-### Error Handling
-- Use proper error logging with console.error including descriptive messages
-- Include context information in error messages
-
-### Module Structure
-- Each module should be in its own directory under src/modules/
-- Export default class from index.js
-- Use _defaultsDeep for configuration with sensible defaults
-- Register callbacks for lifecycle events via APPLICATION_* events
-
-### Type Definitions
-- Use JSDoc annotations for type documentation
-- Type interfaces follow module names (e.g., MoonwalkOptions)
-- Parameters are typed with standard JSDoc format
-- Group modules into categories (Core, Media, Navigation/UI, Animation)
-- Use `Partial<Options>` for optional constructor parameters
-- All modules have been typed and organized into categories:
-  - Core: Application, Breakpoints, Cookies, Dataloader, Dom, FeatureTests, Fontloader
-  - Media: HeroSlider, HeroVideo, Lazyload, Lightbox, Marquee
-  - Navigation/UI: CoverOverlay, DoubleHeader, Dropdown, FixedHeader, Links, MobileMenu, Popover, Popup, ScrollSpy, StickyHeader, Toggler, Typography
-  - Animation: EqualHeightElements, EqualHeightImages, FooterReveal, Moonwalk, Parallax, StackedBoxes
+- Public module classes live in `src/modules/<Name>/index.js`. Add public exports to [src/index.js](src/index.js). Shared implementation helpers can stay private.
+- Use two-space indentation, single quotes and no trailing semicolons. Use PascalCase for classes, camelCase for functions and variables, and uppercase names for event constants.
+- Read lifecycle event names from [src/events/index.js](src/events/index.js). Keep a disposer for each application callback or listener a module owns when it supports teardown.
+- For flat options, see [applyDefaults](src/utils/applyDefaults.js). Modules with nested defaults use `lodash.defaultsdeep`. Preserve existing handling of nested values and caller-supplied options when changing either path.
+- Document option properties and signatures in source JSDoc. Regenerate the declarations and standalone demo builds when their inputs change. CI checks the tracked output. See the [TypeScript guide](types/README.md).

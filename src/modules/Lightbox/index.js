@@ -14,6 +14,7 @@ import { set, PausedTimeline } from '../../utils/motion-helpers'
 
 /**
  * @typedef {Object} LightboxOptions
+ * @property {string} [dialogLabel] - Accessible name of the gallery dialog
  * @property {boolean} [captions=false] - Enable captions
  * @property {boolean} [numbers=false] - Enable index numbers
  * @property {string|boolean} [trigger=false] - Selector for trigger element to open the lightbox
@@ -134,7 +135,7 @@ const DEFAULT_OPTIONS = {
       animate(h.elements.caption, { opacity: 0 }, { duration: 0.45 })
     }
 
-    animate(
+    return animate(
       [
         h.elements.imgWrapper,
         h.elements.nextArrow,
@@ -145,7 +146,7 @@ const DEFAULT_OPTIONS = {
       { opacity: 0 },
       { duration: 0.5 }
     ).finished.then(() => {
-      animate(h.elements.wrapper, { opacity: 0 }, { duration: 0.45 }).finished.then(() => {
+      return animate(h.elements.wrapper, { opacity: 0 }, { duration: 0.45 }).finished.then(() => {
         h.app.scrollRelease()
         h.destroy()
       })
@@ -182,7 +183,7 @@ export default class Lightbox {
       const href = lightbox.getAttribute('data-lightbox')
       const srcset = lightbox.getAttribute('data-srcset')
       const originalImage = lightbox.querySelector('img')
-      const alt = originalImage.getAttribute('alt')
+      const alt = originalImage?.alt || ''
       const section =
         lightbox.getAttribute('data-lightbox-section') || 'general'
       let trigger = lightbox
@@ -202,14 +203,25 @@ export default class Lightbox {
 
       const index = this.sections[section].push(image) - 1
 
+      if (!trigger.matches('a[href], button, input, select, textarea, summary')) {
+        if (!trigger.hasAttribute('tabindex')) trigger.tabIndex = 0
+        if (!trigger.hasAttribute('role')) trigger.setAttribute('role', 'button')
+        trigger.addEventListener('keydown', event => {
+          if (event.target !== trigger || !['Enter', ' '].includes(event.key)) return
+          event.preventDefault()
+          this.showBox(section, index, trigger)
+        })
+      }
       trigger.addEventListener('click', (e) => {
         e.preventDefault()
-        this.showBox(section, index)
+        this.showBox(section, index, trigger)
       })
     })
   }
 
-  showBox(section, index) {
+  showBox(section, index, trigger = document.activeElement) {
+    if (this.currentIndex !== null || this.closing) return
+    this.invoker = trigger
     this.opts.onBeforeOpen(this)
     this.buildBox(section, index)
   }
@@ -232,6 +244,23 @@ export default class Lightbox {
     this.elements.close.classList.add('lightbox-close')
     this.elements.dots.classList.add('lightbox-dots')
     this.elements.numbers.classList.add('lightbox-numbers')
+    this.elements.wrapper.setAttribute('role', 'dialog')
+    this.elements.wrapper.setAttribute('aria-modal', 'true')
+    this.elements.wrapper.setAttribute('aria-label', this.opts.dialogLabel || 'Image gallery')
+    this.elements.close.setAttribute('aria-label', 'Close')
+    this.elements.nextArrow.setAttribute('aria-label', 'Next image')
+    this.elements.prevArrow.setAttribute('aria-label', 'Previous image')
+    this.elements.wrapper.addEventListener('keydown', event => {
+      if (event.key !== 'Tab') return
+      const links = this.elements.wrapper.querySelectorAll('a[href], button:not([disabled]), [tabindex="0"]')
+      const first = links[0]
+      const last = links[links.length - 1]
+      if (event.shiftKey ? document.activeElement === first : document.activeElement === last) {
+        event.preventDefault()
+        const target = event.shiftKey ? last : first
+        target.focus()
+      }
+    })
     this.elements.wrapper.classList.add('lightbox-backdrop')
     this.elements.wrapper.setAttribute('data-lightbox-wrapper-section', section)
     this.elements.imgWrapper.classList.add('lightbox-image-wrapper')
@@ -277,6 +306,7 @@ export default class Lightbox {
 
     this.sections[section].forEach((img, x) => {
       const imgElement = document.createElement('img')
+      imgElement.alt = img.alt
       set(imgElement, { opacity: 0 })
       imgElement.style.visibility = 'hidden'
       imgElement.classList.add('lightbox-image', 'm-lg')
@@ -286,6 +316,7 @@ export default class Lightbox {
 
       const a = document.createElement('a')
       a.setAttribute('href', '#')
+      a.setAttribute('aria-label', 'Image ' + (x + 1))
       a.setAttribute('data-idx', x)
 
       if (x === index) {
@@ -328,6 +359,7 @@ export default class Lightbox {
     this.setImg(section, index, this.getPrevIdx(section))
 
     this.opts.onOpen(this)
+    this.elements.close.focus({ preventScroll: true })
 
     this.elements.close.addEventListener('click', (e) => {
       e.preventDefault()
@@ -337,18 +369,35 @@ export default class Lightbox {
     })
   }
 
-  close() {
+  async close() {
+    if (this.closing || this.currentIndex === null) return
+    this.closing = true
     document.removeEventListener('keyup', this.keyUpCallback)
-    this.opts.onClose(this)
+    try {
+      await this.opts.onClose(this)
+    } finally {
+      this.closing = false
+      this.resetAfterClose()
+    }
     this.opts.onAfterClose(this)
+  }
+
+  resetAfterClose() {
     this.currentIndex = null
     this.currentImage = null
     this.firstTransition = true
     this.imgs = []
+    if (this.invoker && this.invoker.tabIndex < 0 && !this.invoker.hasAttribute('tabindex')) {
+      this.invoker.setAttribute('tabindex', '-1')
+      this.invoker.focus({ preventScroll: true })
+      this.invoker.removeAttribute('tabindex')
+    } else {
+      this.invoker?.focus?.({ preventScroll: true })
+    }
   }
 
   destroy() {
-    this.elements.wrapper.parentNode.removeChild(this.elements.wrapper)
+    this.elements.wrapper?.remove()
   }
 
   setImg(section, index) {
@@ -357,13 +406,13 @@ export default class Lightbox {
     this.currentIndex = index
     this.elements.content.setAttribute('data-current-idx', index)
 
-    let activeDot = document.querySelector('.lightbox-dots a.active')
+    let activeDot = this.elements.dots.querySelector('a.active')
 
     if (activeDot) {
       activeDot.classList.remove('active')
     }
 
-    activeDot = document.querySelector(`.lightbox-dots a[data-idx="${index}"]`)
+    activeDot = this.elements.dots.querySelector(`a[data-idx="${index}"]`)
     activeDot.classList.add('active')
 
     if (this.elements.caption) {
@@ -372,7 +421,7 @@ export default class Lightbox {
       this.previousCaption = this.sections[section][index].alt
       this.opts.onCaptionOut(this, captionHasChanged)
       this.timelines.caption.call(() => {
-        this.elements.caption.innerHTML = this.sections[section][index].alt
+        this.elements.caption.textContent = this.sections[section][index].alt
       })
     }
 
@@ -450,6 +499,7 @@ export default class Lightbox {
   }
 
   onKeyup(e, section) {
+    if (this.closing) return
     const key = e.keyCode || e.which
 
     switch (key) {

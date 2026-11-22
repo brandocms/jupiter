@@ -4,5 +4,7 @@ export default class EqualHeightElements {
     container: HTMLElement;
     opts: any;
     selector: any;
+    onResize: () => void;
     initialize(): void;
+    destroy(): void;
 }

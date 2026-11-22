@@ -1,5 +1,7 @@
 # Migration: CoverOverlay Module
 
+> Archived 2025 migration plan. See the [current CoverOverlay implementation](../../src/modules/CoverOverlay/index.js) and [migration status](STATUS.md).
+
 **Tier**: 2 (Moderate)
 **Complexity**: ⭐⭐ Low-Moderate
 **Estimated Time**: 2-3 hours

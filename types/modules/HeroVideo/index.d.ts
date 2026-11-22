@@ -16,6 +16,7 @@ export default class HeroVideo {
     elements: {};
     el: any;
     initialize(): void;
+    events: AbortController;
     cover: any;
     videoDiv: any;
     video: any;
@@ -26,11 +27,14 @@ export default class HeroVideo {
     fadeIn(): void;
     fadeInCover(): void;
     addObserver(): void;
+    visibilityObserver: IntersectionObserver;
     /**
      * Add a window resize handler that resizes video width
      */
     _addResizeHandler(): void;
+    resizeHandler: any;
     observer: IntersectionObserver;
+    destroy(): void;
     _resize(): void;
 }
 export type HeroVideoElementGenerators = {

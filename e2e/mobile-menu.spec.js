@@ -3,14 +3,7 @@ const { test, expect } = require('@playwright/test')
 
 test.describe('Jupiter MobileMenu Module', () => {
   test.beforeEach(async ({ page }) => {
-    // Load the mobile-menu test page from Vite server
     await page.goto('/mobile-menu.html')
-
-    // Wait for the page to load completely
-    await page.waitForLoadState('networkidle')
-
-    // Wait for Jupiter initialization
-    await page.waitForTimeout(1000)
   })
 
   test('should have menu closed initially', async ({ page }) => {
@@ -37,9 +30,6 @@ test.describe('Jupiter MobileMenu Module', () => {
     // Click the hamburger
     await hamburger.click()
 
-    // Wait for animation
-    await page.waitForTimeout(500)
-
     // Body should have open-menu class
     await expect(body).toHaveClass(/open-menu/)
 
@@ -52,22 +42,13 @@ test.describe('Jupiter MobileMenu Module', () => {
     const mobileBg = page.locator('[data-testid="mobile-bg"]')
 
     // Background should start with opacity 0
-    let opacity = await mobileBg.evaluate((el) => {
-      return window.getComputedStyle(el).opacity
-    })
-    expect(parseFloat(opacity)).toBeLessThan(0.1)
+    await expect(mobileBg).toHaveCSS('opacity', '0')
 
     // Click to open menu
     await hamburger.click()
 
-    // Wait for background fade-in animation
-    await page.waitForTimeout(500)
-
     // Background opacity should be close to 1
-    opacity = await mobileBg.evaluate((el) => {
-      return window.getComputedStyle(el).opacity
-    })
-    expect(parseFloat(opacity)).toBeGreaterThan(0.9)
+    await expect(mobileBg).toHaveCSS('opacity', '1')
   })
 
   test('should display menu items with stagger animation', async ({ page }) => {
@@ -75,9 +56,6 @@ test.describe('Jupiter MobileMenu Module', () => {
 
     // Click to open menu
     await hamburger.click()
-
-    // Wait for stagger animation to complete
-    await page.waitForTimeout(1500)
 
     // All menu items should be visible (opacity 1)
     const menuItems = [
@@ -89,10 +67,7 @@ test.describe('Jupiter MobileMenu Module', () => {
     ]
 
     for (const item of menuItems) {
-      const opacity = await item.evaluate((el) => {
-        return window.getComputedStyle(el).opacity
-      })
-      expect(parseFloat(opacity)).toBeGreaterThan(0.8)
+      await expect(item).toHaveCSS('opacity', '1')
     }
   })
 
@@ -102,12 +77,10 @@ test.describe('Jupiter MobileMenu Module', () => {
 
     // Open menu
     await hamburger.click()
-    await page.waitForTimeout(500)
     await expect(body).toHaveClass(/open-menu/)
 
     // Close menu
     await hamburger.click()
-    await page.waitForTimeout(500)
 
     // Body should not have open-menu class
     await expect(body).not.toHaveClass(/open-menu/)
@@ -122,13 +95,12 @@ test.describe('Jupiter MobileMenu Module', () => {
 
     // Open menu
     await hamburger.click()
-    await page.waitForTimeout(1500)
 
     // Menu link should be clickable
     await menuLink.click()
 
     // URL should have hash
-    expect(page.url()).toContain('#home')
+    await expect(page).toHaveURL(/#home$/)
   })
 
   test('should support multiple toggle cycles', async ({ page }) => {
@@ -137,22 +109,18 @@ test.describe('Jupiter MobileMenu Module', () => {
 
     // Open
     await hamburger.click()
-    await page.waitForTimeout(500)
     await expect(body).toHaveClass(/open-menu/)
 
     // Close
     await hamburger.click()
-    await page.waitForTimeout(500)
     await expect(body).not.toHaveClass(/open-menu/)
 
     // Open again
     await hamburger.click()
-    await page.waitForTimeout(500)
     await expect(body).toHaveClass(/open-menu/)
 
     // Close again
     await hamburger.click()
-    await page.waitForTimeout(500)
     await expect(body).not.toHaveClass(/open-menu/)
   })
 
@@ -163,15 +131,7 @@ test.describe('Jupiter MobileMenu Module', () => {
     // Click to open menu
     await hamburger.click()
 
-    // Wait for animation
-    await page.waitForTimeout(700)
-
     // Header background should be transparent
-    const bgColor = await header.evaluate((el) => {
-      return window.getComputedStyle(el).backgroundColor
-    })
-
-    // Check if background is transparent (rgba with alpha 0 or transparent keyword)
-    expect(bgColor).toMatch(/rgba?\(.*,\s*0\)|transparent/)
+    await expect(header).toHaveCSS('background-color', /rgba?\(.*,\s*0\)|transparent/)
   })
 })

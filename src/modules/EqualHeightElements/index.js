@@ -1,70 +1,29 @@
-import { clearProps } from '../../utils/motion-helpers'
-import Dom from '../Dom'
-import _defaultsDeep from 'lodash.defaultsdeep'
+import { all } from '../Dom/query'
+import equalizeRows from '../../utils/equalizeRows'
 import * as Events from '../../events'
-
-const DEFAULT_OPTIONS = {}
 
 export default class EqualHeightElements {
   constructor(app, selector, opts = {}, container = document.body) {
     this.app = app
     this.container = container
-    this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
+    this.opts = Object(opts)
     this.selector = selector
     this.initialize()
-    window.addEventListener(Events.APPLICATION_RESIZE, () => {
-      clearProps('[data-eq-height-elements-adjusted]', 'minHeight')
-      this.initialize()
-    })
+    this.onResize = () => this.initialize()
+    window.addEventListener(Events.APPLICATION_RESIZE, this.onResize)
   }
 
   initialize() {
-    const canvases = Dom.all(this.container, '[data-eq-height-elements]')
-    Array.from(canvases).forEach((canvas) => {
-      let lastTop = null
-      const actionables = []
-      let elements = []
-      let height = 0
-      const eqElements = Dom.all(canvas, this.selector)
-
-      eqElements.forEach((el) => {
-        const rect = el.getBoundingClientRect()
-
-        if (lastTop === null) {
-          height = rect.height
-          elements.push(el)
-          lastTop = rect.top
-          return
-        }
-
-        if (lastTop !== rect.top) {
-          console.debug('== pushing actionables', { elements, height })
-          actionables.push({ elements, height })
-          elements = []
-          height = rect.height
-        } else if (lastTop === rect.top) {
-          if (rect.height > height) {
-            height = rect.height
-          }
-        } else {
-          height = rect.height
-        }
-        elements.push(el)
-        lastTop = rect.top
-      })
-
-      if (elements.length) {
-        actionables.push({ elements, height })
+    for (const canvas of all(this.container, '[data-eq-height-elements]')) {
+      const elements = all(canvas, this.selector)
+      for (const el of elements) {
+        if (el.hasAttribute('data-eq-height-elements-adjusted')) el.style.removeProperty('min-height')
       }
+      equalizeRows(elements, (_el, rect) => rect.height, true)
+    }
+  }
 
-      if (actionables.length) {
-        actionables.forEach((a) => {
-          a.elements.forEach(el => {
-            el.style.minHeight = `${a.height}px`
-            el.setAttribute('data-eq-height-elements-adjusted', 'true')
-          })
-        })
-      }
-    })
+  destroy() {
+    window.removeEventListener(Events.APPLICATION_RESIZE, this.onResize)
   }
 }

@@ -14,15 +14,21 @@ export default class Dataloader {
     id: any;
     $canvasEl: any;
     opts: any;
-    debounce(func: any, delay: any): (...args: any[]) => void;
+    debounce(func: any, delay: any): {
+        (...args: any[]): void;
+        cancel(): void;
+    };
     updateBaseURL(url: any): void;
     baseURL: any;
     setInitialParams(): void;
     initialize(): void;
-    $paramEls: any;
+    $paramEls: any[];
     _boundOnParam: any;
     _boundOnMore: any;
-    _boundOnFilter: (...args: any[]) => void;
+    _boundOnFilter: {
+        (...args: any[]): void;
+        cancel(): void;
+    };
     urlSync: DataloaderUrlSync;
     $moreBtn: any;
     $filterInput: any;
@@ -34,8 +40,9 @@ export default class Dataloader {
     handleMultiSelectParam(el: any): void;
     handleSingleSelectParam(el: any): void;
     onParam(e: any): void;
-    fetch(addEntries?: boolean): void;
+    fetch(addEntries?: boolean, page?: any): Promise<void>;
     _abortController: AbortController;
+    replacementPage: any;
     /**
      * Set [data-loader-loading] on main el
      */

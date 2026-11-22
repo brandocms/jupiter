@@ -1,5 +1,7 @@
 # Migration: Lightbox Module
 
+> Archived 2025 migration plan. See the [current Lightbox implementation](../../src/modules/Lightbox/index.js) and [migration status](STATUS.md).
+
 **Tier**: 2 (Moderate) | **Complexity**: ⭐⭐⭐ | **Time**: 5-6 hours | **File**: `src/modules/Lightbox/index.js`
 
 ---

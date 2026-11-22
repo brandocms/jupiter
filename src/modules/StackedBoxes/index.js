@@ -1,12 +1,9 @@
 import { set } from '../../utils/motion-helpers'
-import _defaultsDeep from 'lodash.defaultsdeep'
-
-const DEFAULT_OPTIONS = {}
 
 export default class StackedBoxes {
   constructor(app, opts = {}) {
     this.app = app
-    this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
+    this.opts = Object(opts)
     this.initialize()
   }
 
@@ -14,9 +11,8 @@ export default class StackedBoxes {
     const boxes = document.querySelectorAll('[data-boxes-stacked]')
 
     const observer = new IntersectionObserver((entries) => {
-      const [{ isIntersecting, target }] = entries
-      if (isIntersecting) {
-        this.adjustBox(target)
+      for (const { isIntersecting, target } of entries) {
+        if (isIntersecting) this.adjustBox(target)
       }
     })
 
@@ -29,7 +25,7 @@ export default class StackedBoxes {
     const sizeTarget = box.querySelector('[data-boxes-stacked-size-target]')
     const sizeSrc = box.querySelector('[data-boxes-stacked-size-src]')
 
-    if (sizeTarget) {
+    if (sizeTarget && sizeSrc) {
       this.size(sizeTarget, sizeSrc)
     }
 
@@ -57,7 +53,7 @@ export default class StackedBoxes {
             '==> JUPITER/STACKEDBOXES: `data-boxes-stacked-pull` has wrong value'
           )
       }
-      this.pull(pull, pullPx)
+      if (pullPx !== undefined) this.pull(pull, pullPx)
     }
   }
 

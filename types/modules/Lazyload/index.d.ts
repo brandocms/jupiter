@@ -11,9 +11,16 @@ export default class Lazyload {
     app: any;
     opts: any;
     target: any;
+    sectionObservers: Set<any>;
     resizePending: Map<any, any>;
     rafId: number;
-    srcsetReadyObserver: MutationObserver;
+    native: boolean;
+    observed: WeakSet<object>;
+    sized: WeakSet<object>;
+    pendingReveals: Set<any>;
+    loadingPictures: WeakMap<object, any>;
+    events: AbortController;
+    unsubscribe: any;
     watch(): void;
     /**
      * Observe new lazyload elements within a container
@@ -22,12 +29,17 @@ export default class Lazyload {
      * @param {HTMLElement|HTMLElement[]|NodeList} elements - Container element(s) or lazyload element(s) to observe
      */
     observe(elements: HTMLElement | HTMLElement[] | NodeList): void;
+    observeNative(root: any): void;
+    preparePicture(picture: any, index: any): void;
+    observeImage(img: any): void;
     initialize(): void;
     lazyPictures: any;
     loadObserver: IntersectionObserver;
     revealObserver: IntersectionObserver;
     imageObserver: IntersectionObserver;
     lazyImages: any;
+    nextImageIndex: any;
+    nextPictureIndex: any;
     initObserver(observer: any, setAttrs?: boolean): void;
     /**
      * Force load all lazyload elements within a container, bypassing intersection observers.
@@ -39,12 +51,13 @@ export default class Lazyload {
     forceLoad($container?: HTMLElement, { reveal }?: {
         reveal?: boolean;
     }): void;
-    initializeResizeObserver(): void;
+    initializeResizeObserver(root?: any, refresh?: boolean): void;
     sizeObserver: ResizeObserver;
     flushSizeUpdates(): void;
     initializeSections(): void;
     handleLoadEntries(entries: any): void;
     handleRevealEntries(entries: any): void;
+    waitForPicture(picture: any): void;
     loadPicture(picture: any): void;
     /**
      * Reveal a picture element by setting `data-ll-loaded` on its img child.

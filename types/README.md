@@ -1,159 +1,31 @@
-# Jupiter TypeScript Definitions
+# TypeScript with Jupiter
 
-This directory contains TypeScript declaration files (.d.ts) for Jupiter modules.
+Import values from `@brandocms/jupiter` in a browser application. TypeScript resolves the package's `types` entry to `types/public.d.ts`, which re-exports the declarations generated from the same JavaScript entry as the runtime. The declarations use browser DOM types.
 
-## Using Type Definitions
+```ts
+import { Application, Moonwalk } from '@brandocms/jupiter'
 
-When importing Jupiter modules, you'll get autocomplete and type checking for options:
+const app = new Application({ respectReducedMotion: true })
+const options = {
+  initialDelay: 100,
+  rootMargin: '-5% 0%'
+} satisfies NonNullable<ConstructorParameters<typeof Moonwalk>[1]>
 
-```javascript
-import { Moonwalk } from '@brandocms/jupiter';
+const moonwalk = new Moonwalk(app, options)
+app.initialize()
 
-// Options object will have autocomplete
-const moonwalk = new Moonwalk(app, {
-  clearNestedSections: true,
-  rootMargin: '-5% 0%',
-  walks: {
-    // Autocomplete for walk properties
-    default: {
-      interval: 0.1,
-      duration: 0.5
-    }
-  }
-});
-```
-
-## Available Typed Modules
-
-The following modules have TypeScript definitions:
-
-### Core Modules
-- **Application** - Main application controller
-- **Breakpoints** - Responsive design and media query handling
-- **Dom** - DOM utility functions
-
-### Media Modules
-- **Lazyload** - Image lazy loading functionality
-- **Lightbox** - Image gallery overlay
-- **HeroVideo** - Background video with controls
-
-### Navigation and UI Modules
-- **Links** - Navigation and page transitions
-- **Popup** - Modal dialogs and popups
-- **Toggler** - Show/hide component for collapsible content
-
-### Animation Modules
-- **Parallax** - Parallax scrolling effect for background images
-- **Moonwalk** - Animation system for element reveals
-
-## Adding Type Definitions for a New Module
-
-1. **Create JSDoc annotations** in your source file (src/modules/YourModule/index.js):
-
-```javascript
-/**
- * @typedef {Object} YourModuleOptions
- * @property {boolean} [someOption=false] - Description of the option
- * @property {number} [anotherOption=10] - Description of another option
- */
-
-/** @type {YourModuleOptions} */
-const DEFAULT_OPTIONS = {
-  someOption: false,
-  anotherOption: 10
-};
-
-/**
- * Your module description
- */
-export default class YourModule {
-  /**
-   * @param {Object} app - Application instance
-   * @param {YourModuleOptions} [opts={}] - Configuration options
-   */
-  constructor(app, opts = {}) {
-    // ...
-  }
-  
-  /**
-   * @param {string} someParam - Parameter description
-   * @returns {boolean} Return value description
-   */
-  someMethod(someParam) {
-    // ...
-  }
+// Call when the view is removed.
+function unmount() {
+  moonwalk.destroy()
+  app.destroy()
 }
 ```
 
-2. **Create a TypeScript declaration file** in types/modules/YourModule/index.d.ts:
+Use `ConstructorParameters` to obtain an option type from the public class. The package exports module classes, utilities, event constants and Motion functions from its root. The precision of individual signatures depends on their source JSDoc.
 
-```typescript
-/**
- * Types for YourModule
- */
-import Application from '../Application';
+## Maintaining declarations
 
-/**
- * YourModule options
- */
-export interface YourModuleOptions {
-  /** Description of the option */
-  someOption?: boolean;
-  
-  /** Description of another option */
-  anotherOption?: number;
-}
-
-/**
- * Your module description
- */
-export default class YourModule {
-  /** Application instance */
-  app: Application;
-  
-  /** Module options */
-  opts: YourModuleOptions;
-  
-  /**
-   * Create a new YourModule instance
-   * @param app - Application instance
-   * @param opts - YourModule options
-   */
-  constructor(app: Application, opts?: Partial<YourModuleOptions>);
-  
-  /**
-   * Method description
-   * @param someParam - Parameter description
-   * @returns Return value description
-   */
-  someMethod(someParam: string): boolean;
-}
-```
-
-3. **Update the main index.d.ts file** to export your new module:
-
-```typescript
-export {
-  default as YourModule,
-  YourModuleOptions
-} from './modules/YourModule';
-```
-
-Place this export in the appropriate section (Core, Media, Navigation/UI, or Animation).
-
-## Typing Guidelines
-
-- Use `Partial<Options>` for optional constructor parameters
-- Use descriptive JSDoc comments for all properties and methods
-- Group related interfaces together (e.g., options and element interfaces)
-- Always import `Application` from '../Application'
-- Use consistent naming patterns:
-  - `ModuleOptions` for options interfaces
-  - `ModuleElements` for element collections
-  - Use camelCase for methods and properties
-
-## Running Type Checking
-
-Run `yarn types` to generate and check type definitions.
-
-If there are errors, don't worry about typechecking passing completely. The primary goal is to provide autocomplete and documentation for developers.
+1. Update the public JavaScript implementation and its JSDoc in `src/`. Add new public values to `src/index.js`.
+2. Run `yarn types` from the repository root. TypeScript emits `types/index.d.ts` and module declarations using `tsconfig.json`. The hand-maintained `types/public.d.ts` entry also supplies the browser compatibility declaration used by Motion.
+3. Run `yarn verify:package`. It packs Jupiter, extracts the tarball into a temporary consumer and compiles with browser globals, strict checking and `skipLibCheck` disabled.
+4. Include the regenerated declarations with the source change. CI regenerates them and checks for differences.

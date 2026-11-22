@@ -142,9 +142,7 @@ export default class Dropdown {
     event.stopPropagation()
 
     if (this.open) {
-      await this.opts.onBeforeClose(this)
-      await this.closeMenu()
-      this.opts.onAfterClose(this)
+      await this.closeWithHooks()
     } else {
       await this.opts.onBeforeOpen(this)
       await this.openMenu()
@@ -231,9 +229,14 @@ export default class Dropdown {
   handleDocumentClick(event) {
     // If the click target is not inside the dropdown, close the menu.
     if (!this.element.contains(event.target)) {
-      // this.closeMenu()
-      this.onClick(event)
+      this.closeWithHooks()
     }
+  }
+
+  async closeWithHooks() {
+    await this.opts.onBeforeClose(this)
+    await this.closeMenu()
+    this.opts.onAfterClose(this)
   }
 
   checkForInitialOpen() {

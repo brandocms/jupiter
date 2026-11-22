@@ -1,5 +1,7 @@
 # Migration: Popover Module
 
+> Archived 2025 migration plan. See the [current Popover implementation](../../src/modules/Popover/index.js) and [migration status](STATUS.md).
+
 **Tier**: 1 (Easy)
 **Complexity**: ⭐⭐ Low
 **Estimated Time**: 2-3 hours

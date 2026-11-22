@@ -285,7 +285,7 @@
       <!-- Intro Section -->
       <section class="intro">
         <h1>🚀 Application Module Test</h1>
-        <p>Testing core Application features after GSAP → Motion migration</p>
+        <p>Explore application events, scroll controls and viewport measurements.</p>
       </section>
 
       <!-- Fader Animation -->
@@ -436,7 +436,18 @@
         const time = new Date().toLocaleTimeString()
         const eventDiv = document.createElement('div')
         eventDiv.className = 'event'
-        eventDiv.innerHTML = `<span class="event-time">[${time}]</span> <span class="event-name">${eventName}</span>${detail ? `: ${JSON.stringify(detail)}` : ''}`
+        const timestamp = document.createElement('span')
+        timestamp.className = 'event-time'
+        timestamp.textContent = `[${time}] `
+        const name = document.createElement('span')
+        name.className = 'event-name'
+        name.textContent = eventName
+        eventDiv.append(timestamp, name)
+        if (detail === app) {
+          eventDiv.append(' — Application')
+        } else if (detail) {
+          eventDiv.append(' — ' + JSON.stringify(detail))
+        }
         eventLog.appendChild(eventDiv)
         eventLog.scrollTop = eventLog.scrollHeight
       }

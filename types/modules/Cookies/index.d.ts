@@ -1,6 +1,3 @@
-/**
- * Cookies module for handling cookie consent
- */
 export default class Cookies {
     /**
      * Create a new Cookies instance
@@ -9,6 +6,9 @@ export default class Cookies {
      */
     constructor(app: any, opts?: CookiesOptions);
     app: any;
+    root: Document | HTMLElement;
+    events: AbortController;
+    ownedNodes: any[];
     opts: any;
     cc: Element;
     inner: Element;
@@ -16,9 +16,11 @@ export default class Cookies {
     btns: Element;
     btn: Element;
     btnRefuse: Element;
+    unsubscribe: any;
     /**
      * Find all `[data-cookie-consent]` elements and wire them up.
      */
+    destroy(): void;
     setupConsentToggles(): void;
     consentToggles: Element[];
     /**
@@ -72,6 +74,10 @@ export default class Cookies {
     keys(): string[];
 }
 export type CookiesOptions = {
+    /**
+     * - Container for the banner and consent toggles
+     */
+    root?: Document | HTMLElement;
     /**
      * - Called when cookies are accepted
      */

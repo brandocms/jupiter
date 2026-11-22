@@ -6,11 +6,7 @@ test.describe('Jupiter Parallax Module', () => {
     // Load the parallax test page from Vite server
     await page.goto('/parallax.html')
     
-    // Wait for the page to load completely
-    await page.waitForLoadState('networkidle')
-    
-    // Wait additional time for Jupiter to initialize
-    await page.waitForTimeout(1000)
+    await expect(page.locator('body')).toHaveAttribute('data-app-revealed', 'true')
   })
 
   test('should initialize traditional parallax correctly', async ({ page }) => {
@@ -56,54 +52,26 @@ test.describe('Jupiter Parallax Module', () => {
       return window.getComputedStyle(el).transform
     })
     
-    // Scroll to make the parallax effect visible
-    await page.evaluate(() => {
-      window.scrollTo(0, 500)
-      window.dispatchEvent(new CustomEvent('APPLICATION_SCROLL'))
-    })
-    
-    // Small wait for animation
-    await page.waitForTimeout(500)
-    
-    // Get the new transform state
-    const scrolledTransform = await parallaxFigure.evaluate(el => {
-      return window.getComputedStyle(el).transform
-    })
-    
-    // Check that the transform has changed
-    expect(initialTransform).not.toEqual(scrolledTransform)
+    await page.evaluate(() => window.scrollTo(0, 500))
+    await expect.poll(() => parallaxFigure.evaluate(el => getComputedStyle(el).transform))
+      .not.toEqual(initialTransform)
   })
 
   test('should apply different factors to multi-element parallax', async ({ page }) => {
-    // Instead of testing dynamic transforms which can be unreliable,
-    // let's verify the elements have different factor attributes
-    
-    // Get the multi-parallax container
-    const multiParallaxContainer = page.locator('[data-testid="multi-parallax-container"]')
-    
-    // Get the slow and fast elements
-    const slowElement = page.locator('[data-testid="multi-slow-element"]')
-    const fastElement = page.locator('[data-testid="multi-fast-element"]')
-    
-    // Make sure they're visible
-    await multiParallaxContainer.scrollIntoViewIfNeeded()
-    await expect(slowElement).toBeVisible()
-    await expect(fastElement).toBeVisible()
-    
-    // Get their factor values
-    const slowFactor = await slowElement.evaluate(el => {
-      return parseFloat(el.getAttribute('data-parallax-factor') || '0')
+    const movement = await page.evaluate(() => {
+      const items = ['multi-slow-element', 'multi-fast-element'].map(id =>
+        document.querySelector('[data-testid="' + id + '"]'))
+      items[0].scrollIntoView({ block: 'center' })
+      function measure() {
+        window.dispatchEvent(new CustomEvent('APPLICATION:SCROLL'))
+        return items.map(el => new DOMMatrix(getComputedStyle(el).transform).m42)
+      }
+      const start = measure()
+      window.scrollBy(0, 100)
+      return measure().map((y, i) => Math.abs(y - start[i]))
     })
-    
-    const fastFactor = await fastElement.evaluate(el => {
-      return parseFloat(el.getAttribute('data-parallax-factor') || '0')
-    })
-    
-    console.log(`Slow factor: ${slowFactor}, Fast factor: ${fastFactor}`)
-    
-    // Verify that the factors are different and that the "fast" element
-    // has a higher factor than the "slow" element
-    expect(slowFactor).toBeLessThan(fastFactor)
+    expect(movement[0]).toBeGreaterThan(0)
+    expect(movement[1]).toBeGreaterThan(movement[0])
   })
   
   test('should have fade capability on elements with fadeContent', async ({ page }) => {

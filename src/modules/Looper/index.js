@@ -1,3 +1,4 @@
+import { nearestSnap, stretch, unstretch, stretchRate } from './geometry'
 import { animate, motionValue, frame, cancelFrame } from 'motion'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import Dom from '../Dom'
@@ -230,37 +231,31 @@ function horizontalLoop(app, items, config) {
     const originalItemCount = items.length
     const maxReplications = 10
     let count = 0
-    let previousTotalWidth = totalWidth
+    let cycleWidth = totalWidth - (parseFloat(config.paddingRight) || 0)
 
-    // Always create at least TWO sets of clones - needed for starting at first clone position
-    // Then continue until we have enough width for seamless looping
-    while ((count < 2 || totalWidth < minRequiredWidth) && count < maxReplications) {
-      // Clone ONLY original items
-      for (let i = 0; i < originalItemCount; i++) {
-        const clone = items[i].cloneNode(true)
-        clone.setAttribute('data-looper-clone', 'true')
-        container.appendChild(clone)
-        items.push(clone)
-
-        // Force-load cloned lazyload elements without revealing them
-        // Sources are swapped immediately (no flash on wrap), but data-ll-loaded
-        // is not set — the reveal happens after the wrapper fade-in animation
-        if (app?.lazyload?.forceLoad) {
-          app.lazyload.forceLoad(clone, { reveal: false })
+    // Estimate from one cycle, then verify against layout for flexible or lazy items.
+    while (count < maxReplications && (count < 2 || totalWidth < minRequiredWidth)) {
+      const missing = Math.ceil((minRequiredWidth - totalWidth) / (cycleWidth || totalWidth))
+      const copies = Math.min(maxReplications - count, Math.max(2 - count, 1, missing))
+      const batch = document.createDocumentFragment()
+      const firstClone = items.length
+      for (let set = 0; set < copies; set++) {
+        for (let i = 0; i < originalItemCount; i++) {
+          const clone = items[i].cloneNode(true)
+          clone.setAttribute('data-looper-clone', 'true')
+          batch.appendChild(clone)
+          items.push(clone)
         }
       }
-
-      // Force layout recalculation
-      container.getBoundingClientRect()
-      totalWidth = getTotalWidthOfItems()
-      count++
-
-      // Safety: detect if width isn't increasing
-      if (totalWidth <= previousTotalWidth && count > 1) {
-        break
+      container.appendChild(batch)
+      if (app?.lazyload?.forceLoad) {
+        for (let i = firstClone; i < items.length; i++) app.lazyload.forceLoad(items[i], { reveal: false })
       }
-
-      previousTotalWidth = totalWidth
+      const width = getTotalWidthOfItems()
+      if (width <= totalWidth) break
+      cycleWidth = (width - totalWidth) / copies
+      totalWidth = width
+      count += copies
     }
   }
 
@@ -459,6 +454,14 @@ function horizontalLoop(app, items, config) {
    * Refresh measurements and recalculate animation
    * @param {boolean} deep - Whether to rebuild animation (on resize)
    */
+  function findNearestSnapPoint(target) {
+    if (!times.length || !originalItemCount) return target
+    const snap = nearestSnap(target, times, originalItemCount, pixelsPerSecond,
+      originalItemsWidth, maxScrollPosition, shouldLoop)
+    curIndex = snap.index
+    return snap.position
+  }
+
   function refresh(deep = false) {
     // Pause animation if running
     const wasPlaying = animation && animation.speed !== 0
@@ -920,7 +923,7 @@ function horizontalLoop(app, items, config) {
       startY = e.clientY
       // Grabbed past an end (mid-bounce): continue from the drag distance that
       // shows the row there, or the rubber band would jump
-      startPosition = shouldLoop ? position.get() : unstretch(position.get())
+      startPosition = shouldLoop ? position.get() : unstretch(position.get(), maxScrollPosition, containerWidth || container.offsetWidth, config.edgeElasticity)
       velocityTracker = [{ x: e.clientX, time: e.timeStamp }]
       hasDragged = false // Reset - will be set true if movement exceeds threshold
       axisDecided = false // Reset - will be decided on first significant movement
@@ -1041,7 +1044,7 @@ function horizontalLoop(app, items, config) {
         position.set(newPosition)
       } else {
         // For non-looping, past either end the row gives with resistance
-        position.set(stretch(newPosition))
+        position.set(stretch(newPosition, maxScrollPosition, containerWidth || container.offsetWidth, config.edgeElasticity))
       }
     }
 
@@ -1197,41 +1200,6 @@ function horizontalLoop(app, items, config) {
     }
 
     /**
-     * Rubber band for dragging past an end of a non-looping row — the curve
-     * iOS uses, (1 - 1 / (x·c/d + 1)) · d: the row follows the pointer at
-     * `edgeElasticity` of its speed at the edge, slower the further out, and
-     * never further than its own width. `stretch` maps drag distance to the
-     * shown position, `unstretch` inverts it, `stretchRate` is the slope.
-     */
-    function stretch(raw) {
-      const c = config.edgeElasticity
-      if (!c) return Math.max(0, Math.min(maxScrollPosition, raw))
-      const d = containerWidth || container.offsetWidth
-      const band = over => (1 - 1 / ((over * c) / d + 1)) * d
-      if (raw > maxScrollPosition) return maxScrollPosition + band(raw - maxScrollPosition)
-      if (raw < 0) return -band(-raw)
-      return raw
-    }
-
-    function unstretch(shown) {
-      const c = config.edgeElasticity
-      if (!c || !outOfBounds(shown)) return shown
-      const d = containerWidth || container.offsetWidth
-      const over = shown > maxScrollPosition ? shown - maxScrollPosition : -shown
-      const raw = (d / c) * (1 / (1 - Math.min(over, d - 1) / d) - 1)
-      return shown > maxScrollPosition ? maxScrollPosition + raw : -raw
-    }
-
-    function stretchRate(shown) {
-      const c = config.edgeElasticity
-      if (!c || !outOfBounds(shown)) return 1
-      const d = containerWidth || container.offsetWidth
-      const over = shown > maxScrollPosition ? shown - maxScrollPosition : -shown
-      // dy/dx = c / (x·c/d + 1)², written in terms of the shown overshoot
-      return c * (1 - over / d) ** 2
-    }
-
-    /**
      * Whether a throw would come to rest past either end of a non-looping row.
      * Uses Motion's own inertia arithmetic: it rests at origin + power * velocity.
      */
@@ -1284,7 +1252,7 @@ function horizontalLoop(app, items, config) {
       // Time (ms) the decay takes to reach the edge, and its speed there (px/s)
       const tEdge = outside ? 0 : Math.max(0, -tau * Math.log(beyond / amplitude))
       const edgeVelocity = outside
-        ? motionVelocity * stretchRate(origin)
+        ? motionVelocity * stretchRate(origin, maxScrollPosition, containerWidth || container.offsetWidth, config.edgeElasticity)
         : (beyond / tau) * 1000
 
       let current = null
@@ -1333,58 +1301,6 @@ function horizontalLoop(app, items, config) {
      * @param {number} targetPos - Position to find nearest snap point for
      * @returns {number} The snap position
      */
-    function findNearestSnapPoint(targetPos) {
-      if (!times || times.length === 0 || originalItemCount === 0) {
-        return targetPos
-      }
-
-      // Find closest snap point by checking each original item at different cycle offsets
-      let closestIndex = 0
-      let closestSnapPos = 0
-      let closestDist = Infinity
-
-      // Calculate which cycle the target is in to determine which cycles to check
-      const targetCycle = Math.floor(targetPos / originalItemsWidth)
-
-      // Only iterate over original items
-      for (let i = 0; i < originalItemCount; i++) {
-        const snapTime = times[i]
-        const baseSnapPos = snapTime * pixelsPerSecond
-
-        // For looping, check this snap point at multiple cycle offsets relative to target
-        if (shouldLoop) {
-          // Check previous cycle, target cycle, and next cycle relative to where target is
-          for (let cycleOffset = -1; cycleOffset <= 1; cycleOffset++) {
-            const candidatePos = baseSnapPos + (targetCycle + cycleOffset) * originalItemsWidth
-            const dist = Math.abs(candidatePos - targetPos)
-
-            if (dist < closestDist) {
-              closestDist = dist
-              closestIndex = i
-              closestSnapPos = candidatePos
-            }
-          }
-        } else {
-          // Non-looping: just use base position, clamped to maxScrollPosition
-          const clampedSnapPos = Math.min(baseSnapPos, maxScrollPosition)
-          const dist = Math.abs(clampedSnapPos - targetPos)
-          if (dist < closestDist) {
-            closestDist = dist
-            closestIndex = i
-            closestSnapPos = clampedSnapPos
-          }
-        }
-      }
-
-      // Update current index
-      curIndex = closestIndex
-
-      // Return the snap position closest to the inertia target
-      // DO NOT normalize to current position - we want to preserve momentum
-      // and allow the carousel to spin through multiple cycles for high-velocity throws
-      return closestSnapPos
-    }
-
     /**
      * Snap to nearest item with animation
      * Uses Motion's native inertia with modifyTarget for natural physics + snap
@@ -2097,9 +2013,8 @@ export default class Looper {
     })
 
     // Register callback for when layout is ready
-    this.app.registerCallback('APPLICATION:REVEALED', () => {
-      this.finalizeLoopers()
-    })
+    if (this.app.state?.revealed) this.finalizeLoopers()
+    else this.unsubscribe = this.app.registerCallback('APPLICATION:REVEALED', () => this.finalizeLoopers())
   }
 
   finalizeLoopers() {
@@ -2184,6 +2099,7 @@ export default class Looper {
   }
 
   destroy() {
+    this.unsubscribe?.()
     this.loopers.forEach(loop => {
       // Clean up navigation button listeners (C2)
       if (loop._navCleanups) {

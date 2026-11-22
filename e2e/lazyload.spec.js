@@ -6,11 +6,7 @@ test.describe('Jupiter Lazyload Module', () => {
     // Load the lazyload test page from Vite server
     await page.goto('/lazyload.html')
 
-    // Wait for the page to load completely
-    await page.waitForLoadState('networkidle')
-
-    // Wait additional time for Jupiter to initialize
-    await page.waitForTimeout(1000)
+    await expect(page.locator('body')).toHaveAttribute('data-app-revealed', 'true')
   })
 
   test('should initialize and mark images with appropriate attributes', async ({
@@ -84,29 +80,14 @@ test.describe('Jupiter Lazyload Module', () => {
     // First image has data-sizes="auto"
     const firstImage = page.locator('[data-testid="landscape-image"]')
 
-    // Check if sizes attribute was set
-    await expect(firstImage).toHaveAttribute('sizes')
+    const initialWidth = await firstImage.evaluate(img => Math.round(img.getBoundingClientRect().width))
+    await expect(firstImage).toHaveAttribute('sizes', initialWidth + 'px')
 
-    // Get the sizes value and ensure it's not empty
-    const sizesValue = await firstImage.getAttribute('sizes')
-    expect(sizesValue).toBeTruthy()
-    expect(sizesValue).toMatch(/^\d+px$/)
-
-    // Resize window and check if sizes attribute is updated
     await page.setViewportSize({ width: 800, height: 600 })
-
-    // Force a resize event
-    await page.evaluate(() => {
-      window.dispatchEvent(new Event('resize'))
-    })
-
-    // Wait a bit for the resize handler to complete
-    await page.waitForTimeout(500)
-
-    // Get the new sizes value after resize
-    const newSizesValue = await firstImage.getAttribute('sizes')
-    expect(newSizesValue).toBeTruthy()
-    expect(newSizesValue).toMatch(/^\d+px$/)
+    const newWidth = await firstImage.evaluate(img => Math.round(img.getBoundingClientRect().width))
+    expect(newWidth).not.toBe(initialWidth)
+    await expect(firstImage).toHaveAttribute('sizes', newWidth + 'px')
+    await expect(page.locator('[data-testid="landscape-picture"] source').first()).toHaveAttribute('sizes', newWidth + 'px')
   })
 
   test('should swap legacy data-ll-image elements when scrolled into view', async ({
@@ -169,12 +150,7 @@ test.describe('Jupiter Lazyload Module', () => {
     })
 
     // Wait for sources to be swapped
-    await page.locator('[data-testid="force-load-picture"]').evaluate(el => {
-      return new Promise(resolve => {
-        const check = () => el.hasAttribute('data-ll-srcset-ready') ? resolve(true) : setTimeout(check, 50)
-        check()
-      })
-    })
+    await expect(page.getByTestId('force-load-picture')).toHaveAttribute('data-ll-srcset-ready')
 
     // Image should NOT have data-ll-loaded since reveal was false
     await expect(forceLoadImage).not.toHaveAttribute('data-ll-loaded')

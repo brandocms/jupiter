@@ -1,5 +1,7 @@
 # Migration: HeroVideo Module
 
+> Archived 2025 migration plan. See the [current HeroVideo implementation](../../src/modules/HeroVideo/index.js) and [migration status](STATUS.md).
+
 **Tier**: 2 (Moderate)
 **Complexity**: ⭐⭐ Low-Moderate
 **Estimated Time**: 3-4 hours

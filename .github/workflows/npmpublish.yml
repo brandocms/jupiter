@@ -6,21 +6,35 @@ on:
       - "*"
 
 permissions:
-  id-token: write
   contents: read
 
 jobs:
   build:
+    outputs:
+      npm_tag: ${{ steps.version.outputs.npm_tag }}
     timeout-minutes: 60
-    runs-on: ubuntu-latest
+    # Playwright 1.58 ships Chromium for Ubuntu 24.04.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: "yarn"
+      - name: Verify release version
+        id: version
+        run: |
+          tag=$(node scripts/release-tag.cjs "$GITHUB_REF_NAME")
+          echo "npm_tag=$tag" >> "$GITHUB_OUTPUT"
       - name: Install dependencies
         run: yarn install --frozen-lockfile
+      - name: Verify declarations, package exports and demo builds
+        run: |
+          yarn types
+          yarn verify:package
+          yarn vite:build
+          git diff --exit-code -- types test-pages/dist
+          test -z "$(git ls-files --others --exclude-standard -- types test-pages/dist)"
       - name: Setup Playwright
         uses: ./.github/actions/setup-playwright
       - name: Run Playwright tests
@@ -33,6 +47,9 @@ jobs:
           retention-days: 30
 
   publish-npm:
+    permissions:
+      contents: read
+      id-token: write
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -41,14 +58,5 @@ jobs:
         with:
           node-version: '24'
           registry-url: 'https://registry.npmjs.org'
-      - name: Determine npm tag
-        id: npm-tag
-        run: |
-          TAG_NAME=${GITHUB_REF#refs/tags/}
-          if [[ "$TAG_NAME" =~ (alpha|beta|rc|next) ]]; then
-            echo "tag=next" >> $GITHUB_OUTPUT
-          else
-            echo "tag=latest" >> $GITHUB_OUTPUT
-          fi
       - name: Publish to npm
-        run: npm publish --access=public --tag ${{ steps.npm-tag.outputs.tag }}
+        run: npm publish --access=public --tag ${{ needs.build.outputs.npm_tag }}

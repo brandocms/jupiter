@@ -1,7 +1,8 @@
-import Dom from '../Dom'
+import { all } from '../Dom/query'
+import equalizeRows from '../../utils/equalizeRows'
 import * as Events from '../../events'
 import imagesAreLoaded from '../../utils/imagesAreLoaded'
-import _defaultsDeep from 'lodash.defaultsdeep'
+import applyDefaults from '../../utils/applyDefaults'
 
 const DEFAULT_OPTIONS = {
   listenForResize: true,
@@ -11,72 +12,40 @@ export default class EqualHeightImages {
   constructor(app, opts = {}, container = document.body) {
     this.app = app
     this.container = container
-    this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
+    this.opts = applyDefaults(opts, DEFAULT_OPTIONS)
+    this.adjusted = new WeakSet()
     this.initialize()
 
-    if (opts.listenForResize) {
-      window.addEventListener(Events.APPLICATION_RESIZE, () => {
-        this.initialize()
-      })
+    if (this.opts.listenForResize) {
+      this.onResize = () => this.initialize()
+      window.addEventListener(Events.APPLICATION_RESIZE, this.onResize)
     }
   }
 
   run() {
-    Array.from(this.canvases).forEach((canvas) => {
-      let lastTop = null
-      const actionables = []
-      let elements = []
-      let height = 0
-      const imgs = Dom.all(canvas, 'img')
-
-      if (imgs.length === 0) {
-        return
-      }
-
-      imagesAreLoaded(imgs, false).then(() => {
-        imgs.forEach((el) => {
-          const rect = el.getBoundingClientRect()
-          const size = this.getImgSizeInfo(el)
-
-          if (lastTop === null) {
-            height = size.height
-            elements.push(el)
-            lastTop = rect.top
-            return
-          }
-
-          if (lastTop !== rect.top) {
-            actionables.push({ elements, height })
-            elements = []
-            height = size.height
-          } else if (lastTop === rect.top) {
-            if (size.height > height) {
-              height = size.height
-            }
-          } else {
-            height = size.height
-          }
-          elements.push(el)
-          lastTop = rect.top
-        })
-
-        if (elements.length) {
-          actionables.push({ elements, height })
+    const generation = this.generation = (this.generation || 0) + 1
+    for (const canvas of this.canvases) {
+      const images = canvas.querySelectorAll('img')
+      imagesAreLoaded(images).then(() => {
+        if (generation !== this.generation) return
+        for (const img of images) {
+          if (this.adjusted.has(img)) img.style.removeProperty('min-height')
+          this.adjusted.add(img)
         }
-
-        if (actionables.length) {
-          actionables.forEach((a) => {
-            a.elements.forEach((el) => {
-              el.style.minHeight = `${a.height}px`
-            })
-          })
-        }
+        equalizeRows(images, img => img.naturalWidth
+          ? Math.min(img.height, img.width * img.naturalHeight / img.naturalWidth)
+          : img.height)
       })
-    })
+    }
+  }
+
+  destroy() {
+    this.generation++
+    window.removeEventListener(Events.APPLICATION_RESIZE, this.onResize)
   }
 
   initialize() {
-    this.canvases = Dom.all(this.container, '[data-eq-height-images]')
+    this.canvases = all(this.container, '[data-eq-height-images]')
     this.run()
   }
 

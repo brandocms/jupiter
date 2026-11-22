@@ -22,10 +22,13 @@ export default class Lightbox {
         caption: PausedTimeline;
         image: PausedTimeline;
     };
-    showBox(section: any, index: any): void;
+    showBox(section: any, index: any, trigger?: Element): void;
+    invoker: Element;
     buildBox(section: any, index: any): void;
     keyUpCallback: (event: any) => void;
-    close(): void;
+    close(): Promise<void>;
+    closing: boolean;
+    resetAfterClose(): void;
     currentImage: any;
     destroy(): void;
     setImg(section: any, index: any): void;
@@ -56,6 +59,10 @@ export type LightboxElements = {
     dot?: Function;
 };
 export type LightboxOptions = {
+    /**
+     * - Accessible name of the gallery dialog
+     */
+    dialogLabel?: string;
     /**
      * - Enable captions
      */

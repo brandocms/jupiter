@@ -102,7 +102,8 @@ export default class HeroVideo {
   }
 
   initialize() {
-    this._addResizeHandler()
+    this.events = new AbortController()
+    if (this._resize !== HeroVideo.prototype._resize) this._addResizeHandler()
     // style the container
     set(this.el, {
       position: 'absolute',
@@ -164,7 +165,7 @@ export default class HeroVideo {
 
     if (this.cover) {
       imageIsLoaded(this.cover).then(() => {
-        this.fadeInCover()
+        if (!this.events.signal.aborted) this.fadeInCover()
       })
     }
 
@@ -185,7 +186,7 @@ export default class HeroVideo {
           window.objectFitPolyfill()
         }
       }
-    })
+    }, { signal: this.events.signal })
   }
 
   setSrc() {
@@ -216,7 +217,7 @@ export default class HeroVideo {
           set(this.videoDiv, { opacity: 1 })
         }
       }
-    })
+    }, { signal: this.events.signal })
     if (this.elements.pause) {
       this.elements.pause.addEventListener('click', (e) => {
         e.preventDefault()
@@ -232,7 +233,7 @@ export default class HeroVideo {
           this.forcePaused = false
           this.elements.pause.innerHTML = this.opts.elements.pause()
         }
-      })
+      }, { signal: this.events.signal })
     }
   }
 
@@ -258,7 +259,7 @@ export default class HeroVideo {
   }
 
   addObserver() {
-    const observer = new IntersectionObserver((entries) => {
+    this.visibilityObserver = new IntersectionObserver((entries) => {
       const [{ isIntersecting }] = entries
       if (isIntersecting) {
         if (this.forcePaused) {
@@ -273,30 +274,40 @@ export default class HeroVideo {
       }
     })
 
-    observer.observe(this.el)
+    this.visibilityObserver.observe(this.el)
   }
 
   /**
    * Add a window resize handler that resizes video width
    */
   _addResizeHandler() {
+    this.resizeHandler = this._resize.bind(this)
     this.observer = new IntersectionObserver((entries) => {
       const [{ isIntersecting }] = entries
       if (isIntersecting) {
         this._resize()
         window.addEventListener(
           Events.APPLICATION_RESIZE,
-          this._resize.bind(this)
+          this.resizeHandler
         )
       } else {
         window.removeEventListener(
           Events.APPLICATION_RESIZE,
-          this._resize.bind(this)
+          this.resizeHandler
         )
       }
     })
 
     this.observer.observe(this.el)
+  }
+
+  destroy() {
+    this.events?.abort()
+    this.visibilityObserver?.disconnect()
+    this.observer?.disconnect()
+    window.removeEventListener(Events.APPLICATION_RESIZE, this.resizeHandler)
+    this.video?.pause()
+    this.elements.pause?.remove()
   }
 
   _resize() {

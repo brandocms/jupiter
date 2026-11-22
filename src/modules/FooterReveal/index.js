@@ -1,5 +1,5 @@
 import { set } from '../../utils/motion-helpers'
-import _defaultsDeep from 'lodash.defaultsdeep'
+import applyDefaults from '../../utils/applyDefaults'
 
 const DEFAULT_OPTIONS = {
   shadow: false,
@@ -9,24 +9,29 @@ const DEFAULT_OPTIONS = {
 export default class FooterReveal {
   constructor(app, opts) {
     this.app = app
-    this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
+    this.opts = applyDefaults(opts, DEFAULT_OPTIONS)
 
     const main = document.querySelector('main')
     const footer = document.querySelector('[data-footer-reveal]')
     // fix footer
     set(footer, {
-      'z-index': -100,
+      zIndex: -100,
       position: 'fixed',
       bottom: 0,
     })
-    const footerHeight = footer.offsetHeight
-    // add height as margin
-    set(main, { marginBottom: footerHeight })
+    const update = () => set(main, { marginBottom: footer.offsetHeight })
+    update()
+    this.observer = new ResizeObserver(update)
+    this.observer.observe(footer)
     if (this.opts.shadow) {
       const shadowStyle = `0 50px 50px -20px ${this.opts.shadowColor}`
       main.style.mozBoxShadow = shadowStyle
       main.style.webkitBoxShadow = shadowStyle
       main.style.boxShadow = shadowStyle
     }
+  }
+
+  destroy() {
+    this.observer.disconnect()
   }
 }

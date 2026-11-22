@@ -3,6 +3,7 @@ import * as Events from '../../events'
 export default class FeatureTests {
   constructor(app, tests) {
     this.app = app
+    this.listeners = new AbortController()
 
     this.testFns = {
       touch: this.testTouch
@@ -59,7 +60,7 @@ export default class FeatureTests {
   testOutlineEvents() {
     document.addEventListener('mousedown', () => {
       this.testFor('outline', false)
-    })
+    }, { signal: this.listeners.signal })
 
     document.addEventListener('keydown', e => {
       if (e.keyCode === 9 || e.which === 9) {
@@ -67,7 +68,7 @@ export default class FeatureTests {
         const outlineEvent = new window.CustomEvent(Events.APPLICATION_OUTLINE)
         window.dispatchEvent(outlineEvent)
       }
-    })
+    }, { signal: this.listeners.signal })
   }
 
   /**
@@ -114,8 +115,8 @@ export default class FeatureTests {
       this.deviceLastTouched = Date.now()
     }
 
-    document.addEventListener('touchstart', onTouchStart, false)
-    document.addEventListener('touchend', onTouchEnd, false)
+    document.addEventListener('touchstart', onTouchStart, { signal: this.listeners.signal })
+    document.addEventListener('touchend', onTouchEnd, { signal: this.listeners.signal })
 
     const onMouseMove = () => {
       if (!this.results.mouse) {
@@ -128,12 +129,16 @@ export default class FeatureTests {
       }
     }
 
-    document.addEventListener('mousemove', onMouseMove, false)
+    document.addEventListener('mousemove', onMouseMove, { signal: this.listeners.signal })
   }
 
   bindEventTests() {
     this.testOutlineEvents()
     this.testTouchMouseEvents()
+  }
+
+  destroy() {
+    this.listeners.abort()
   }
 
   testTouch() {

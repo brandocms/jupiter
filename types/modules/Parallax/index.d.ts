@@ -27,7 +27,7 @@ export default class Parallax {
      * @param {number} scrollPosition - Current scroll position
      * @returns {Object} Transform and opacity values
      */
-    calculateTransform(item: any, scrollPosition: number): any;
+    calculateTransform(item: any, scrollPosition: number, rect?: any): any;
     /**
      * Apply a smooth transition between current and target position
      * @param {Object} item - Parallax element data

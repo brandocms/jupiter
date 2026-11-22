@@ -1,7 +1,6 @@
-import _defaultsDeep from 'lodash.defaultsdeep'
+import applyDefaults from '../../utils/applyDefaults'
 import dispatchElementEvent from '../../utils/dispatchElementEvent'
 import imagesAreLoaded from '../../utils/imagesAreLoaded'
-import Dom from '../Dom'
 import * as Events from '../../events'
 
 /**
@@ -21,21 +20,36 @@ import * as Events from '../../events'
  * @property {HTMLElement|null} [target=null] - Container element to scope lazyloading to. Defaults to document.body
  */
 
+const REVEAL_CONFIG = { rootMargin: '0px 100px 0px 100px', threshold: 0 }
+const LOAD_CONFIG = { rootMargin: '850px 500px 850px 500px', threshold: 0 }
+
 /** @type {LazyloadOptions} */
 const DEFAULT_OPTIONS = {
-  revealIntersectionObserverConfig: {
-    rootMargin: '0px 100px 0px 100px',
-    threshold: 0.0,
-  },
-  loadIntersectionObserverConfig: {
-    rootMargin: '850px 500px 850px 500px',
-    threshold: 0.0,
-  },
   useNativeLazyloadIfAvailable: true,
   minSize: 40,
   updateSizes: true,
   registerCallback: true,
   target: null,
+}
+
+function matchingElements(root, selector) {
+  return root.matches?.(selector) ? [root] : root.querySelectorAll(selector)
+}
+
+function setSize(img, width) {
+  const sizes = width + 'px'
+  if (img.getAttribute('sizes') !== sizes) img.setAttribute('sizes', sizes)
+  if (img.parentElement?.tagName !== 'PICTURE') return
+  for (const source of img.parentElement.querySelectorAll('source')) {
+    if (source.getAttribute('sizes') !== sizes) source.setAttribute('sizes', sizes)
+  }
+}
+
+function copyImageSource(element, attribute) {
+  const value = element.getAttribute('data-' + attribute)
+  if (value === null || value === element.getAttribute(attribute)) return false
+  element.setAttribute(attribute, value)
+  return true
 }
 
 /**
@@ -49,28 +63,34 @@ export default class Lazyload {
    */
   constructor(app, opts = {}) {
     this.app = app
-    this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
+    this.opts = applyDefaults(opts, DEFAULT_OPTIONS)
+    // A consumer can override individual observer options and pass a custom root.
+    for (const [key, config] of [
+      ['revealIntersectionObserverConfig', REVEAL_CONFIG],
+      ['loadIntersectionObserverConfig', LOAD_CONFIG],
+    ]) {
+      if (this.opts[key] === undefined) Reflect.set(this.opts, key, { ...config })
+      else if (this.opts[key] !== null) applyDefaults(this.opts[key], config)
+    }
     this.target = this.opts.target || document.body
+    this.sectionObservers = new Set()
     this.resizePending = new Map()
     this.rafId = null
 
-    // Create reusable MutationObserver for reveal handling
-    this.srcsetReadyObserver = new MutationObserver(mutations => {
-      mutations.forEach(record => {
-        if (record.type === 'attributes' && record.attributeName === 'data-ll-srcset-ready') {
-          this.revealPicture(record.target)
-          this.revealObserver.unobserve(record.target)
-        }
-      })
-    })
+    this.native = this.opts.useNativeLazyloadIfAvailable && 'loading' in HTMLImageElement.prototype
+    this.observed = new WeakSet()
+    this.sized = new WeakSet()
+    this.pendingReveals = new Set()
+    this.loadingPictures = new WeakMap()
+    this.events = new AbortController()
 
     this.initialize()
 
-    if (this.opts.registerCallback) {
+    if (this.revealObserver && this.opts.registerCallback) {
       if (this.app.state.revealed) {
         this.watch()
       } else {
-        this.app.registerCallback(Events.APPLICATION_REVEALED, () => {
+        this.unsubscribe = this.app.registerCallback(Events.APPLICATION_REVEALED, () => {
           this.watch()
         })
       }
@@ -78,7 +98,7 @@ export default class Lazyload {
   }
 
   watch() {
-    this.initObserver(this.revealObserver, false)
+    if (this.revealObserver) this.initObserver(this.revealObserver, false)
   }
 
   /**
@@ -88,76 +108,59 @@ export default class Lazyload {
    * @param {HTMLElement|HTMLElement[]|NodeList} elements - Container element(s) or lazyload element(s) to observe
    */
   observe(elements) {
-    // Handle NodeList, array, or single element
-    const els = elements instanceof NodeList ? Array.from(elements) :
-                Array.isArray(elements) ? elements : [elements]
-
-    let imgIdx = this.lazyImages?.length || 0
-    let picIdx = this.lazyPictures?.length || 0
-
-    els.forEach(el => {
-      // Handle [data-ll-image] elements
-      if (this.imageObserver) {
-        const images = el.matches?.('[data-ll-image]')
-          ? [el]
-          : el.querySelectorAll?.('[data-ll-image]') || []
-
-        images.forEach(img => {
-          // Skip if already observed or loaded
-          if (img.hasAttribute('data-ll-idx') || img.hasAttribute('data-ll-loaded')) return
-
-          img.setAttribute('data-ll-blurred', '')
-          img.setAttribute('data-ll-idx', imgIdx)
-          img.style.setProperty('--ll-idx', imgIdx)
-          this.imageObserver.observe(img)
-          imgIdx++
-        })
+    const roots = elements instanceof NodeList || Array.isArray(elements) ? elements : [elements]
+    for (const root of roots) {
+      this.initializeResizeObserver(root)
+      if (this.native) {
+        this.observeNative(root)
+        continue
       }
-
-      // Handle [data-ll-srcset] picture elements
-      if (this.loadObserver) {
-        const pictures = el.matches?.('[data-ll-srcset]')
-          ? [el]
-          : el.querySelectorAll?.('[data-ll-srcset]') || []
-
-        pictures.forEach(picture => {
-          // Skip if already loaded
-          if (picture.hasAttribute('data-ll-srcset-ready')) return
-
-          picture.setAttribute('data-ll-srcset-initialized', '')
-          picture.querySelectorAll('img:not([data-ll-loaded])').forEach(img => {
-            img.removeAttribute('data-ll-idx') // Clear cloned idx
-            img.setAttribute('data-ll-blurred', '')
-            img.setAttribute('data-ll-idx', picIdx)
-            img.style.setProperty('--ll-idx', picIdx)
-          })
-          // Add to both observers like initObserver does
-          this.loadObserver.observe(picture)
-          this.revealObserver?.observe(picture)
-          picIdx++
-        })
+      for (const img of matchingElements(root, '[data-ll-image]')) this.observeImage(img)
+      for (const picture of matchingElements(root, '[data-ll-srcset]')) {
+        if (this.observed.has(picture) || picture.hasAttribute('data-ll-srcset-ready')) continue
+        this.preparePicture(picture, this.nextPictureIndex++)
+        this.loadObserver.observe(picture)
+        this.revealObserver.observe(picture)
       }
-    })
+    }
+  }
+
+  observeNative(root) {
+    for (const item of matchingElements(root, '[data-ll-srcset], [data-ll-image]')) {
+      if (this.observed.has(item)) continue
+      this.observed.add(item)
+      if (item.hasAttribute('data-ll-srcset')) {
+        this.swapPicture(item)
+      } else {
+        item.loading = 'lazy'
+        this.swapImage(item)
+      }
+    }
+  }
+
+  preparePicture(picture, index) {
+    this.observed.add(picture)
+    picture.setAttribute('data-ll-srcset-initialized', '')
+    for (const img of picture.querySelectorAll('img:not([data-ll-loaded])')) {
+      img.setAttribute('data-ll-blurred', '')
+      img.setAttribute('data-ll-idx', index)
+      img.style.setProperty('--ll-idx', index)
+    }
+  }
+
+  observeImage(img) {
+    if (this.observed.has(img) || img.hasAttribute('data-ll-loaded')) return
+    this.observed.add(img)
+    img.setAttribute('data-ll-blurred', '')
+    img.setAttribute('data-ll-idx', this.nextImageIndex)
+    img.style.setProperty('--ll-idx', this.nextImageIndex++)
+    this.imageObserver.observe(img)
   }
 
   initialize() {
-    // initialize ResizeObserver for images with data-sizes="auto"
-    this.initializeResizeObserver()
-
-    // if we have native lazyload, use it.
-    if ('loading' in HTMLImageElement.prototype && this.opts.useNativeLazyloadIfAvailable) {
-      const lazyImages = this.target.querySelectorAll('[data-ll-image]')
-      lazyImages.forEach(img => {
-        img.setAttribute('loading', 'lazy')
-        this.swapImage(img)
-      })
-
-      const lazyPictures = this.target.querySelectorAll('[data-ll-srcset]')
-      lazyPictures.forEach(picture => {
-        picture.querySelectorAll('img').forEach(img => img.setAttribute('loading', 'lazy'))
-        this.swapPicture(picture)
-      })
-
+    this.initializeResizeObserver(this.target)
+    if (this.native) {
+      this.observeNative(this.target)
       return
     }
 
@@ -179,26 +182,17 @@ export default class Lazyload {
     // lazyload for all images within.
     this.initializeSections()
 
-    // Deprecate data-ll-image sometime
-    this.imageObserver = new IntersectionObserver(
-      this.lazyloadImages.bind(this),
-      this.opts.loadIntersectionObserverConfig
-    )
-
+    // Legacy images and pictures use the same load margin.
+    this.imageObserver = this.loadObserver
     this.lazyImages = this.target.querySelectorAll('[data-ll-image]')
-    this.observe(this.lazyImages)
+    this.nextImageIndex = this.lazyImages.length
+    this.nextPictureIndex = this.lazyPictures.length
+    for (const img of this.lazyImages) this.observeImage(img)
   }
 
   initObserver(observer, setAttrs = true) {
     this.lazyPictures.forEach((picture, idx) => {
-      if (setAttrs) {
-        picture.setAttribute('data-ll-srcset-initialized', '')
-        picture.querySelectorAll('img:not([data-ll-loaded])').forEach(img => {
-          img.setAttribute('data-ll-blurred', '')
-          img.setAttribute('data-ll-idx', idx)
-          img.style.setProperty('--ll-idx', idx)
-        })
-      }
+      if (setAttrs) this.preparePicture(picture, idx)
       observer.observe(picture)
     })
   }
@@ -211,217 +205,140 @@ export default class Lazyload {
    * @param {boolean} [options.reveal=true] - Whether to also reveal (set data-ll-loaded) after loading
    */
   forceLoad($container = document.body, { reveal = true } = {}) {
-    const images = Dom.all($container, '[data-ll-image]')
-    images.forEach(img => this.swapImage(img))
-
-    const pictures = Dom.all($container, '[data-ll-srcset]')
-    pictures.forEach(picture => {
+    // Set the responsive candidate width before assigning sources.
+    this.initializeResizeObserver($container, true)
+    for (const img of $container.querySelectorAll('[data-ll-image]')) this.swapImage(img)
+    for (const picture of $container.querySelectorAll('[data-ll-srcset]')) {
       this.loadPicture(picture)
-      if (reveal) {
-        this.revealPicture(picture)
-      }
-    })
-
-    // Set sizes on dynamically added images with data-sizes="auto"
-    // and register them with the ResizeObserver for future updates
-    if (this.opts.updateSizes && this.sizeObserver) {
-      const autoSizesImages = Dom.all($container, '[data-sizes="auto"]')
-      autoSizesImages.forEach(img => {
-        let width = Math.round(img.offsetWidth)
-        if (width < this.opts.minSize) {
-          width = this.opts.minSize
-        }
-
-        const sizes = `${width}px`
-        img.setAttribute('sizes', sizes)
-
-        if (img.parentNode) {
-          Dom.all(img.parentNode, 'source').forEach(source => {
-            source.setAttribute('sizes', sizes)
-          })
-        }
-
-        this.sizeObserver.observe(img)
-      })
+      if (reveal) this.revealPicture(picture)
     }
   }
 
-  initializeResizeObserver() {
-    if (!this.opts.updateSizes) {
-      return
-    }
+  initializeResizeObserver(root = this.target, refresh = false) {
+    if (!this.opts.updateSizes) return
+    const candidates = matchingElements(root, '[data-sizes="auto"]')
+    if (!candidates.length) return
+    const images = Array.from(candidates).filter(img => refresh || !this.sized.has(img))
+    if (!images.length) return
 
-    // Use ResizeObserver to watch images with data-sizes="auto"
-    // This eliminates layout thrashing from repeated offsetWidth reads
-    this.sizeObserver = new ResizeObserver(entries => {
-      entries.forEach(entry => {
-        const img = entry.target
-        // Use contentBoxSize for better performance (avoids layout queries)
-        let width = entry.borderBoxSize?.[0]?.inlineSize || entry.contentRect.width
-
-        // Round to prevent decimal fluctuations causing loops
-        width = Math.round(width)
-
-        // Fallback to minSize if element is too small
-        if (width < this.opts.minSize) {
-          width = this.opts.minSize
+    if (!this.sizeObserver) {
+      this.sizeObserver = new ResizeObserver(entries => {
+        for (const entry of entries) {
+          const width = entry.borderBoxSize?.[0]?.inlineSize ?? entry.contentRect.width
+          const size = Math.max(this.opts.minSize, Math.round(width))
+          if (entry.target.getAttribute('sizes') === size + 'px') this.resizePending.delete(entry.target)
+          else this.resizePending.set(entry.target, size)
         }
-
-        // Only queue update if width actually changed from current sizes attribute
-        const currentSizes = img.getAttribute('sizes')
-        const expectedSizes = `${width}px`
-
-        if (currentSizes !== expectedSizes) {
-          // Batch updates using RAF to avoid layout thrashing
-          this.resizePending.set(img, width)
-
-          if (!this.rafId) {
-            this.rafId = requestAnimationFrame(() => {
-              this.flushSizeUpdates()
-            })
-          }
+        if (this.resizePending.size && this.rafId === null) {
+          this.rafId = requestAnimationFrame(() => this.flushSizeUpdates())
         }
       })
-    })
-
-    // Observe all images with data-sizes="auto" within the target container
-    const autoSizesImages = Dom.all(this.target, '[data-sizes="auto"]')
-
-    // Deduplicate in case of multiple Lazyload instances
-    const uniqueImages = new Set(autoSizesImages)
-
-    uniqueImages.forEach(img => {
+    }
+    // Read all slot widths before writing sizes or assigning any srcset. Otherwise
+    // the browser can start a viewport-width request before the first resize delivery.
+    const widths = images.map(img => Math.max(this.opts.minSize, img.offsetWidth))
+    images.forEach((img, index) => {
+      setSize(img, widths[index])
+      this.sized.add(img)
       this.sizeObserver.observe(img)
     })
   }
 
   flushSizeUpdates() {
-    // Batch all size updates together to minimize reflows
-    this.resizePending.forEach((width, img) => {
-      const currentSizes = img.getAttribute('sizes')
-      const newSizes = `${Math.round(width)}px`
-
-      // Only update if value actually changed to prevent resize loops
-      if (currentSizes !== newSizes) {
-        img.setAttribute('sizes', newSizes)
-        if (img.parentNode) {
-          Dom.all(img.parentNode, 'source').forEach(source => {
-            if (source.getAttribute('sizes') !== newSizes) {
-              source.setAttribute('sizes', newSizes)
-            }
-          })
-        }
-      }
-    })
-
+    this.resizePending.forEach((width, img) => setSize(img, width))
     this.resizePending.clear()
     this.rafId = null
   }
 
   initializeSections() {
     const sections = this.target.querySelectorAll('[data-lazyload-section]')
-
-    const sectionObserver = (section, children) => {
-      const imagesInSection = Dom.all(section, 'img')
-      return new IntersectionObserver((entries, self) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting || entry.intersectionRatio > 0) {
-            imagesAreLoaded(imagesInSection, true).then(() => {
-              dispatchElementEvent(section, Events.SECTION_LAZYLOADED)
-            })
-            children.forEach(picture => {
-              this.loadPicture(picture)
-              this.loadObserver.unobserve(picture)
-            })
-            self.unobserve(section)
-          }
+    if (!sections.length) return
+    const observer = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting && entry.intersectionRatio <= 0) continue
+        const section = entry.target
+        observer.unobserve(section)
+        imagesAreLoaded(section, true).then(() => {
+          if (!this.events.signal.aborted) dispatchElementEvent(section, Events.SECTION_LAZYLOADED)
         })
-      }, this.opts.loadIntersectionObserverConfig)
-    }
-
-    sections.forEach(section => {
-      const children = section.querySelectorAll('picture')
-      const obs = sectionObserver(section, children)
-      obs.observe(section)
-    })
+        for (const picture of section.querySelectorAll('picture')) {
+          this.loadPicture(picture)
+          this.loadObserver.unobserve(picture)
+        }
+      }
+    }, this.opts.loadIntersectionObserverConfig)
+    this.sectionObservers.add(observer)
+    for (const section of sections) observer.observe(section)
   }
 
   handleLoadEntries(entries) {
     entries.forEach(item => {
       if (item.isIntersecting || item.intersectionRatio > 0) {
-        const picture = item.target
-        this.loadPicture(picture)
-        this.loadObserver.unobserve(item.target)
+        const target = item.target
+        if (target.hasAttribute('data-ll-image')) this.swapImage(target)
+        else this.loadPicture(target)
+        this.loadObserver.unobserve(target)
       }
     })
   }
 
   handleRevealEntries(entries) {
-    entries.forEach(item => {
-      if (item.isIntersecting || item.intersectionRatio > 0) {
-        const picture = item.target
-        const ready = item.target.hasAttribute('data-ll-srcset-ready')
-        if (!ready) {
-          // element is not loaded, observe the picture and wait for
-          // `data-ll-srcset-ready` before revealing
-          // Use reusable MutationObserver to prevent memory leaks
-          this.srcsetReadyObserver.observe(picture, { attributes: true })
-        } else {
-          this.revealPicture(picture)
-          this.revealObserver.unobserve(item.target)
+    for (const entry of entries) {
+      if (!entry.isIntersecting && entry.intersectionRatio <= 0) continue
+      const picture = entry.target
+      if (picture.hasAttribute('data-ll-srcset-ready')) {
+        this.revealPicture(picture)
+        this.revealObserver.unobserve(picture)
+      } else {
+        this.waitForPicture(picture)
+      }
+    }
+  }
+
+  waitForPicture(picture) {
+    if (this.pendingReveals.has(picture)) return
+    this.pendingReveals.add(picture)
+    this.srcsetReadyObserver ??= new MutationObserver(records => {
+      for (const { target } of records) {
+        if (target.hasAttribute('data-ll-srcset-ready') && this.pendingReveals.delete(target)) {
+          this.revealPicture(target)
+          this.revealObserver.unobserve(target)
         }
       }
+      if (!this.pendingReveals.size) this.srcsetReadyObserver.disconnect()
     })
+    this.srcsetReadyObserver.observe(picture, { attributeFilter: ['data-ll-srcset-ready'] })
   }
 
   loadPicture(picture) {
-    // gather all the source elements in picture
-    const sources = picture.querySelectorAll('source')
-    let loadedSomething = false
-
-    for (let s = 0; s < sources.length; s += 1) {
-      const source = sources[s]
-      if (!source.hasAttribute('data-ll-ready')) {
-        loadedSomething = true
-      }
-      if (source.hasAttribute('data-srcset')) {
-        source.setAttribute('srcset', source.dataset.srcset)
-        source.setAttribute('data-ll-ready', '')
-      }
-    }
-
-    if (!loadedSomething && sources.length > 0) {
-      return
-    }
-
     const img = picture.querySelector('img')
+    if (!img) return
+    let changed = false
+    for (const source of picture.querySelectorAll('source[data-srcset]')) {
+      if (copyImageSource(source, 'srcset')) changed = true
+      if (!source.hasAttribute('data-ll-ready')) source.setAttribute('data-ll-ready', '')
+    }
+    if (copyImageSource(img, 'srcset')) changed = true
+    if (img.dataset.src && copyImageSource(img, 'src')) changed = true
 
-    const onload = () => {
-      // ResizeObserver now handles size updates automatically,
-      // including Firefox's delayed dimension calculation
+    // A section, an individual observer and forceLoad can reach the same picture.
+    const pending = this.loadingPictures.get(img)
+    if (!changed && (pending || picture.hasAttribute('data-ll-srcset-ready'))) return
+    if (pending) img.removeEventListener('load', pending)
+    const ready = () => {
+      this.loadingPictures.delete(img)
       img.removeAttribute('data-ll-placeholder')
       img.removeAttribute('data-ll-blurred')
       img.removeAttribute('data-ll-loading')
       img.setAttribute('data-ll-ready', '')
       picture.setAttribute('data-ll-srcset-ready', '')
     }
-
-    img.addEventListener('load', onload, { once: true })
     img.setAttribute('data-ll-loading', '')
-
-    if (img.dataset.src) {
-      img.setAttribute('src', img.dataset.src)
+    if (img.complete) ready()
+    else {
+      this.loadingPictures.set(img, ready)
+      img.addEventListener('load', ready, { once: true, signal: this.events.signal })
     }
-
-    if (img.dataset.srcset) {
-      img.setAttribute('srcset', img.dataset.srcset)
-    }
-
-    // safari sometimes caches, so force load
-    if (img.complete) {
-      onload()
-    }
-
     dispatchElementEvent(img, Events.IMAGE_LAZYLOADED)
   }
 
@@ -431,9 +348,7 @@ export default class Lazyload {
    */
   revealPicture(picture) {
     const img = picture.querySelector('img')
-    if (img.hasAttribute('data-ll-loaded')) {
-      return
-    }
+    if (!img || img.hasAttribute('data-ll-loaded')) return
     img.setAttribute('data-ll-loaded', '')
     dispatchElementEvent(img, Events.IMAGE_REVEALED)
   }
@@ -444,23 +359,15 @@ export default class Lazyload {
    * @param {HTMLElement} picture - The picture element to swap
    */
   swapPicture(picture) {
-    const sources = picture.querySelectorAll('source')
-    sources.forEach(source => {
-      if (source.hasAttribute('data-srcset')) {
-        source.setAttribute('srcset', source.dataset.srcset)
-      }
-    })
-
     const img = picture.querySelector('img')
-    if (img) {
-      if (img.dataset.src) {
-        img.setAttribute('src', img.dataset.src)
-      }
-      if (img.dataset.srcset) {
-        img.setAttribute('srcset', img.dataset.srcset)
-      }
-      img.setAttribute('data-ll-loaded', '')
-    }
+    if (!img) return
+    if (this.native) img.loading = 'lazy'
+    for (const source of picture.querySelectorAll('source[data-srcset]')) copyImageSource(source, 'srcset')
+    copyImageSource(img, 'srcset')
+    if (img.dataset.src) copyImageSource(img, 'src')
+    this.observed.add(img)
+    img.setAttribute('data-ll-loaded', '')
+    dispatchElementEvent(img, Events.IMAGE_LAZYLOADED)
   }
 
   lazyloadImages(entries) {
@@ -474,18 +381,23 @@ export default class Lazyload {
   }
 
   swapImage(image) {
-    image.src = image.dataset.src
+    if (image.dataset.src) copyImageSource(image, 'src')
     image.setAttribute('data-ll-loaded', '')
+    dispatchElementEvent(image, Events.IMAGE_LAZYLOADED)
   }
 
   /**
    * Destroy the Lazyload instance, disconnecting all observers and freeing resources.
    */
   destroy() {
+    this.events.abort()
+    this.unsubscribe?.()
+    this.pendingReveals.clear()
+    this.sectionObservers.forEach(observer => observer.disconnect())
+    this.sectionObservers.clear()
     this.srcsetReadyObserver?.disconnect()
     this.loadObserver?.disconnect()
     this.revealObserver?.disconnect()
-    this.imageObserver?.disconnect()
     this.sizeObserver?.disconnect()
 
     if (this.rafId) {

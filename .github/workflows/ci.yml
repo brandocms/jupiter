@@ -7,7 +7,8 @@ on:
 jobs:
   test:
     timeout-minutes: 60
-    runs-on: ubuntu-latest
+    # Playwright 1.58 ships Chromium for Ubuntu 24.04.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -16,6 +17,13 @@ jobs:
           cache: "yarn"
       - name: Install dependencies
         run: yarn install --frozen-lockfile
+      - name: Verify declarations, package exports and demo builds
+        run: |
+          yarn types
+          yarn verify:package
+          yarn vite:build
+          git diff --exit-code -- types test-pages/dist
+          test -z "$(git ls-files --others --exclude-standard -- types test-pages/dist)"
       - name: Setup Playwright
         uses: ./.github/actions/setup-playwright
       - name: Run Playwright tests

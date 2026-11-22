@@ -1,6 +1,7 @@
 export default class FeatureTests {
     constructor(app: any, tests: any);
     app: any;
+    listeners: AbortController;
     testFns: {
         touch: () => boolean;
     };
@@ -19,6 +20,7 @@ export default class FeatureTests {
      */
     testTouchMouseEvents(): void;
     bindEventTests(): void;
+    destroy(): void;
     testTouch(): boolean;
     testIE11(): boolean;
     testIOS(): RegExpMatchArray;

@@ -1,16 +1,17 @@
 // @ts-check
 const { test, expect } = require('@playwright/test')
+const { serveFixtureImages } = require('./fixtures/images')
 
 test.describe('Jupiter EqualHeightImages Module', () => {
   test.beforeEach(async ({ page }) => {
-    // Load the equal-height-images test page from Vite server
+    await serveFixtureImages(page)
     await page.goto('/equal-height-images.html')
 
-    // Wait for the page to load completely
-    await page.waitForLoadState('networkidle')
-
-    // Wait for Jupiter initialization and images to load
-    await page.waitForTimeout(3000)
+    const images = page.locator('[data-eq-height-images-item] img')
+    await expect(images).toHaveCount(13)
+    await expect.poll(() => images.evaluateAll(elements => elements.every(img =>
+      img instanceof HTMLImageElement && img.naturalWidth > 0 && parseFloat(img.style.minHeight) > 0
+    ))).toBe(true)
   })
 
   test('should set equal heights for images in same row', async ({ page }) => {

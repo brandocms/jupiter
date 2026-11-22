@@ -1,5 +1,5 @@
-import _defaultsDeep from 'lodash.defaultsdeep'
-import Dom from '../Dom'
+import { all } from '../Dom/query'
+import applyDefaults from '../../utils/applyDefaults'
 
 /**
  * @typedef {Object} ScrollSpyOptions
@@ -22,7 +22,7 @@ export default class ScrollSpy {
    */
   constructor(app, opts = {}) {
     this.app = app
-    this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
+    this.opts = applyDefaults(opts, DEFAULT_OPTIONS)
     this.initialize()
   }
 
@@ -30,7 +30,7 @@ export default class ScrollSpy {
    * Initialize ScrollSpy
    */
   initialize() {
-    this.triggers = Dom.all('[data-scrollspy-trigger]')
+    this.triggers = all('[data-scrollspy-trigger]')
     const config = {
       rootMargin: '-55px 0px -85%'
     }

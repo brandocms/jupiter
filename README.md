@@ -2,33 +2,42 @@
   <sup><em>«Earth people, I was born on»</em></sup>
 </p>
 
-![](http://univers.agency/jupiter.svg)
+# Jupiter
 
-<p align="center">
-  <img src="https://github.com/univers-agency/jupiter/workflows/CI/badge.svg">
-  <a href="https://badge.fury.io/js/%40univers-agency%2Fjupiter"><img src="https://badge.fury.io/js/%40univers-agency%2Fjupiter.svg" alt="npm version" height="18"></a>
-</p>
+Jupiter is a browser toolkit for responsive layout, scroll effects, carousels, galleries and disclosure controls.
 
-------
+[![CI](https://github.com/brandocms/jupiter/actions/workflows/ci.yml/badge.svg)](https://github.com/brandocms/jupiter/actions/workflows/ci.yml)
 
-## NOTICE
+## Getting started
 
-This package is not compiled with Babel, which means that your build step should babelify it.
-Meaning, if your bundler's babel config excludes `node_modules`, you should add `jupiter` as an exception.
-In your webpack babel loader config:
+Install `@brandocms/jupiter` in your frontend project and import the components you use. The npm package ships ES module source and TypeScript declarations. Use a browser bundler such as Vite to resolve the imports. In an SSR application, load Jupiter in the browser after the page markup exists.
 
-```es6
-exclude: [
-  /node_modules([\\]+|\/)+(?!@univers-agency\/jupiter)/
-]
+```js
+import { Application, Events, Moonwalk } from '@brandocms/jupiter'
+
+const app = new Application({ respectReducedMotion: true })
+const moonwalk = new Moonwalk(app)
+app.registerCallback(Events.APPLICATION_REVEALED, () => {
+  console.log('Page revealed')
+})
+app.initialize()
 ```
 
+Create modules before `app.initialize()` so they receive the startup events. For responsive components, define the `--breakpoint-<name>` CSS variables that correspond to `breakpointConfig.breakpoints`. See the [breakpoints demo](test-pages/breakpoints.html).
+
+From a checkout, run `yarn install --frozen-lockfile` and `yarn vite`, then open `http://localhost:8448/` for the [demo index](test-pages/index.html). The [development guide](CLAUDE.md), [TypeScript guide](types/README.md) and [release guide](RELEASE.md) cover the repository workflows.
+
+## Bundle size
+
+Import the components your page uses from `@brandocms/jupiter`. A production bundler can tree-shake the package’s ES module entry. The standalone ES and UMD files in `test-pages/dist` include the complete API and its dependencies.
+
+Run `yarn size` from the repository to measure the npm tarball, both standalone builds, and production bundles for individual and combined imports. The default Application fader uses Web Animations. In a code-splitting build, the Motion fallback and debug-panel animations load on demand. The tarball value is its download size. For JavaScript the command reports raw, gzip and Brotli bytes, with on-demand chunks shown separately from the initial import. See the [audit measurements](docs/codebase-audit.html) for the before-and-after comparison.
 
 ## Application
 
 ### Config
 
-- `respectReducedMotion` - default `true`
+- `respectReducedMotion` defaults to `false`. Set it to `true` to enable reduced-motion handling in components such as Moonwalk and Parallax when the browser reports that preference.
 
 
 ### Available CSS vars
@@ -37,39 +46,18 @@ exclude: [
 - `--vp-initial-outer-h` - Initial window outer height
 - `--vp-initial-inner-w` - Initial window inner width
 - `--vp-initial-outer-w` - Initial window outer width
+- `--vp-100vh` and `--vp-1vh` are updated on resize using screen height on iOS and inner height elsewhere. Call `app.setvw100()` to publish `--vp-100vw` and `--vp-1vw` for the current width.
 
 
 ### Methods/functions
 
-- `registerCallback(type, callback)`
-  - Registers `callback` to be called when an event `type` occurs.
-  - Example:
-  ```es6
-  const app = new Application()
-
-  app.registerCallback(Events.APPLICATION_PRELUDIUM, () => { ... })
-  app.registerCallback(Events.APPLICATION_INITIALIZED, () => { ... })
-  app.registerCallback(Events.APPLICATION_READY, () => { ... })
-  ```
-
-- `isScrolled()`
-  - If application is scrolled or not
-
-- `scrollLock()`
-  - Lock the application's scrolling
-
-- `scrollRelease()`
-  - Release the application's scrolling
-
-- `scrollTo(target)`
-  - scroll to target
-
-- `pollForElement(target, time = 500, callback = () => {})`
-  - Checks if `target` is in DOM every 500ms until successful, then calls `callback`
-
-- `pollForVar(variable, time = 500, callback = () => {})`
-  - Checks if `variable` is true every 500ms until successful, then calls `callback`
-
+- `registerCallback(type, callback)` runs the callback with the application when that lifecycle stage occurs. It returns a function you can call to unsubscribe.
+- `isScrolled()` returns whether the document is scrolled below the top.
+- `scrollLock(extraPaddedElements = [])` locks body scrolling and compensates for the scrollbar. `scrollRelease()` restores the previous inline overflow and padding.
+- `scrollTo(target, time = 0.8, emitEvents = true, ease = 'easeInOut')` accepts a pixel position, CSS selector, element or `{ y, offsetY }`. Duration is in seconds and a positive offset scrolls further down.
+- `pollForElement(selector, time = 500, callback)` polls in milliseconds and passes the matching element to the callback.
+- `pollForVar(getter, time = 500, callback)` calls a getter until it returns a value other than `null` or `undefined`, then passes the value to the callback.
+- `destroy()` releases application-owned listeners, subscriptions and pending scroll work. When unmounting a view, call the individual modules’ teardown methods as well where provided.
 
 ## Dom
 
@@ -106,7 +94,7 @@ Some utility functions for dealing with the DOM.
   - Toggles `one`, `two`, `three` classes on `element`
 
 - `Dom.overlapsVertically(element1, element2)`
-  - Returns number in pixels element1 and element2 overlaps
+  - Returns the vertical overlap of both margin boxes in pixels, or zero when they do not overlap
 
 - `Dom.offset(element)`
   - Returns `top` and `left` offsets for `element`
@@ -115,16 +103,18 @@ Some utility functions for dealing with the DOM.
   - Returns `top` and `left` positions for `element`
 
 - `Dom.getCSSVar(key)`
-  - Get `key` as CSS var on root
+  - Reads the root custom property, for example `Dom.getCSSVar('--header-height')`
 
 - `Dom.setCSSVar(key, val)`
-  - Sets `key` with `val` as CSS var on root
+  - Writes the root custom property, for example `Dom.setCSSVar('header-height', '48px')`
 
 
 
 ## Events (application)
 
-- `APPLICATION:PRELUDIUM`
+Import `{ Events }` from `@brandocms/jupiter` and use its constants with `window.addEventListener`. The event strings below are case-sensitive.
+
+- `APPLICATION_PRELUDIUM`
 
 Called before initialization
 
@@ -134,17 +124,17 @@ Called after initialization
 
 - `APPLICATION:READY`
 
-Called when application/dom ready
+Called when the application finishes waiting for fonts
 
 - `APPLICATION:REVEALED`
 
-Called after `#fader` removed
+Called when the configured fade-in completes
 
 - `APPLICATION:MOBILE_MENU:OPEN`
 
 Called on opening mobile navigation menu
 
-- `APPLICATION:MOBILE_MENU:CLOSE`
+- `APPLICATION:MOBILE_MENU:CLOSED`
 
 Called on closing mobile navigation menu
 
@@ -193,34 +183,34 @@ Called when application becomes visible
 
 `IMAGE:LAZYLOADED`
 
-Called when an image marked for lazyloading finishes loading. Gets called on the element itself:
+Lazyload dispatches this event on the image when it assigns its sources. `imageIsLoaded(img, true)` waits for that handoff and also recognizes images already handed off. Use `imageIsLoaded(img)` to wait for native load or error, or `img.decode()` for decoded pixels.
 
 ```es6
-import * as Events from jupiter
+import { Events } from '@brandocms/jupiter'
 const image = document.querySelector('.my-image')
 image.addEventListener(Events.IMAGE_LAZYLOADED, () => { console.log('lazyloaded') })
 ```
 
 `SECTION:LAZYLOADED`
 
-Called when a section enters the viewport and its pictures are done loading
+With `useNativeLazyloadIfAvailable: false`, the section observer dispatches this event on the section after it intersects the configured load margin and its images reach the Lazyload handoff.
 
 ```es6
-import * as Events from jupiter
+import { Events } from '@brandocms/jupiter'
 const section = document.querySelector('.my-section[data-lazyload-section]')
 section.addEventListener(Events.SECTION_LAZYLOADED, () => { console.log('lazyloaded') })
 ```
 
 ## Lightbox
 
-Can be initiated with a sectioned name `data-lightbox-section`. The lightbox will only
-include images from this section. Otherwise, all lightboxed images will be included.
+The default gallery moves focus into a labelled dialog and restores it to the opening control after close. Set `dialogLabel` to localize its name. Captions display the original image’s alt as plain text. A custom `onClose` should return its animation promise and release resources it owns. `onAfterClose` runs when closing finishes.
+
+Give related images the same `data-lightbox-section` to navigate them as a group. Images without a section share the `general` group.
 
 ```html
 <div
   data-lightbox="/media/images/site/posts/xlarge/2gmk2h1d8d4q.jpg"
-  data-lightbox-section="intro"
-  aria-hidden="true">
+  data-lightbox-section="intro">
   <figure>
     <img
       alt="Text"
@@ -228,13 +218,20 @@ include images from this section. Otherwise, all lightboxed images will be inclu
       height="1667"
       width="2210">
 
-      <div data-lightbox-trigger>Click to trigger</div>
+    <button type="button" data-lightbox-trigger>Open image</button>
   </figure>
 </div>
 ```
 
+```js
+import { Lightbox } from '@brandocms/jupiter'
+
+new Lightbox(app, { trigger: '[data-lightbox-trigger]', captions: true })
+```
+
 #### Options
 
+- `numbers` defaults to `false`. Set it to `true` to show the current image number and section total.
 - `trigger` - `false` - selector representing an element you want to use as a trigger to open lightbox
 - `captions` - `false` - whether to show captions or not in the overlay
 - `elements` - `object` - switch out default elements in the overlay
@@ -334,7 +331,7 @@ CSS
 
 JS
 ```es6
-import { Toggler } from '@brandocms/jupiter'
+import { Dom, Toggler } from '@brandocms/jupiter'
 
 app.togglers = []
 
@@ -346,6 +343,7 @@ togglers.forEach(toggleEl => {
 
 #### Options
 
+Pass `onBeforeOpen`, `onOpen`, `onBeforeClose` or `onClose` in the third constructor argument. Each receives the Toggler instance and its one-based group index. Keep padding on a child inside `[data-toggle-content]` so the panel can collapse to zero height.
 
 ## Dataloader
 
@@ -357,7 +355,7 @@ HTML:
 ```html
 <div data-loader="/api/articles" data-loader-id="articles">
   <div class="filters">
-    <a href="#" data-loader-param="all" data-loader-param-selected>All</a>
+    <a href="#" data-loader-param="all" data-loader-param-key="category" data-loader-param-selected>All</a>
     <a href="#" data-loader-param="tech" data-loader-param-key="category">Technology</a>
     <a href="#" data-loader-param="design" data-loader-param-key="category">Design</a>
   </div>
@@ -372,15 +370,12 @@ HTML:
 
 JavaScript:
 ```js
-import { Dataloader } from '@brandocms/jupiter'
+import { Dataloader, Lazyload } from '@brandocms/jupiter'
 
-const dataloader = new Dataloader(app, $loaderEl, {
-  onFetch: (dataloader) => {
-    // Initialize components after content loads
-    const mw = new Moonwalk(app, {}, dataloader.$canvasEl)
-    new Lazyload(app, {}, dataloader.$canvasEl)
-    mw.ready()
-  }
+const loader = document.querySelector('[data-loader]')
+const lazyload = new Lazyload(app)
+const dataloader = new Dataloader(app, loader, {
+  onFetch: ({ $canvasEl }) => lazyload.observe($canvasEl)
 })
 ```
 
@@ -448,6 +443,7 @@ Components can be placed outside the main dataloader element:
 - `filterDebounce` - `number` - Debounce delay in ms for filter input (default: 650)
 - `onFetch` - `function` - Called after content is fetched
 - `urlSync` - `object` - URL synchronization configuration:
+  - Key the configuration by `data-loader-id`. Each entry accepts the options below.
   - `templates` - Language-specific URL templates with `:param` placeholders
   - `updateOnInit` - `boolean` - Update URL on initialization (default: true)
   - `languageInPath` - `boolean` - Include language in URL path
@@ -479,6 +475,10 @@ Components can be placed outside the main dataloader element:
 - `updateBaseURL(url)` - Change the base API URL
 - `Dataloader.replaceInnerHTML(el, url)` - Static method to replace an element's innerHTML with fetched content
 
+Dataloader inserts HTML returned by the configured endpoint. Use a trusted renderer that escapes user-authored values. A successful response commits the page and fires `onFetch`. A failed request leaves the current results in place and the More button retries the same page.
+
+URL templates encode each filter value separately. Multiple values share a segment separated by commas, and a comma inside a value is encoded. An omitted middle parameter leaves an empty path segment so later parameters keep their positions. On back or forward navigation the loader fetches page zero. Sites with different URL conventions can supply `buildUrl` and `parseUrl`.
+
 ### API Response Headers
 
 - `jpt-dataloader: starved` - Set this header when there's no more content to load
@@ -500,10 +500,19 @@ By default anchor links get added to the browser history. You can skip this by s
 ```
 
 
+## Lazyload
+
+`new Lazyload(app, { target: container })` scopes image handling to a container. The default target is `document.body`. On browsers with native lazy loading, the default path assigns the image sources and `loading="lazy"`. Call `lazyload.observe(container)` after inserting new images. Native mode assigns their sources and the observer path registers them for loading and reveal. Both paths measure images marked `data-sizes="auto"` before assigning sources, then update `sizes` when their width changes. Set `useNativeLazyloadIfAvailable: false` for Jupiter’s distance-based preload and section events. Call `destroy()` when removing the view. See the [responsive picture examples](test-pages/lazyload.html).
+
+## Looper and Marquee
+
+`new Looper(app)` scans `[data-moonwalk-run="loop"]` containers. Inside each, place a `[data-looper]` track with `[data-looper-item]` children inside a `[data-looper-container]` wrapper. Clip overflow on the wrapper. Looper measures and reveals the carousel when the application is revealed, or immediately if that already happened. Call `destroy()` when removing the view. See the [basic markup](test-pages/looper/basic.html), [peek layout](test-pages/looper/peek.html) and [teardown demo](test-pages/looper/destroy.html).
+
+`new Marquee(app, container, options)` uses `[data-marquee]`, `[data-marquee-holder]` and `[data-marquee-item]` descendants. `speed` defaults to 100 pixels per second. Set `reversed: true` for rightward movement or `draggable: true` for drag and inertia. Call `destroy()` when removing the marquee. See the [marquee demo](test-pages/marquee.html) and [drag example](test-pages/marquee/drag.html).
+
 ## Moonwalk
 
-Moonwalks are divided into sections that are run in a timeline. Multiple
-timelines can run at the same time.
+Moonwalk observes sections and their children. Each section can reveal its items independently as they enter the viewport.
 
 You reference the configured `walks` by the `data-moonwalk="walkname"`
 syntax. If no value is provided, we run the `default` walk.
@@ -511,18 +520,17 @@ syntax. If no value is provided, we run the `default` walk.
 #### Options
 
 - `on` - default `Events.APPLICATION_REVEALED`
-  - Automatically fire on `APPLICATION_REVEALED` event. Set this to `() => {}` if
-    you need to do customized initialization before firing.
+  - Set this to `null` to start manually with `moonwalk.ready()`. A Moonwalk scoped to a container other than `document.body` also starts manually.
 
-- `initialDelay` - default `0`
-  - Set a delay before calling the `ready` function. Useful for timing reveal against
+- `initialDelay` - default `100` milliseconds
+  - Delay between the configured event and starting the reveal observers. Useful for timing reveal against
     other reveals happening towards the `APPLICATION_REVEALED` event for instance.
 
 - `clearLazyload` - default `false`
-  - Clear out all `data-ll-srcset` from moonwalk elements
+  - Remove `data-moonwalk` from elements that also have `data-ll-srcset` so Lazyload can reveal them.
 
 - `clearNestedSections` - default `true`
-  - Clear nested `data-moonwalk-sections` since they usually just break functionality.
+  - Clear nested `data-moonwalk-section` attributes since they usually just break functionality.
 
 - `clearMoonwalkOnAnchors` - default `true`
   - When the page loads with a hash, marks every walk before the target element, the
@@ -536,10 +544,10 @@ syntax. If no value is provided, we run the `default` walk.
   - How much of the element must be visible before IO trigger. From 0 to 1 where 1 is the entire element
 
 - `uniqueIds` - default `false`
-  - Create unique `[data-moonwalk-id="<rand>"] prop for each moonwalk element
+  - Assign a unique `data-moonwalk-id` to each walk element
 
 - `addIndexes` - default `false`
-  - Create `[data-moonwalk-idx="X"] inside of each section per key
+  - Assign a `data-moonwalk-idx` within each section per key
 
 - `runs`
   - Example
@@ -600,8 +608,7 @@ Sample code
 ### Named sections
 
 A named section will autoplay its children when intersecting with the viewport.
-Needs the `sectionTargets` key in config. If `sectionTargets` is not provided,
-the section's immediate children are used instead.
+Set `sectionTargets` to select specific descendants. By default the section uses its immediate children.
 
 You can force a custom order of the staggered reveal by adding `data-moonwalk-order="1"` etc
 to the targeted elements.
@@ -633,11 +640,11 @@ slider: {
   alphaTween: true,
   transition: {
     from: {
-      autoAlpha: 0,
+      opacity: 0,
       y: 21
     },
     to: {
-      ease: 'sine.out',
+      ease: 'easeOut',
       y: 0
     }
   }
@@ -647,10 +654,7 @@ slider: {
 
 ### Stages
 
-A stage will run a transition on itself before introducing the rest
-of the moonwalks. For instance, if a section should be animated to
-"open" by scaling Y from 0 to 100. When the stage's tween is finished,
-the rest are called as they intersect.
+A stage animates the section itself when it intersects. For example, the stage below scales from 0 to 1. Child walks have their own intersection observers and can start while the stage is animating.
 
 Sample code
 
@@ -667,9 +671,7 @@ Sample config
 ```es6
 walks: {
   scaleup: {
-    interval: 0,
     duration: 1,
-    startDelay: 1,
     transition: {
       from: {
         scaleY: 0,
@@ -677,8 +679,7 @@ walks: {
       },
 
       to: {
-        scaleY: 1,
-        ease: 'sine.out'
+        scaleY: 1
       }
     }
   }
@@ -705,12 +706,11 @@ Paragraph one and two will then get a `data-moonwalk="slide"` attribute.
 
 ## Popup
 
-The Popup module allows you to create modal dialogs that appear when triggered by a button click.
+For a modal popup, give the target a dialog role and an accessible name. Popup handles Escape, backdrop and close-button clicks. A modal integration must also move focus into the visible dialog, contain Tab navigation there and return focus to the opener on close.
 
 ### Options
 
-- `selector` - default `[data-popup]`
-  - CSS selector to find popup elements
+- Pass the target selector as the second argument to `new Popup(app, selector, options)`. It defaults to `[data-popup]`.
 
 - `responsive: (app) => boolean` - default `() => true`
   - Function to determine if popup should be shown on current breakpoint
@@ -743,9 +743,9 @@ The Popup module allows you to create modal dialogs that appear when triggered b
 HTML:
 
 ```html
-<div id="my-popup" data-popup>
+<div id="my-popup" data-popup role="dialog" aria-labelledby="my-popup-title">
   <div class="popup-header">
-    <h3>My Popup</h3>
+    <h3 id="my-popup-title">My Popup</h3>
     <button class="close-button" data-popup-close>×</button>
   </div>
   <div class="popup-content">
@@ -773,7 +773,7 @@ HTML:
 
 ```html
 <!-- First popup with key "newsletter" -->
-<div id="newsletter-popup" data-popup data-popup-key="newsletter">
+<div id="newsletter-popup" data-popup data-popup-key="newsletter" role="dialog" aria-label="Newsletter signup">
   <div class="popup-header">
     <h3>Newsletter Signup</h3>
     <button class="close-button" data-popup-close>×</button>
@@ -784,7 +784,7 @@ HTML:
 </div>
 
 <!-- Second popup with key "login" -->
-<div id="login-popup" data-popup data-popup-key="login">
+<div id="login-popup" data-popup data-popup-key="login" role="dialog" aria-label="Login">
   <div class="popup-header">
     <h3>Login</h3>
     <button class="close-button" data-popup-close>×</button>
@@ -827,34 +827,18 @@ const loginPopup = new Popup(app, '[data-popup][data-popup-key="login"]', {
 
 ### Custom Animations
 
-You can customize the animation for specific popups:
+This opening animation uses the Motion function exported by Jupiter. It runs on a popup with `data-popup-key="custom"` and the CSS below. The default exit animation handles the backdrop and target.
 
 ```js
+import { animate, Popup } from '@brandocms/jupiter'
+
 const customPopup = new Popup(app, '[data-popup][data-popup-key="custom"]', {
-  tweenIn: (trigger, target, popup) => {
-    // Set backdrop visible
-    gsap.set(popup.backdrop, { display: 'block' })
-    gsap.to(popup.backdrop, {
-      duration: 0.3,
-      opacity: 1,
-      onComplete: () => {
-        // Bounce in animation for popup
-        gsap.fromTo(
-          target,
-          {
-            scale: 0.5,
-            opacity: 0,
-            display: 'block'
-          },
-          {
-            duration: 0.5,
-            scale: 1,
-            opacity: 1,
-            ease: 'back.out(1.7)'
-          }
-        )
-      }
-    })
+  tweenIn(trigger, target, popup) {
+    popup.backdrop.style.display = 'block'
+    target.style.display = 'block'
+    animate(popup.backdrop, { opacity: [0, 1] }, { duration: 0.3 })
+    animate(target, { opacity: [0, 1] }, { duration: 0.5, ease: 'easeOut' })
+    target.querySelector('[data-popup-close]')?.focus()
   }
 })
 ```
@@ -878,9 +862,10 @@ const customPopup = new Popup(app, '[data-popup][data-popup-key="custom"]', {
   border-radius: 6px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
   
-  @responsive mobile {
-    width: 90%;
-  }
+}
+
+@media (max-width: 600px) {
+  [data-popup] { width: 90%; }
 }
 
 [data-popup-backdrop] {
@@ -920,7 +905,7 @@ const customPopup = new Popup(app, '[data-popup][data-popup-key="custom"]', {
     </cite>
   </aside>
   <figure data-boxes-stacked-pull="2/3" data-boxes-stacked-size-src>
-    <%= picture_tag Enum.at(@works, 2).cover, img_class: "img-fluid", alt: "--", key: :original, prefix: media_url() %>
+    <img src="/images/work.jpg" alt="Selected project">
   </figure>
 </div>
 ```
@@ -939,8 +924,8 @@ when the original header is visible.
 
 ### Options
 
-- `onClone` - default `h => h.el.cloneNode(true)`
-  - Hook to customize how the auxillary header element is created
+- `default.onClone` - default `h => h.el.cloneNode(true)`
+  - Hook to customize how the auxiliary header element is created
 
 - `on` - default `Events.APPLICATION_REVEALED`
   - Automatically shows on `APPLICATION_REVEALED` event.
@@ -949,8 +934,7 @@ when the original header is visible.
   - Pin header when user tabs
 - `pinOnForcedScroll` - default `true`
   - Pin header when scroll is forced (`application.scrollTo`, clicking anchors etc)
-- `unPinOnResize` - default `false`
-  - Unpin header when window is resized
+- Set `default.unPinOnResize: true` to unpin the clone when the window is resized.
 - `headerHeightTracksPin` - default `true`
   - Set per section (under `default` / `sections`). Whether `--header-height` drops
     to `0px` while the header is unpinned. Set `false` for a header that never
@@ -962,9 +946,9 @@ when the original header is visible.
   - `onMainInvisible`
     - Triggers when main nav leaves viewport
   - `onPin`
-    - Triggers when the auxillary nav gets pinned
+    - Triggers when the auxiliary nav gets pinned
   - `onUnpin`
-    - Triggers when the auxillary nav unpins
+    - Triggers when the auxiliary nav unpins
   - `beforeEnter`
     - Triggers during initialization. Useful for preparing elements
       before tweening into view
@@ -996,8 +980,8 @@ Same options as FixedHeader - see FixedHeader documentation below, including
 
 - `on` - default `Events.APPLICATION_REVEALED`
   - Automatically enter on `APPLICATION_REVEALED` event.
-- `pinOnOutline` - default `false`
-  - Pin header when user tabs
+- `unpinOnForcedScrollStart` and `pinOnForcedScrollEnd` both default to `true`.
+- Set section-specific callbacks, including `onOutline`, under `default` or `sections[sectionName]`. The default outline handler pins the header.
 - `sections`
   - Here you can set a config per section (body[data-script="section"])
   - `unPinOnResize` - auto unpin while resizing
@@ -1019,9 +1003,9 @@ Same options as FixedHeader - see FixedHeader documentation below, including
 
   *Section-specific events*
   - `onPin`
-    - Triggers when the auxillary nav gets pinned
+    - Triggers when the auxiliary nav gets pinned
   - `onUnpin`
-    - Triggers when the auxillary nav unpins
+    - Triggers when the auxiliary nav unpins
   - `onAltBg`
     - Triggers when the altBg offset is passed
   - `onNotAltBg`
@@ -1098,7 +1082,7 @@ where the scroll offset is clamped to the document and the page visibly jumps.
 ## HeroVideo
 
 Set a cover image by supplying a `data-cover` element.
-Allow different srcs for mobile/desktop by setting
+Select different video sources for phone and desktop by setting this attribute on the `<video>` element:
 `data-src='{"phone": "<%= get_global("hero_link_phone") %>", "desktop": "<%= get_global("hero_link_desktop") %>"}'`
 
 Hero example:
@@ -1146,11 +1130,9 @@ Hero example:
 
 - Elements
   - `elements.play`
-    - string SVG representing the play icon
-    - Gets wrapped in a button with `[data-hero-video-pause].
+    - Function returning the play icon markup for the `[data-hero-video-pause]` button.
   - `elements.pause`
-    - string SVG representing the pause icon
-    - Gets wrapped in a button with `[data-hero-video-pause].
+    - Function returning the pause icon markup for the same button.
 
 
 ## Parallax
@@ -1365,5 +1347,4 @@ For using parallax with responsive images:
 
 ## CSS/JS Quirks
 
-  - autoplay hero video.
-    - iOS safari needs `playsinline`, `muted` and `loop` attributes
+Use `playsinline` and `muted` for inline video autoplay. Add `loop` when the video should repeat.

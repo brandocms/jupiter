@@ -1,12 +1,9 @@
 import { animate } from 'motion'
-import _defaultsDeep from 'lodash.defaultsdeep'
-
-const DEFAULT_OPTIONS = {}
 
 export default class CoverOverlay {
   constructor(app, opts = {}) {
     this.app = app
-    this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
+    this.opts = Object(opts)
     this.initialize()
   }
 

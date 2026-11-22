@@ -1,6 +1,5 @@
-import { animate } from 'motion'
-import { set } from '../../utils/motion-helpers'
-import _defaultsDeep from 'lodash.defaultsdeep'
+import animateStyles from '../../utils/animateStyles'
+import applyDefaults from '../../utils/applyDefaults'
 
 /**
  * @typedef {Object} PopupOptions
@@ -37,12 +36,14 @@ const DEFAULT_OPTIONS = {
   onClose: () => {},
 
   tweenIn: (trigger, target, popup) => {
-    popup.backdrop.style.display = 'block'
-    animate(popup.backdrop, { opacity: 1 }, { duration: 0.3 })
+    const backdrop = popup.backdrop
+    backdrop.style.display = 'block'
+    animateStyles(backdrop, { opacity: 1 }, { duration: 0.3 })
       .finished
       .then(() => {
+        if (popup.currentPopup !== target || popup.backdrop !== backdrop) return
         target.style.display = 'block'
-        animate(
+        animateStyles(
           target,
           {
             transform: [
@@ -57,20 +58,22 @@ const DEFAULT_OPTIONS = {
   },
 
   tweenOut: (popup) => {
-    console.log('default tweenOut')
+    const backdrop = popup.backdrop
     const popupElement = popup.currentPopup
     if (popupElement) {
-      animate(popupElement, { opacity: 0 }, { duration: 0.3 })
+      animateStyles(popupElement, { opacity: 0 }, { duration: 0.3 })
         .finished
         .then(() => {
-          popupElement.style.display = 'none'
+          if (popup.currentPopup !== popupElement || popup.backdrop === backdrop) {
+            popupElement.style.display = 'none'
+          }
         })
     }
-    animate(popup.backdrop, { opacity: 0 }, { duration: 0.3 })
+    animateStyles(backdrop, { opacity: 0 }, { duration: 0.3 })
       .finished
       .then(() => {
         // Remove the backdrop completely instead of just hiding it
-        popup.backdrop.remove()
+        backdrop.remove()
       })
   },
 }
@@ -87,7 +90,7 @@ export default class Popup {
    */
   constructor(app, selector = '[data-popup]', opts = {}) {
     this.app = app
-    this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
+    this.opts = applyDefaults(opts, DEFAULT_OPTIONS)
     this.opts.selector = selector
     this.backdrop = null
     this.currentPopup = null
@@ -147,7 +150,6 @@ export default class Popup {
         
         // Only close if keys match or no key is set
         if (!this.popupKey || !popupKey || this.popupKey === popupKey) {
-          this.opts.onClose(this)
           this.close()
         }
       })
@@ -182,7 +184,7 @@ export default class Popup {
     }
     backdrop.style.display = 'none'
     backdrop.style.zIndex = '4999'
-    set(backdrop, { opacity: 0 })
+    backdrop.style.opacity = '0'
 
     backdrop.addEventListener('click', (e) => {
       e.stopPropagation()
@@ -200,15 +202,6 @@ export default class Popup {
    * @param {string|null} key - Optional popup key
    */
   open(trigger, target, key = null) {
-    this.keyUpListener = this.onKeyup.bind(this)
-    document.addEventListener('keyup', this.keyUpListener)
-
-    // Store the popup key
-    this.popupKey = key || this.getKeyFromTarget(target)
-
-    // Create a new backdrop for this popup
-    this.backdrop = this.createBackdrop(this.popupKey)
-
     if (typeof target === 'string') {
       target = document.querySelector(target)
     }
@@ -217,6 +210,17 @@ export default class Popup {
       console.error(`JUPITER/POPUP >>> Element ${target} not found`)
       return
     }
+
+    if (target === this.currentPopup) return
+    if (this.currentPopup) this.close()
+    this.keyUpListener = this.onKeyup.bind(this)
+    document.addEventListener('keyup', this.keyUpListener)
+
+    // Store the popup key
+    this.popupKey = key || this.getKeyFromTarget(target)
+
+    // Create a new backdrop for this popup
+    this.backdrop = this.createBackdrop(this.popupKey)
 
     // Store the current popup element for reference
     this.currentPopup = target
@@ -234,6 +238,7 @@ export default class Popup {
    * Close the popup
    */
   close() {
+    if (!this.currentPopup) return
     document.removeEventListener('keyup', this.keyUpListener)
     this.opts.onClose(this)
     this.opts.tweenOut(this)

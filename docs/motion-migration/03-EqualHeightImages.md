@@ -1,5 +1,7 @@
 # Migration: EqualHeightImages Module
 
+> Archived 2025 migration plan. See the [current EqualHeightImages implementation](../../src/modules/EqualHeightImages/index.js) and [migration status](STATUS.md).
+
 **Tier**: 1 (Easy)
 **Complexity**: ⭐ Very Low
 **Estimated Time**: 1 hour

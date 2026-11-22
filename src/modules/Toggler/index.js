@@ -1,6 +1,5 @@
-import { animate } from 'motion'
-import Dom from '../Dom'
-import { set } from '../../utils/motion-helpers'
+import { find, all } from '../Dom/query'
+import animateStyles from '../../utils/animateStyles'
 
 /**
  * Toggler component for show/hide functionality
@@ -28,9 +27,11 @@ export default class Toggler {
    * Create a new Toggler instance
    * @param {Object} app - Application instance
    * @param {HTMLElement} el - Container element with [data-toggle] attribute
-   * @param {Object} options - Configuration options
-   * @param {Function} options.onOpen - Callback when toggle opens
-   * @param {Function} options.onClose - Callback when toggle closes
+   * @param {Object} [options] - Configuration options
+   * @param {Function} [options.onBeforeOpen] - Called before expanding
+   * @param {Function} [options.onOpen] - Called after expanding
+   * @param {Function} [options.onBeforeClose] - Called before the active trigger collapses its panel
+   * @param {Function} [options.onClose] - Called after collapsing
    */
   constructor(app, el, options = {}) {
     this.open = false
@@ -40,15 +41,12 @@ export default class Toggler {
     this.onClose = options.onClose
     this.onBeforeOpen = options.onBeforeOpen
     this.onBeforeClose = options.onBeforeClose
-    this.trigger = Dom.find(this.el, '[data-toggle-trigger]')
+    this.trigger = find(this.el, '[data-toggle-trigger]')
     this.triggerTarget = this.trigger.dataset.toggleTrigger
     this.group = this.el.dataset.toggleGroup
-    if (this.triggerTarget) {
-      this.content = Dom.all(this.el, `[data-toggle-content="${this.triggerTarget}"]`)
-    } else {
-      this.content = Dom.all(this.el, '[data-toggle-content]')
-    }
-    this.triggerIcon = Dom.find(this.trigger, 'span.icon')
+    const selector = this.triggerTarget ? `[data-toggle-content="${this.triggerTarget}"]` : '[data-toggle-content]'
+    this.content = all(this.el, selector)
+    this.triggerIcon = find(this.trigger, 'span.icon')
     this.trigger.addEventListener('click', this.onClick.bind(this))
   }
 
@@ -89,7 +87,7 @@ export default class Toggler {
         el.offsetHeight
       })
 
-      this.el.classList.toggle('open')
+      this.el.classList.add('open')
       if (this.onBeforeOpen) {
         this.onBeforeOpen(this, this.getGroupIndex())
       }
@@ -101,7 +99,7 @@ export default class Toggler {
         const targetHeight = el.scrollHeight
 
         animations.push(
-          animate(el, { height: [0, targetHeight + 'px'] }, {
+          animateStyles(el, { height: [0, targetHeight + 'px'] }, {
             ease: 'easeInOut',
             delay: index * 0.1
           })
@@ -112,6 +110,7 @@ export default class Toggler {
       const lastAnimation = animations[animations.length - 1]
       if (lastAnimation) {
         lastAnimation.finished.then(() => {
+          if (!this.open) return
           // Set height to auto for responsiveness
           this.content.forEach(el => {
             el.style.height = 'auto'
@@ -132,41 +131,29 @@ export default class Toggler {
         this.onBeforeClose(this, this.getGroupIndex())
       }
 
-      // Animate each content element with stagger
-      const animations = []
-      this.content.forEach((el, index) => {
-        // Get current height and set explicitly before animating
-        const currentHeight = el.scrollHeight
-        el.style.height = currentHeight + 'px'
-        // Force layout reflow to ensure pixel height is applied
-        el.offsetHeight
-
-        animations.push(
-          animate(el, { height: 0 }, {
-            duration: 0.25,
-            ease: 'easeOut',
-            delay: index * 0.1
-          })
-        )
-      })
-
-      // Wait for the last animation to complete
-      const lastAnimation = animations[animations.length - 1]
-      if (lastAnimation) {
-        lastAnimation.finished.then(() => {
-          this.el.classList.toggle('open')
-          this.content.forEach(el => {
-            el.style.display = 'none'
-            el.style.removeProperty('height')
-            el.removeAttribute('data-toggle-visible')
-            el.setAttribute('data-toggle-hidden', '')
-          })
-          if (this.onClose) {
-            this.onClose(this, this.getGroupIndex())
-          }
-        })
-      }
+      this.collapse()
     }
+  }
+
+  collapse() {
+    const heights = this.content.map(el => el.scrollHeight)
+    const animations = this.content.map((el, index) =>
+      animateStyles(el, { height: [heights[index] + 'px', '0px'] }, {
+        duration: 0.25, ease: 'easeOut', delay: index * 0.1
+      })
+    )
+    const last = animations[animations.length - 1]
+    last?.finished.then(() => {
+      if (this.open) return
+      this.el.classList.remove('open')
+      for (const el of this.content) {
+        el.style.display = 'none'
+        el.style.removeProperty('height')
+        el.removeAttribute('data-toggle-visible')
+        el.setAttribute('data-toggle-hidden', '')
+      }
+      this.onClose?.(this, this.getGroupIndex())
+    })
   }
 
   /**
@@ -176,57 +163,12 @@ export default class Toggler {
     if (!this.group || !this.app.togglers) return
 
     this.app.togglers.forEach(toggler => {
-      // Skip if it's this toggler or not in the same group
-      if (toggler === this || toggler.group !== this.group) return
-
-      // Only close if it's open
-      if (toggler.open) {
-        // Close the toggler
-        toggler.open = false
-
-        // Update UI
-        if (toggler.triggerIcon) {
-          toggler.triggerIcon.classList.remove('active')
-        }
-
-        toggler.trigger.removeAttribute('data-toggle-trigger-active')
-        toggler.el.classList.remove('open')
-
-        // Animate content closing with stagger
-        const animations = []
-        toggler.content.forEach((el, index) => {
-          // Get current height and set explicitly before animating
-          const currentHeight = el.scrollHeight
-          el.style.height = currentHeight + 'px'
-          // Force layout reflow to ensure pixel height is applied
-          el.offsetHeight
-
-          animations.push(
-            animate(el, { height: 0 }, {
-              duration: 0.25,
-              ease: 'easeOut',
-              delay: index * 0.1
-            })
-          )
-        })
-
-        // Wait for the last animation to complete
-        const lastAnimation = animations[animations.length - 1]
-        if (lastAnimation) {
-          lastAnimation.finished.then(() => {
-            toggler.content.forEach(el => {
-              el.style.display = 'none'
-              el.style.removeProperty('height')
-              el.removeAttribute('data-toggle-visible')
-              el.setAttribute('data-toggle-hidden', '')
-            })
-
-            if (toggler.onClose) {
-              toggler.onClose(toggler, toggler.getGroupIndex())
-            }
-          })
-        }
-      }
+      if (toggler === this || toggler.group !== this.group || !toggler.open) return
+      toggler.open = false
+      toggler.triggerIcon?.classList.remove('active')
+      toggler.trigger.removeAttribute('data-toggle-trigger-active')
+      toggler.el.classList.remove('open')
+      toggler.collapse()
     })
   }
 
@@ -234,10 +176,6 @@ export default class Toggler {
    * Toggle open/closed state
    */
   toggleState() {
-    if (this.open) {
-      this.open = false
-    } else {
-      this.open = true
-    }
+    this.open = !this.open
   }
 }

@@ -3,14 +3,17 @@ const { test, expect } = require('@playwright/test')
 
 test.describe('Jupiter CoverOverlay Module', () => {
   test.beforeEach(async ({ page }) => {
-    // Load the coveroverlay test page from Vite server
+    await page.route('https://player.vimeo.com/api/player.js', route => route.fulfill({
+      contentType: 'application/javascript',
+      body: 'window.Vimeo = {Player: class { constructor(el) { this.el = el } play() { this.el.dataset.played = "true" } }}'
+    }))
+    await page.route('https://player.vimeo.com/video/**', route => route.fulfill({ contentType: 'text/html', body: '<title>Vimeo fixture</title>' }))
+    await page.route('https://www.youtube.com/embed/**', route => route.fulfill({
+      contentType: 'text/html',
+      body: '<body><script>addEventListener("message", e => { if (JSON.parse(e.data).func === "playVideo") document.body.dataset.played = "true" })</script>'
+    }))
+    await page.route('https://picsum.photos/**', route => route.fulfill({ status: 204 }))
     await page.goto('/coveroverlay.html')
-
-    // Wait for the page to load completely
-    await page.waitForLoadState('networkidle')
-
-    // Wait additional time for Jupiter to initialize
-    await page.waitForTimeout(1000)
   })
 
   test('should initialize correctly', async ({ page }) => {
@@ -57,13 +60,11 @@ test.describe('Jupiter CoverOverlay Module', () => {
     // Click play button
     await playButton.click()
 
-    // Wait for transition to complete
-    // await page.waitForTimeout(1500)
-
     // Check that overlay is hidden and iframe is visible
     await expect(overlay).not.toBeVisible()
     await expect(playButton).toHaveCSS('opacity', '0')
     await expect(iframe).toHaveCSS('opacity', '1')
+    await expect(page.frameLocator('[data-testid="video-iframe"]').locator('body')).toHaveAttribute('data-played', 'true')
   })
 
   test('should handle Vimeo integration', async ({ page }) => {
@@ -86,21 +87,16 @@ test.describe('Jupiter CoverOverlay Module', () => {
     // Click play button
     await playButton.click()
 
-    // Wait for transition to complete
-    // await page.waitForTimeout(1500)
-
     // Check that overlay is hidden and iframe is visible
     await expect(overlay).not.toBeVisible()
     await expect(playButton).toHaveCSS('opacity', '0')
     await expect(iframe).toHaveCSS('opacity', '1')
+    await expect(iframe).toHaveAttribute('data-played', 'true')
   })
 
   test('should reset video overlay correctly', async ({ page }) => {
     // First play the video
     await page.locator('[data-testid="play-button"]').click()
-
-    // Wait for transition to complete
-    // await page.waitForTimeout(1500)
 
     // Check if overlay is hidden
     const overlay = page.locator('[data-testid="overlay"]')

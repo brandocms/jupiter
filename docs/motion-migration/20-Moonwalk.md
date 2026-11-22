@@ -1,5 +1,7 @@
 # Migration: Moonwalk Module
 
+> Archived 2025 migration plan. See the [current Moonwalk implementation](../../src/modules/Moonwalk/index.js) and [migration status](STATUS.md).
+
 **Tier**: 3 (Complex) | **Complexity**: ⭐⭐⭐⭐⭐ | **Time**: 2-3 weeks | **File**: `src/modules/Moonwalk/index.js`
 
 ---

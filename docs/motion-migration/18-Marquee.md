@@ -1,5 +1,7 @@
 # Migration: Marquee Module
 
+> Archived 2025 migration plan. See the [current Marquee implementation](../../src/modules/Marquee/index.js) and [migration status](STATUS.md).
+
 **Tier**: 2 (Moderate) | **Complexity**: ⭐⭐⭐ | **Time**: 4-5 hours | **File**: `src/modules/Marquee/index.js`
 
 ---

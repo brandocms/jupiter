@@ -11,6 +11,8 @@ export default class DataloaderUrlSync {
     hideDefaultLanguage: boolean;
     defaultLanguage: any;
     omitFromUrl: any;
+    template: any;
+    parts: any;
     initialize(): void;
     popstateHandler: () => void;
     /**
@@ -28,7 +30,7 @@ export default class DataloaderUrlSync {
     /**
      * Sync dataloader parameters from current URL
      */
-    syncFromUrl(): void;
+    syncFromUrl(params?: any): void;
     /**
      * Clean up event listeners
      */

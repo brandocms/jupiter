@@ -1,3 +1,5 @@
+Archived third-party migration guide, captured in 2025. Dependency, licensing and size comparisons below describe the original source at the time of capture. For current Jupiter usage see README.md at the repository root and docs/motion-migration/STATUS.md.
+
 GSAP is an incredible animation library. But, you can achieve all of the same effects using Motion, with hardware accelerated performance, often for a far smaller bundlesize.
 
 Unlike GSAP, Motion doesn't need a costly yearly license to run on commercial websites, as its supported by corporate sponsors and optional Motion+ memberships.

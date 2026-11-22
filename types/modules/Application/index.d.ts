@@ -1,5 +1,6 @@
 export default class Application {
     constructor(opts?: {});
+    listeners: AbortController;
     debugType: number;
     debugOverlay: Element;
     userAgent: string;
@@ -29,9 +30,9 @@ export default class Application {
     opts: any;
     focusableSelectors: any;
     browser: any;
-    featureTests: any;
-    breakpoints: any;
-    fontLoader: any;
+    featureTests: FeatureTests;
+    breakpoints: Breakpoints;
+    fontLoader: Fontloader;
     callbacks: {};
     SCROLL_LOCKED: boolean;
     SCROLLBAR_WIDTH: number;
@@ -41,6 +42,14 @@ export default class Application {
     initializedEvent: CustomEvent<this>;
     readyEvent: CustomEvent<this>;
     revealedEvent: CustomEvent<this>;
+    scheduleScroll: {
+        (...latest: any[]): void;
+        cancel(): void;
+    };
+    scheduleResize: {
+        (...latest: any[]): void;
+        cancel(): void;
+    };
     /**
      * Main init. Called from client application on DOMReady.
      */
@@ -50,6 +59,7 @@ export default class Application {
      * Fade in, then execute callbacks
      */
     ready(): void;
+    destroy(): void;
     getZoom(): void;
     _lastDevicePixelRatio: number;
     _initialZoom: any;
@@ -64,7 +74,7 @@ export default class Application {
     /**
      * Register callbacks by `type`
      */
-    registerCallback(type: any, callback: any): void;
+    registerCallback(type: any, callback: any): () => void;
     /**
      * Execute callbacks by `type`
      */
@@ -84,7 +94,9 @@ export default class Application {
      * @param {*} extraPaddedElements
      */
     scrollLock(extraPaddedElements?: any): void;
+    previousOverflow: string;
     _scrollPaddedElements: any[];
+    previousPadding: any[];
     scrollRelease(defaultOverflow?: string): void;
     /**
      *
@@ -94,6 +106,7 @@ export default class Application {
      * @param {*} emitEvents
      */
     scrollTo(target: any, time?: any, emitEvents?: any, ease?: string): void;
+    scrollFrame: number;
     hardScrollToTop(): void;
     hardScrollTo(target: any): void;
     scrollVoid(e: any): void;
@@ -146,9 +159,7 @@ export default class Application {
     pollForVar(getter: any, time?: number, callback?: () => void): void;
     setupDebug(): void;
     toggleDebug(): void;
-    /**
-     * CTRL-G to show grid overlay
-     */
+    /** CTRL-G toggles the debug grid. */
     setupGridoverlay(): void;
     /**
      * Add in extra selectors that are focusable
@@ -165,3 +176,6 @@ export default class Application {
      */
     getFocusableSelectors(): any;
 }
+import FeatureTests from '../FeatureTests';
+import Breakpoints from '../Breakpoints';
+import Fontloader from '../Fontloader';

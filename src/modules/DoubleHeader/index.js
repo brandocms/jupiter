@@ -1,28 +1,15 @@
+import HeaderState from '../HeaderState'
 /**
  * A dual-header module that clones the original header element. The clone stays fixed and
  * hides when scrolling down, revealing on scroll up. Uses IntersectionObserver to detect
  * when the original header is visible.
  *
- * You can pass different configs for different sections:
- *
- *  this.header = new DoubleHeader(
-      document.querySelector('header'),
-      {
-        default: {
-          offset: 60,
-          offsetSmall: 1,
-          offsetBg: 200,
-          regBgColor: 'transparent'
-        },
-
-        sections: {
-          index: {
-            offsetBg: '#content'
-          }
-        }
-      }
-    )
- *
+ * @example
+ * new DoubleHeader(app, {
+ *   el: 'header[data-nav]',
+ *   default: { offset: 60, offsetSmall: 1, offsetBg: 200 },
+ *   sections: { index: { offsetBg: '#content' } }
+ * })
  */
 
 import { animate, stagger } from 'motion'
@@ -69,6 +56,11 @@ const DEFAULT_EVENTS = {
     })
   },
   onSmall: () => {},
+  onNotSmall: () => {},
+  onTop: () => {},
+  onNotTop: () => {},
+  onBottom: () => {},
+  onNotBottom: () => {},
 }
 
 const DEFAULT_OPTIONS = {
@@ -117,13 +109,14 @@ const DEFAULT_OPTIONS = {
   },
 }
 
-export default class DoubleHeader {
+export default class DoubleHeader extends HeaderState {
   constructor(app, opts = {}) {
+    super(DEFAULT_EVENTS)
     this.app = app
     this.mainOpts = _defaultsDeep(opts, DEFAULT_OPTIONS)
 
     if (this.mainOpts.pinOnOutline) {
-      window.addEventListener(Events.APPLICATION_OUTLINE, () => {
+      this.listen(Events.APPLICATION_OUTLINE, () => {
         this.preventUnpin = true
         this.pin()
       })
@@ -173,6 +166,12 @@ export default class DoubleHeader {
     this.initialize()
   }
 
+  destroy() {
+    super.destroy()
+    this.observer?.disconnect()
+    this.auxEl?.remove()
+  }
+
   initialize() {
     // bind to canvas scroll
     this.lastKnownScrollY = this.getScrollY()
@@ -186,14 +185,13 @@ export default class DoubleHeader {
 
     this.setupObserver()
 
-    window.addEventListener(this.mainOpts.on, this.bindObserver.bind(this))
+    this.listen(this.mainOpts.on, this.bindObserver.bind(this))
     this._bindMobileMenuListeners()
 
     if (this.opts.unPinOnResize) {
-      window.addEventListener(
+      this.listen(
         Events.APPLICATION_RESIZE,
-        this.setResizeTimer.bind(this),
-        false
+        this.setResizeTimer.bind(this)
       )
     }
 
@@ -220,15 +218,14 @@ export default class DoubleHeader {
       }
     })
 
-    window.addEventListener(
+    this.listen(
       Events.APPLICATION_SCROLL,
-      this.update.bind(this),
-      false
+      this.update.bind(this)
     )
 
     // Add debounced scroll listener for accurate top/bottom detection after scroll settles
     // RAF-throttled events can lag behind actual scroll position during fast scrolls
-    window.addEventListener('scroll', () => {
+    this.listen('scroll', () => {
       clearTimeout(this.scrollSettleTimeout)
       this.scrollSettleTimeout = setTimeout(() => {
         // Get real-time scroll position after scroll has settled
@@ -247,19 +244,18 @@ export default class DoubleHeader {
     })
 
     if (this.mainOpts.pinOnForcedScroll) {
-      window.addEventListener(Events.APPLICATION_FORCED_SCROLL_START, () => {
+      this.listen(Events.APPLICATION_FORCED_SCROLL_START, () => {
         this.preventUnpin = false
         this.unpin()
         this.preventPin = true
       })
-      window.addEventListener(
+      this.listen(
         Events.APPLICATION_FORCED_SCROLL_END,
         () => {
           this.preventPin = false
           this.pin()
           this.preventUnpin = false
-        },
-        false
+        }
       )
     }
   }
@@ -295,61 +291,6 @@ export default class DoubleHeader {
 
   update() {
     this.redraw(false)
-  }
-
-  lock() {
-    this.preventPin = true
-    this.preventUnpin = true
-  }
-
-  unlock() {
-    this.preventPin = false
-    this.preventUnpin = false
-  }
-
-  checkSize(force) {
-    if (this.currentScrollY > this.opts.offsetSmall) {
-      if (force) {
-        this.small()
-      } else if (!this._small) {
-        this.small()
-      }
-    } else if (force) {
-      this.notSmall()
-    } else if (this._small) {
-      this.notSmall()
-    }
-  }
-
-  checkTop(force) {
-    if (this.currentScrollY <= this.opts.offset) {
-      if (force) {
-        this.top()
-      } else if (!this._top) {
-        this.top()
-      }
-    } else if (force) {
-      this.notTop()
-    } else if (this._top) {
-      this.notTop()
-    }
-  }
-
-  checkBot(force) {
-    if (
-      this.currentScrollY + this.getViewportHeight() >=
-      this.getScrollerHeight()
-    ) {
-      if (force) {
-        this.bottom()
-      } else if (!this._bottom) {
-        this.bottom()
-      }
-    } else if (force) {
-      this.notBottom()
-    } else if (this._bottom) {
-      this.notBottom()
-    }
   }
 
   checkPin(force, toleranceExceeded) {
@@ -388,34 +329,6 @@ export default class DoubleHeader {
     this._firstLoad = false
   }
 
-  notTop() {
-    this._top = false
-    this.el.removeAttribute('data-header-top')
-    this.el.setAttribute('data-header-not-top', '')
-    this.opts.onNotTop(this)
-  }
-
-  top() {
-    this._top = true
-    this.el.setAttribute('data-header-top', '')
-    this.el.removeAttribute('data-header-not-top')
-    this.opts.onTop(this)
-  }
-
-  notBottom() {
-    this._bottom = false
-    this.el.setAttribute('data-header-not-bottom', '')
-    this.el.removeAttribute('data-header-bottom')
-    this.opts.onNotBottom(this)
-  }
-
-  bottom() {
-    this._bottom = true
-    this.el.setAttribute('data-header-bottom', '')
-    this.el.removeAttribute('data-header-not-bottom')
-    this.opts.onBottom(this)
-  }
-
   unpin() {
     if (!this.preventUnpin) {
       this._pinned = false
@@ -449,30 +362,6 @@ export default class DoubleHeader {
     this.opts.onSmall(this)
   }
 
-  /**
-   * Update the --header-height CSS variable on :root.
-   *
-   * Measured from `el`, the main header — `auxEl` is the clone. By default this
-   * is how much header is *visible*, the measured height when pinned and 0 when
-   * unpinned, so anything positioned under the bar follows it out of the way as
-   * the clone retracts.
-   *
-   * That is wrong for a header configured never to retract, whether through
-   * `preventUnpin` or by no-opping `onPin` / `onUnpin`. The bar stays put, but
-   * `_pinned` still flips on every change of scroll direction, so the variable
-   * drops to 0 and back while nothing moves. Any layout sized from it then grows
-   * and shrinks the document under the reader. Scroll anchoring absorbs that
-   * mid-page, but not at the very bottom, where the scroll offset is clamped to
-   * the document and the page visibly jumps instead.
-   *
-   * `headerHeightTracksPin: false` publishes the measured height throughout.
-   */
-  _updateHeaderHeight() {
-    const tracksPin = this.opts.headerHeightTracksPin !== false
-    const height = tracksPin && !this._pinned ? '0px' : `${this.el.clientHeight}px`
-    document.documentElement.style.setProperty('--header-height', height)
-  }
-
   shouldUnpin(toleranceExceeded) {
     if (this._navVisible) {
       return true
@@ -492,99 +381,12 @@ export default class DoubleHeader {
     return (scrollingUp && toleranceExceeded) || pastOffset
   }
 
-  isOutOfBounds() {
-    const pastTop = this.currentScrollY < 0
-    const pastBottom =
-      this.currentScrollY + this.getScrollerPhysicalHeight() >
-      this.getScrollerHeight()
-
-    return pastTop || pastBottom
-  }
-
-  getScrollerPhysicalHeight() {
-    return this.opts.canvas === window || this.opts.canvas === document.body
-      ? this.getViewportHeight()
-      : this.getElementPhysicalHeight(this.opts.canvas)
-  }
-
-  getScrollerHeight() {
-    return this.opts.canvas === window || this.opts.canvas === document.body
-      ? this.getDocumentHeight()
-      : this.getElementHeight(this.opts.canvas)
-  }
-
-  getDocumentHeight() {
-    const { body } = document
-    const { documentElement } = document
-
-    return Math.max(
-      body.scrollHeight,
-      documentElement.scrollHeight,
-      body.offsetHeight,
-      documentElement.offsetHeight,
-      body.clientHeight,
-      documentElement.clientHeight
-    )
-  }
-
-  getViewportHeight() {
-    return (
-      window.innerHeight ||
-      document.documentElement.clientHeight ||
-      document.body.clientHeight
-    )
-  }
-
-  getElementHeight(el) {
-    return Math.max(el.scrollHeight, el.offsetHeight, el.clientHeight)
-  }
-
-  getElementPhysicalHeight(el) {
-    return Math.max(el.offsetHeight, el.clientHeight)
-  }
-
-  getScrollY() {
-    if (this.opts.canvas.pageYOffset !== undefined) {
-      return this.opts.canvas.pageYOffset
-    }
-    if (this.opts.canvas.scrollTop !== undefined) {
-      return this.opts.canvas.scrollTop
-    }
-    return (
-      document.documentElement ||
-      document.body.parentNode ||
-      document.body
-    ).scrollTop
-  }
-
-  toleranceExceeded() {
-    return (
-      Math.abs(this.currentScrollY - this.lastKnownScrollY) >=
-      this.opts.tolerance
-    )
-  }
-
-  _getOptionsForSection(section, opts) {
-    // if section is not a key in opts, return default opts
-    if (
-      !Object.prototype.hasOwnProperty.call(opts, 'sections') ||
-      !Object.prototype.hasOwnProperty.call(opts.sections, section)
-    ) {
-      return opts.default
-    }
-
-    // merge in default events, in case they're not supplied
-    const sectionOpts = opts.sections[section]
-    opts = _defaultsDeep(sectionOpts, DEFAULT_EVENTS, opts.default || {})
-    return opts
-  }
-
   _bindMobileMenuListeners() {
-    window.addEventListener(
+    this.listen(
       Events.APPLICATION_MOBILE_MENU_OPEN,
       this._onMobileMenuOpen.bind(this)
     )
-    window.addEventListener(
+    this.listen(
       Events.APPLICATION_MOBILE_MENU_CLOSED,
       this._onMobileMenuClose.bind(this)
     )

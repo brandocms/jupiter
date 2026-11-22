@@ -11,5 +11,6 @@ export default class Dropdown {
     onClick(event: any): Promise<void>;
     openMenu(): Promise<void>;
     closeMenu(): Promise<void>;
+    closeWithHooks(): Promise<void>;
     checkForInitialOpen(): void;
 }

@@ -1,4 +1,7 @@
-scroll
+# scroll
+
+> Archived Motion reference captured during the Jupiter migration. See the [migration status](STATUS.md) and [current Jupiter guide](../../README.md).
+
 Motion's 5.1kb scroll() function creates scroll-linked animations.
 
 A scroll-linked animation is where a value is bound directly to scroll progress. When the scroll changes, the value changes by the relative amount.

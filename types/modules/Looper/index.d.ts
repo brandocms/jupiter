@@ -8,7 +8,8 @@ export default class Looper {
     loopers: any[];
     pendingLoopers: any[];
     init(): void;
-    looperElements: any;
+    looperElements: any[];
+    unsubscribe: any;
     finalizeLoopers(): void;
     destroy(): void;
 }

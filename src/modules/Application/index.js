@@ -1,4 +1,3 @@
-import { animate, stagger } from 'motion'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import rafCallback from '../../utils/rafCallback'
 import prefersReducedMotion from '../../utils/prefersReducedMotion'
@@ -98,28 +97,37 @@ const DEFAULT_OPTIONS = {
   faderOpts: {
     fadeIn: (callback = () => {}) => {
       const fader = document.querySelector('#fader')
-      if (!fader) {
-        if (window.bfTO) {
-          clearTimeout(window.bfTO)
-        }
+      const reveal = () => {
+        if (window.bfTO) clearTimeout(window.bfTO)
         document.body.classList.remove('unloaded')
         callback()
+      }
+      if (!fader) {
+        reveal()
         return
       }
 
-      animate(fader, { opacity: 0 }, { duration: 0.65 }).finished.then(() => {
-        if (window.bfTO) {
-          clearTimeout(window.bfTO)
-        }
-        document.body.classList.remove('unloaded')
-        callback()
-      })
+      if (typeof fader.animate === 'function') {
+        const fade = fader.animate(
+          [{ opacity: getComputedStyle(fader).opacity }, { opacity: 0 }],
+          { duration: 650, easing: 'ease-out' }
+        )
+        fade.finished.then(() => {
+          fader.style.opacity = '0'
+          reveal()
+        }, reveal)
+      } else {
+        import('../../utils/animateFallback')
+          .then(({ default: animate }) => animate(fader, { opacity: 0 }, { duration: 0.65 }).finished)
+          .then(reveal)
+      }
     },
   },
 }
 
 export default class Application {
   constructor(opts = {}) {
+    this.listeners = new AbortController()
     this.debugType = 1
     this.debugOverlay = null
     this.userAgent = navigator.userAgent
@@ -192,7 +200,7 @@ export default class Application {
       // Motion respects prefers-reduced-motion automatically
       document.documentElement.classList.add('prefers-reduced-motion')
     }
-    window.addEventListener(Events.BREAKPOINT_CHANGE, this.onBreakpointChanged.bind(this))
+    window.addEventListener(Events.BREAKPOINT_CHANGE, this.onBreakpointChanged.bind(this), { signal: this.listeners.signal })
 
     this.beforeInitializedEvent = new window.CustomEvent(Events.APPLICATION_PRELUDIUM, { detail: this })
     this.initializedEvent = new window.CustomEvent(Events.APPLICATION_INITIALIZED, { detail: this })
@@ -202,21 +210,26 @@ export default class Application {
     /**
      * Grab common events and defer
      */
-    document.addEventListener('visibilitychange', this.onVisibilityChange.bind(this))
+    document.addEventListener('visibilitychange', this.onVisibilityChange.bind(this), { signal: this.listeners.signal })
     window.addEventListener('orientationchange', this.onResize.bind(this), {
+      signal: this.listeners.signal,
       capture: false,
       passive: true,
     })
 
     if (this.opts.bindScroll) {
-      window.addEventListener('scroll', rafCallback(this.onScroll.bind(this)), {
+      this.scheduleScroll = rafCallback(this.onScroll.bind(this))
+      window.addEventListener('scroll', this.scheduleScroll, {
+        signal: this.listeners.signal,
         capture: false,
         passive: true,
       })
     }
 
     if (this.opts.bindResize) {
-      window.addEventListener('resize', rafCallback(this.onResize.bind(this)), {
+      this.scheduleResize = rafCallback(this.onResize.bind(this))
+      window.addEventListener('resize', this.scheduleResize, {
+        signal: this.listeners.signal,
         capture: false,
         passive: true,
       })
@@ -242,10 +255,25 @@ export default class Application {
    */
   ready() {
     this.fontLoader.loadFonts(this.opts.fonts).then(() => {
+      if (this.listeners.signal.aborted) return
       this._emitReadyEvent()
       this.executeCallbacks(Events.APPLICATION_READY)
       this.fadeIn()
     })
+  }
+
+  destroy() {
+    if (this.listeners.signal.aborted) return
+    this.listeners.abort()
+    this.scheduleScroll?.cancel()
+    this.scheduleResize?.cancel()
+    cancelAnimationFrame(this.scrollFrame)
+    this.state.forcedScroll = false
+    this.scrollRelease()
+    this.breakpoints.destroy()
+    this.featureTests.destroy()
+    this._zoomSVG?.remove()
+    this.callbacks = {}
   }
 
   getZoom() {
@@ -327,7 +355,15 @@ export default class Application {
     if (!Object.prototype.hasOwnProperty.call(this.callbacks, type)) {
       this.callbacks[type] = []
     }
-    this.callbacks[type].push(callback)
+    const list = this.callbacks[type]
+    list.push(callback)
+    let subscribed = true
+    return () => {
+      if (!subscribed) return
+      subscribed = false
+      const index = list.indexOf(callback)
+      if (index !== -1) list.splice(index, 1)
+    }
   }
 
   /**
@@ -337,7 +373,7 @@ export default class Application {
     if (!Object.prototype.hasOwnProperty.call(this.callbacks, type)) {
       return
     }
-    this.callbacks[type].forEach(cb => cb(this))
+    this.callbacks[type].slice().forEach(cb => cb(this))
   }
 
   /**
@@ -369,7 +405,9 @@ export default class Application {
     }
     const currentScrollbarWidth = this.getCurrentScrollBarWidth()
     const ev = new window.CustomEvent(Events.APPLICATION_SCROLL_LOCKED, { detail: this })
+    this.previousOverflow = document.body.style.overflow
     this._scrollPaddedElements = [document.body, ...extraPaddedElements]
+    this.previousPadding = this._scrollPaddedElements.map(el => el.style.paddingRight)
     window.dispatchEvent(ev)
     this.SCROLL_LOCKED = true
     set(document.body, { overflow: 'hidden' })
@@ -379,7 +417,7 @@ export default class Application {
     document.addEventListener('touchmove', this.scrollVoid, false)
   }
 
-  scrollRelease(defaultOverflow = 'scroll') {
+  scrollRelease(defaultOverflow = this.previousOverflow) {
     if (!this.SCROLL_LOCKED) {
       return
     }
@@ -387,7 +425,7 @@ export default class Application {
     window.dispatchEvent(ev)
     this.SCROLL_LOCKED = false
     set(document.body, { overflow: defaultOverflow })
-    clearProps(this._scrollPaddedElements, ['paddingRight'])
+    this._scrollPaddedElements.forEach((el, i) => { el.style.paddingRight = this.previousPadding[i] })
     document.removeEventListener('touchmove', this.scrollVoid, false)
   }
 
@@ -400,6 +438,7 @@ export default class Application {
    */
   scrollTo(target, time = 0.8, emitEvents = true, ease = 'easeInOut') {
     const forcedScrollEventStart = new window.CustomEvent(Events.APPLICATION_FORCED_SCROLL_START)
+    cancelAnimationFrame(this.scrollFrame)
     this.state.forcedScroll = true
     if (emitEvents) {
       window.dispatchEvent(forcedScrollEventStart)
@@ -454,24 +493,22 @@ export default class Application {
 
     const animateScroll = currentTime => {
       const elapsed = currentTime - startTime
-      const progress = Math.min(elapsed / duration, 1)
+      const progress = duration > 0 ? Math.min(elapsed / duration, 1) : 1
       const eased = easeFn(progress)
       const currentY = startY + distance * eased
 
       window.scrollTo(0, currentY)
 
       if (progress < 1) {
-        requestAnimationFrame(animateScroll)
+        this.scrollFrame = requestAnimationFrame(animateScroll)
       } else {
         const forcedScrollEventEnd = new window.CustomEvent(Events.APPLICATION_FORCED_SCROLL_END)
-        if (emitEvents) {
-          window.dispatchEvent(forcedScrollEventEnd)
-          requestAnimationFrame(() => (this.state.forcedScroll = false))
-        }
+        this.state.forcedScroll = false
+        if (emitEvents) window.dispatchEvent(forcedScrollEventEnd)
       }
     }
 
-    requestAnimationFrame(animateScroll)
+    this.scrollFrame = requestAnimationFrame(animateScroll)
   }
 
   hardScrollToTop() {
@@ -587,7 +624,7 @@ export default class Application {
   }
 
   _emitRevealedEvent() {
-    if (!document.body.hasAttribute('data-app-revealed')) {
+    if (!this.state.revealed && !this.listeners.signal.aborted) {
       this.state.revealed = true
       document.body.dataset.appRevealed = true
       window.dispatchEvent(this.revealedEvent)
@@ -782,7 +819,7 @@ export default class Application {
     if (!this.debugOverlay) {
       return
     }
-    this.debugOverlay.addEventListener('click', this.toggleDebug.bind(this))
+    this.debugOverlay.addEventListener('click', this.toggleDebug.bind(this), { signal: this.listeners.signal })
 
     const userAgent = this.debugOverlay.querySelector('.user-agent')
     set(userAgent, { display: 'none' })
@@ -823,105 +860,26 @@ ${JSON.stringify(this.featureTests.results, undefined, 2)}
       setTimeout(() => {
         span.innerHTML = 'KOPIER'
       }, 1500)
-    })
+    }, { signal: this.listeners.signal })
   }
 
   toggleDebug() {
-    const breakpoint = this.debugOverlay.querySelector('.breakpoint')
-    const userAgent = this.debugOverlay.querySelector('.user-agent')
-
-    if (this.debugType >= 2) {
-      this.debugType = 0
-    } else {
-      this.debugType += 1
-    }
-
-    switch (this.debugType) {
-      case 0:
-        // hide all except branding
-        // First fade out (autoAlpha: 0 = opacity: 0 + visibility: hidden)
-        animate([breakpoint, userAgent], { opacity: 0 }, { duration: 0.3 }).finished.then(() => {
-          ;[breakpoint, userAgent].forEach(el => (el.style.visibility = 'hidden'))
-          // Then collapse width
-          animate([breakpoint, userAgent], { width: 0 }, { duration: 0.7 }).finished.then(() => {
-            set([breakpoint, userAgent], { display: 'none' })
-          })
-        })
-        break
-
-      case 1:
-        // Show breakpoint
-        set(breakpoint, { width: 'auto', display: 'block' })
-        breakpoint.style.visibility = 'visible'
-        // Animate from width: 0 to auto
-        animate(breakpoint, { width: [0, 'auto'] }, { duration: 0.7 }).finished.then(() => {
-          // Then fade in (autoAlpha: 1 = opacity: 1 + visibility: visible)
-          animate(breakpoint, { opacity: 1 }, { duration: 0.3 })
-        })
-        break
-
-      case 2:
-        // Show userAgent
-        set(userAgent, { width: 'auto', display: 'block' })
-        userAgent.style.visibility = 'visible'
-        // Animate from width: 0 to auto
-        animate(userAgent, { width: [0, 'auto'] }, { duration: 0.7 }).finished.then(() => {
-          // Then fade in (autoAlpha: 1 = opacity: 1 + visibility: visible)
-          animate(userAgent, { opacity: 1 }, { duration: 0.3 })
-        })
-        break
-
-      default:
-        break
-    }
+    const mode = this.debugType = (this.debugType + 1) % 3
+    import('./debug').then(({ animateDebugPanel }) => animateDebugPanel(this, mode))
   }
 
-  /**
-   * CTRL-G to show grid overlay
-   */
+  /** CTRL-G toggles the debug grid. */
   setupGridoverlay() {
-    const gridKeyPressed = e => {
-      if (e.keyCode === 71 && e.ctrlKey) {
-        const guides = Dom.find('.dbg-grid')
-        const cols = Dom.all(guides, 'b')
-
-        if (!guides || !cols) {
-          return
-        }
-
-        if (Dom.hasClass(guides, 'visible')) {
-          set(cols, { width: 'auto' })
-          animate(
-            cols,
-            {
-              width: 0,
-            },
-            {
-              duration: 0.35,
-              delay: stagger(0.02),
-              ease: 'easeInOut',
-            }
-          ).finished.then(() => {
-            guides.classList.toggle('visible')
-          })
-        } else {
-          set(cols, { width: 0 })
-          guides.classList.toggle('visible')
-          animate(
-            cols,
-            {
-              width: '100%',
-            },
-            {
-              duration: 0.35,
-              delay: stagger(0.02),
-              ease: 'easeInOut',
-            }
-          )
-        }
+    const gridKeyPressed = event => {
+      if (event.keyCode !== 71 || !event.ctrlKey) return
+      const guides = Dom.find('.dbg-grid')
+      if (guides) {
+        import('./debug').then(({ animateDebugGrid }) => {
+          if (!this.listeners.signal.aborted) return animateDebugGrid(guides)
+        })
       }
     }
-    document.addEventListener('keydown', gridKeyPressed)
+    document.addEventListener('keydown', gridKeyPressed, { signal: this.listeners.signal })
   }
 
   /**

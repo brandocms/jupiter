@@ -5,7 +5,7 @@
 
 import { animate, scroll, stagger, motionValue } from 'motion'
 
-import _defaultsDeep from 'lodash.defaultsdeep'
+import defaultsDeep from 'lodash.defaultsdeep'
 
 import Application from './modules/Application'
 import Breakpoints from './modules/Breakpoints'
@@ -43,6 +43,12 @@ import imagesAreLoaded from './utils/imagesAreLoaded'
 import loadScript from './utils/loadScript'
 import rafCallback from './utils/rafCallback'
 import prefersReducedMotion from './utils/prefersReducedMotion'
+
+/**
+ * The public lodash helper accepts one or more default objects.
+ * @type {<T, U = {}, V = {}, W = {}>(target: T, defaults?: U, more?: V, extra?: W, ...sources: any[]) => T & U & V & W}
+ */
+const _defaultsDeep = defaultsDeep
 
 export {
   Application,

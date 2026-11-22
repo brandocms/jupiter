@@ -14,7 +14,7 @@ export function normalizeAlphaTween(alphaTween: any, duration: any): any;
  * - `data-moonwalk-children` / `data-moonwalk-children="{walkName}"` — converts direct children
  *   into `data-moonwalk` (or `data-moonwalk="{walkName}"`) elements automatically
  * - `data-moonwalk-stage="{walkName}"` — applies a walk transition to the section element itself
- *   before its children animate (e.g. fade in a container, then reveal items)
+ *   when the section intersects. Children are observed separately.
  * - `data-moonwalk-order="{number}"` — overrides the DOM order of children inside a named section;
  *   elements with order are sorted first, unordered elements keep their relative position
  * - `data-moonwalk-run="{runName}"` — standalone observer-based callback (not part of walk system)
@@ -222,8 +222,7 @@ export default class Moonwalk {
     destroy(): void;
     onReady(): void;
     /**
-     * Called on `APPLICATION_READY` event, if `config.fireOnReady`.
-     * Otherwise must be triggered manually
+     * Start observing walks and runs. The configured event calls this via onReady().
      */
     ready(): void;
     /**
@@ -371,7 +370,7 @@ export type MoonwalkRun = {
      */
     initialize?: (el: HTMLElement) => void;
     /**
-     * - Function called when APPLICATION_REVEALED fires, before viewport observers start
+     * - Called by ready() before the run observer starts
      */
     onReady?: (el: HTMLElement) => void;
 };
@@ -385,7 +384,7 @@ export type MoonwalkOptions = {
      */
     initialDelay?: number;
     /**
-     * - Clear data-ll-srcset attributes
+     * - Skip walks on elements with data-ll-srcset
      */
     clearLazyload?: boolean;
     /**
@@ -397,7 +396,7 @@ export type MoonwalkOptions = {
      */
     clearNestedWalks?: boolean;
     /**
-     * - Disable animations when page loaded via anchor
+     * - Reveal walks up to the hash target on page load
      */
     clearMoonwalkOnAnchors?: boolean;
     /**

@@ -1,5 +1,7 @@
 # Migration: Popup Module
 
+> Archived 2025 migration plan. See the [current Popup implementation](../../src/modules/Popup/index.js) and [migration status](STATUS.md).
+
 **Tier**: 2 (Moderate)
 **Complexity**: ⭐⭐ Low-Moderate
 **Estimated Time**: 3-4 hours

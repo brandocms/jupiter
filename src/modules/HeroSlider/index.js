@@ -5,7 +5,7 @@
  *
  * ## Example
  *
- *    const hs = HeroSlider(sliderEl, opts)
+ *    const hs = new HeroSlider(app, { el: sliderEl })
  *
  */
 
@@ -55,11 +55,12 @@ const DEFAULT_OPTIONS = {
     // Start zoom immediately as container fades in
     if (firstSlideImg && hs.slides.length > 1) {
       // Animate with linear easing - MUST specify type: "tween"!
-      animate(
+      hs._currentAnimation = animate(
         firstSlideImg,
         { scale: [1, hs.opts.transition.scale] },
         { type: "tween", duration: hs.opts.interval, ease: "linear" }
-      ).finished.then(callback)
+      )
+      hs._currentAnimation.finished.then(callback)
     }
   },
 }
@@ -83,6 +84,9 @@ export default class HeroSlider {
   }
 
   initialize() {
+    this.slides = this.el.querySelectorAll('[data-hero-slide]')
+    if (!this.slides.length) return
+    this.events = new AbortController()
     this._addResizeHandler()
     this._addVisibilityHandler()
     // style the container
@@ -95,11 +99,10 @@ export default class HeroSlider {
       overflow: 'hidden',
     })
 
-    this.slides = this.el.querySelectorAll('[data-hero-slide]')
     this.images = this.el.querySelectorAll('.hero-slide-img')
 
     this.slideCount = this.slides.length - 1
-    this._currentSlideIdx = this.opts.initialSlideNumber
+    this._currentSlideIdx = Math.min(this.slideCount, Math.max(0, Math.trunc(this.opts.initialSlideNumber) || 0))
 
     // style the slides
     Array.from(this.slides).forEach((s, index) => {
@@ -110,7 +113,7 @@ export default class HeroSlider {
         left: 0,
         width: '100%',
         height: '100%',
-        opacity: index === 0 ? 1 : 0, // Only first slide visible initially
+        opacity: index === this._currentSlideIdx ? 1 : 0,
       })
 
       const img = s.querySelector('.hero-slide-img')
@@ -135,22 +138,22 @@ export default class HeroSlider {
     })
 
     // Set proper z-indexes for first two slides
-    this.slides[0].style.zIndex = this.opts.zIndex.visible
-    if (this.slides[1]) {
-      this.slides[1].style.zIndex = this.opts.zIndex.next
+    this.slides[this._currentSlideIdx].style.zIndex = this.opts.zIndex.visible
+    if (this.slides.length > 1) {
+      this.slides[(this._currentSlideIdx + 1) % this.slides.length].style.zIndex = this.opts.zIndex.next
     }
 
     this.opts.onInitialize(this)
 
     const callback = this.slides.length > 1 ? this.next.bind(this) : () => {}
 
-    this.app.registerCallback(Events.APPLICATION_REVEALED, () => {
+    this.unsubscribe = this.app.registerCallback(Events.APPLICATION_REVEALED, () => {
       /* Wait for the first image to load, then fade in container element */
       const firstImg = this.slides[this._currentSlideIdx].querySelector('img')
 
       if (firstImg) {
         imageIsLoaded(firstImg, this.opts.lazyImages).then(() => {
-          this.opts.onFadeIn(this, callback)
+          if (!this.events.signal.aborted) this.opts.onFadeIn(this, callback)
         })
       }
     })
@@ -160,7 +163,7 @@ export default class HeroSlider {
    * Calculate which slide is next, and call the slide function
    */
   next() {
-    if (prefersReducedMotion() && this.app.opts.respectReducedMotion) {
+    if (!this.events || this.slides.length < 2 || this.events.signal.aborted || (prefersReducedMotion() && this.app.opts.respectReducedMotion)) {
       return
     }
 
@@ -346,18 +349,19 @@ export default class HeroSlider {
    * Add a window resize handler that resizes slide widths
    */
   _addResizeHandler() {
+    this.resizeHandler = this._resizeSlides.bind(this)
     this.observer = new IntersectionObserver((entries) => {
       const [{ isIntersecting }] = entries
       if (isIntersecting) {
         this._resizeSlides()
         window.addEventListener(
           Events.APPLICATION_RESIZE,
-          this._resizeSlides.bind(this)
+          this.resizeHandler
         )
       } else {
         window.removeEventListener(
           Events.APPLICATION_RESIZE,
-          this._resizeSlides.bind(this)
+          this.resizeHandler
         )
       }
     })
@@ -393,12 +397,21 @@ export default class HeroSlider {
         // Reset and restart when tab becomes visible
         this._resetAndRestart()
       }
-    })
+    }, { signal: this.events.signal })
   }
 
   /**
-   * Reset slide states and restart the animation cycle
+   * Remove listeners and cancel running animations.
    */
+  destroy() {
+    this.events?.abort()
+    this.unsubscribe?.()
+    this.observer?.disconnect()
+    window.removeEventListener(Events.APPLICATION_RESIZE, this.resizeHandler)
+    this.resizeAnimation?.stop()
+    this._currentAnimation?.stop()
+  }
+
   _resetAndRestart() {
     // Reset all slides to initial state
     Array.from(this.slides).forEach((s, index) => {

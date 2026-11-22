@@ -183,7 +183,7 @@
     </div>
 
     <div class="parallax-container" data-testid="default-parallax-container">
-      <div data-parallax data-testid="parallax-element">
+      <div id="default-parallax" data-parallax data-testid="parallax-element">
         <div
           data-parallax-figure
           data-testid="parallax-figure"
@@ -229,7 +229,7 @@
           </div>
           <h2>Custom Parallax</h2>
           <p>
-            This parallax effect uses custom settings from the controls below.
+            This section uses a movement factor of 2 and fades its content while scrolling.
           </p>
         </div>
       </div>
@@ -281,71 +281,13 @@
       import { Application, Parallax } from "../src/index.js";
 
       document.addEventListener("DOMContentLoaded", () => {
-        // Initialize Application with proper size
-        const app = new Application({
-          respectReducedMotion: false,
-          breakpointConfig: {
-            breakpoints: [
-              "iphone",
-              "mobile",
-              "ipad_portrait",
-              "ipad_landscape",
-              "desktop_md",
-              "desktop_lg",
-              "desktop_xl",
-            ],
-          },
-        });
-
-        // Override app size to ensure proper effect
-        app.size = {
-          width: window.innerWidth,
-          height: window.innerHeight,
-        };
-
-        // Initialize default Parallax
-        const defaultParallax = new Parallax(app);
-
-        // Custom parallax with controls
-        let customParallax = new Parallax(app, {
-          el: "#custom-parallax",
-          factor: 2,
-          fadeContent: true,
-          scale: 1.2,  // Scale up background to avoid gaps
-          orientation: 'up'
-        });
-        
-        // Multi-element parallax
-        const multiParallax = new Parallax(app, {
-          el: "[data-parallax-parent]"
-        });
+        const app = new Application();
+        new Parallax(app, { el: "#default-parallax" });
+        new Parallax(app, { el: "#custom-parallax", factor: 2 });
+        new Parallax(app, { el: "[data-parallax-parent]" });
 
         // Start the application
         app.initialize();
-
-        // Update app size on resize
-        window.addEventListener("resize", () => {
-          app.size = {
-            width: window.innerWidth,
-            height: window.innerHeight,
-          };
-
-          // Re-initialize the parallax instances
-          if (customParallax && customParallax.initializeTimeline) {
-            customParallax.initializeTimeline();
-          }
-          if (defaultParallax && defaultParallax.initializeTimeline) {
-            defaultParallax.initializeTimeline();
-          }
-          if (multiParallax && multiParallax.initializeMultipleTimelines) {
-            multiParallax.initializeMultipleTimelines();
-          }
-        });
-
-        // Dispatch scroll events on scroll
-        window.addEventListener("scroll", () => {
-          window.dispatchEvent(new CustomEvent("APPLICATION_SCROLL"));
-        });
       });
     </script>
   </body>

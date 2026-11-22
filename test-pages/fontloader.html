@@ -306,7 +306,7 @@
           <div class="code-block">
             function loadFonts() {
               return new Promise((resolve) => {
-                if (!document.fonts) {
+                if (!window.FontFace) {
                   setTimeout(resolve, 800)
                 } else {
                   document.fonts.ready.then(resolve)
@@ -340,7 +340,7 @@
               Beautiful Typography Matters
             </div>
             <p class="small font-inter">
-              This uses custom fonts loaded via Fontloader. The text is consistent across all platforms.
+              CSS requests the custom fonts. Application waits for font readiness before revealing the page.
             </p>
           </div>
         </div>
@@ -353,12 +353,10 @@
           How to use the Fontloader module in your application.
         </p>
         <div class="code-block">
-import { Application, Fontloader } from 'jupiter'
+import { Application } from '@brandocms/jupiter'
 
 const app = new Application()
-const fontloader = new Fontloader(app)
-
-fontloader.loadFonts().then(() => {
+app.fontLoader.loadFonts().then(() => {
   console.log('Fonts are ready!')
   // Your code here
 })
@@ -368,7 +366,6 @@ fontloader.loadFonts().then(() => {
 
     <script type="module">
       import { Application } from "../src/index.js";
-      import Fontloader from "../src/modules/Fontloader";
 
       document.addEventListener("DOMContentLoaded", async () => {
         const startTime = performance.now();
@@ -378,8 +375,7 @@ fontloader.loadFonts().then(() => {
           respectReducedMotion: false,
         });
 
-        // Initialize Fontloader
-        const fontloader = new Fontloader(app);
+        const fontloader = app.fontLoader;
 
         console.log('Fontloader: Starting font load...');
 

@@ -1,5 +1,7 @@
 # Migration: Parallax Module
 
+> Archived 2025 migration plan. See the [current Parallax implementation](../../src/modules/Parallax/index.js) and [migration status](STATUS.md).
+
 **Tier**: 3 (Complex) | **Complexity**: ⭐⭐⭐⭐ | **Time**: 1 week | **File**: `src/modules/Parallax/index.js`
 
 ---

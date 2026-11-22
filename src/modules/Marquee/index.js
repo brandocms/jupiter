@@ -179,10 +179,11 @@ export default class Marquee {
   initializeTween() {
     const $allHolders = Dom.all(this.elements.$el, '[data-marquee-holder]')
 
+    const widths = Array.from($allHolders, h => h.offsetWidth)
     Array.from($allHolders).forEach((h, idx) => {
       set(h, {
         position: 'absolute',
-        left: h.offsetWidth * idx,
+        left: widths[idx] * idx,
         transform: 'translateZ(0)',
         willChange: 'transform'
       })
@@ -197,6 +198,7 @@ export default class Marquee {
     this._initialized = true
     this.render(this.position.get())
 
+    if (this.app.PREFERS_REDUCED_MOTION && this.app.opts.respectReducedMotion) return
     this.timeline = this.createCrawl()
     this.timeline.pause()
   }
@@ -230,6 +232,7 @@ export default class Marquee {
   }
 
   play(rampUp = false) {
+    if (this.app.PREFERS_REDUCED_MOTION && this.app.opts.respectReducedMotion) return
     this.playing = true
     if (this.speedAnimation) {
       this.speedAnimation.stop()
@@ -539,6 +542,7 @@ export default class Marquee {
    * speed so it eases out of a throw rather than snapping.
    */
   resumeCrawl() {
+    if (this.app.PREFERS_REDUCED_MOTION && this.app.opts.respectReducedMotion) return
     if (this.speedAnimation) {
       this.speedAnimation.stop()
       this.speedAnimation = null
@@ -601,15 +605,16 @@ export default class Marquee {
 
     const textWidth = this.elements.$item.offsetWidth
     if (textWidth) {
-      if (this.opts.spacer) {
-        this.elements.$holder.appendChild(Dom.new(this.opts.spacer)[0])
+      const spacer = this.opts.spacer && Dom.new(this.opts.spacer)[0]
+      if (spacer) {
+        this.elements.$holder.appendChild(spacer)
       }
       const count = Math.max(Math.ceil(this.app.size.width / textWidth) - 1, 2)
 
       for (let i = 0; i < count; i += 1) {
         this.elements.$holder.append(this.elements.$item.cloneNode(true))
-        if (this.opts.spacer) {
-          this.elements.$holder.appendChild(Dom.new(this.opts.spacer)[0])
+        if (spacer) {
+          this.elements.$holder.appendChild(spacer.cloneNode(true))
         }
       }
 

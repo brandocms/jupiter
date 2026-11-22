@@ -1,5 +1,7 @@
 # Migration: StackedBoxes Module
 
+> Archived 2025 migration plan. See the [current StackedBoxes implementation](../../src/modules/StackedBoxes/index.js) and [migration status](STATUS.md).
+
 **Tier**: 1 (Easy)
 **Complexity**: ⭐ Very Low
 **Estimated Time**: 1-2 hours

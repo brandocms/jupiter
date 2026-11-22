@@ -24,25 +24,29 @@ export default class Toggler {
      * Create a new Toggler instance
      * @param {Object} app - Application instance
      * @param {HTMLElement} el - Container element with [data-toggle] attribute
-     * @param {Object} options - Configuration options
-     * @param {Function} options.onOpen - Callback when toggle opens
-     * @param {Function} options.onClose - Callback when toggle closes
+     * @param {Object} [options] - Configuration options
+     * @param {Function} [options.onBeforeOpen] - Called before expanding
+     * @param {Function} [options.onOpen] - Called after expanding
+     * @param {Function} [options.onBeforeClose] - Called before the active trigger collapses its panel
+     * @param {Function} [options.onClose] - Called after collapsing
      */
     constructor(app: any, el: HTMLElement, options?: {
-        onOpen: Function;
-        onClose: Function;
+        onBeforeOpen?: Function;
+        onOpen?: Function;
+        onBeforeClose?: Function;
+        onClose?: Function;
     });
     open: boolean;
     app: any;
     el: HTMLElement;
     onOpen: Function;
     onClose: Function;
-    onBeforeOpen: any;
-    onBeforeClose: any;
+    onBeforeOpen: Function;
+    onBeforeClose: Function;
     trigger: any;
     triggerTarget: any;
     group: string;
-    content: any;
+    content: any[];
     triggerIcon: any;
     /**
      * Get the index of this toggle within its group (1-based)
@@ -53,6 +57,7 @@ export default class Toggler {
      * Handle click on trigger element
      */
     onClick(): void;
+    collapse(): void;
     /**
      * Close all other togglers in the same group
      */

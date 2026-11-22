@@ -23,9 +23,7 @@ let _idCounter = 0
 const MOONWALK_ATTRS = ['data-moonwalk', 'data-moonwalk-section', 'data-moonwalk-children']
 
 function logMoonwalk(category, message, data = {}) {
-  if (DEBUG) {
-    console.log(`[Moonwalk:${category}]`, message, data)
-  }
+  console.log(`[Moonwalk:${category}]`, message, data)
 }
 
 function logComputedStyle(element, props = ['opacity', 'transform']) {
@@ -73,17 +71,17 @@ function logComputedStyle(element, props = ['opacity', 'transform']) {
  * @property {boolean} [repeated=false] - Whether the run should repeat
  * @property {string} [rootMargin] - IntersectionObserver rootMargin
  * @property {(el: HTMLElement) => void} [initialize] - Function called during initialization
- * @property {(el: HTMLElement) => void} [onReady] - Function called when APPLICATION_REVEALED fires, before viewport observers start
+ * @property {(el: HTMLElement) => void} [onReady] - Called by ready() before the run observer starts
  */
 
 /**
  * @typedef {Object} MoonwalkOptions
  * @property {string|null} [on=Events.APPLICATION_REVEALED] - Event name to trigger animations. Set to `null` to trigger manually via `ready()`.
  * @property {number} [initialDelay=100] - Delay in ms before starting animations
- * @property {boolean} [clearLazyload=false] - Clear data-ll-srcset attributes
+ * @property {boolean} [clearLazyload=false] - Skip walks on elements with data-ll-srcset
  * @property {boolean} [clearNestedSections=true] - Remove nested data-moonwalk-section attributes
  * @property {boolean} [clearNestedWalks=true] - Remove nested data-moonwalk attributes
- * @property {boolean} [clearMoonwalkOnAnchors=true] - Disable animations when page loaded via anchor
+ * @property {boolean} [clearMoonwalkOnAnchors=true] - Reveal walks up to the hash target on page load
  * @property {boolean} [warnRunWithSection=true] - Warn when run and section on same element
  * @property {string} [rootMargin='-10% 0%'] - Default IntersectionObserver rootMargin
  * @property {number} [threshold=0] - Default IntersectionObserver threshold
@@ -95,13 +93,7 @@ function logComputedStyle(element, props = ['opacity', 'transform']) {
 
 /** @type {MoonwalkOptions} */
 const DEFAULT_OPTIONS = {
-  /**
-   * If your app needs to do some initialization before the
-   * application:ready has been fired, you can set this to
-   * `() => {}`. You will then have to call `this.ready()`
-   * to start the reveals
-   */
-
+  // Set to null to start observers manually with ready().
   on: Events.APPLICATION_REVEALED,
 
   /**
@@ -111,7 +103,7 @@ const DEFAULT_OPTIONS = {
   initialDelay: 100,
 
   /**
-   * Clear out all `data-ll-srcset` from moonwalk elements
+   * Remove data-moonwalk from elements that also use data-ll-srcset
    */
   clearLazyload: false,
 
@@ -126,7 +118,7 @@ const DEFAULT_OPTIONS = {
   clearNestedWalks: true,
 
   /**
-   * If page is linked with an anchor, remove moonwalk for the page
+   * Reveal walks up to the hash target on page load
    */
   clearMoonwalkOnAnchors: true,
 
@@ -205,7 +197,7 @@ export function normalizeAlphaTween(alphaTween, duration) {
  * - `data-moonwalk-children` / `data-moonwalk-children="{walkName}"` — converts direct children
  *   into `data-moonwalk` (or `data-moonwalk="{walkName}"`) elements automatically
  * - `data-moonwalk-stage="{walkName}"` — applies a walk transition to the section element itself
- *   before its children animate (e.g. fade in a container, then reveal items)
+ *   when the section intersects. Children are observed separately.
  * - `data-moonwalk-order="{number}"` — overrides the DOM order of children inside a named section;
  *   elements with order are sorted first, unordered elements keep their relative position
  * - `data-moonwalk-run="{runName}"` — standalone observer-based callback (not part of walk system)
@@ -583,7 +575,7 @@ export default class Moonwalk {
             }
           : sectionWalk.transition.from
 
-        logMoonwalk('InitialState', 'Setting initial state for named section', {
+        if (DEBUG) logMoonwalk('InitialState', 'Setting initial state for named section', {
           section: section.name,
           childCount: section.children.length,
           fromTransition,
@@ -595,7 +587,7 @@ export default class Moonwalk {
           logComputedStyle(section.children[0])
         }
       } else {
-        logMoonwalk('InitialState', 'Skipping initial state for CSS-only section', {
+        if (DEBUG) logMoonwalk('InitialState', 'Skipping initial state for CSS-only section', {
           section: section.name,
           childCount: section.children.length,
         })
@@ -605,7 +597,7 @@ export default class Moonwalk {
     if (section.stage.name) {
       // reset the element to its `from` state.
       const stageTween = walks[section.stage.name]
-      logMoonwalk('InitialState', 'Setting stage initial state', {
+      if (DEBUG) logMoonwalk('InitialState', 'Setting stage initial state', {
         stage: section.stage.name,
         from: stageTween.transition.from,
       })
@@ -652,7 +644,7 @@ export default class Moonwalk {
             if (section.name) {
               const tween = walks[section.name]
 
-              logMoonwalk('SectionObserver', 'Named section triggered', {
+              if (DEBUG) logMoonwalk('SectionObserver', 'Named section triggered', {
                 sectionName: section.name,
                 childCount: section.children.length,
                 interval: tween.interval,
@@ -664,7 +656,7 @@ export default class Moonwalk {
               // Check if this is CSS-only animation (transition: null)
               if (!tween.transition) {
                 // CSS-only mode - stagger adding the data-moonwalked attribute
-                logMoonwalk('SectionObserver', 'Using CSS-only mode', {
+                if (DEBUG) logMoonwalk('SectionObserver', 'Using CSS-only mode', {
                   sectionName: section.name,
                 })
 
@@ -690,7 +682,7 @@ export default class Moonwalk {
                   }),
                 }
 
-                logMoonwalk('SectionObserver', 'Starting stagger animation', {
+                if (DEBUG) logMoonwalk('SectionObserver', 'Starting stagger animation', {
                   sectionName: section.name,
                   to: toValues,
                   ease: convertedEase,
@@ -765,7 +757,7 @@ export default class Moonwalk {
   calculateDelay(section, duration, overlap) {
     if (!section.animation.lastStartTime) {
       // First animation in section
-      logMoonwalk('DelayCalc', 'First animation in section', { delay: 0 })
+      if (DEBUG) logMoonwalk('DelayCalc', 'First animation in section', { delay: 0 })
       return 0
     }
 
@@ -777,7 +769,7 @@ export default class Moonwalk {
       section.animation.lastDelay + section.animation.lastDuration + overlap
     const actualDelay = Math.max(0, idealNextStart - elapsed)
 
-    logMoonwalk('DelayCalc', 'Calculating delay', {
+    if (DEBUG) logMoonwalk('DelayCalc', 'Calculating delay', {
       elapsed: elapsed.toFixed(3),
       lastDelay: section.animation.lastDelay,
       lastDuration: section.animation.lastDuration,
@@ -797,13 +789,13 @@ export default class Moonwalk {
    * @param {*} duration - The duration of the animation
    */
   updateAnimationState(section, delay, duration) {
-    const previousState = { ...section.animation }
+    const previousState = DEBUG && { ...section.animation }
 
     section.animation.lastDelay = delay
     section.animation.lastDuration = duration
     section.animation.lastStartTime = performance.now()
 
-    logMoonwalk('StateUpdate', 'Updating animation state', {
+    if (DEBUG) logMoonwalk('StateUpdate', 'Updating animation state', {
       delay,
       duration,
       previousState,
@@ -852,8 +844,7 @@ export default class Moonwalk {
   }
 
   /**
-   * Called on `APPLICATION_READY` event, if `config.fireOnReady`.
-   * Otherwise must be triggered manually
+   * Start observing walks and runs. The configured event calls this via onReady().
    */
   ready() {
     const { opts } = this
@@ -918,7 +909,7 @@ export default class Moonwalk {
 
           // Only set initial state if this uses tweenJS (has transition property)
           if (cfg && cfg.transition) {
-            logMoonwalk('InitialState', 'Setting initial state for individual element', {
+            if (DEBUG) logMoonwalk('InitialState', 'Setting initial state for individual element', {
               walkName: walkName || 'default',
               from: cfg.transition.from,
             })
@@ -1062,12 +1053,12 @@ export default class Moonwalk {
 
           if (entry.isIntersecting || entry.intersectionRatio > 0) {
             const walkName = entry.target.getAttribute('data-moonwalk')
-            const targetId =
+            const targetId = DEBUG && (
               entry.target.getAttribute('data-testid') ||
               walkName ||
-              entry.target.className
+              entry.target.className)
 
-            logMoonwalk('Observer', 'Element entered viewport', {
+            if (DEBUG) logMoonwalk('Observer', 'Element entered viewport', {
               target: targetId,
               walkName,
               isIntersecting: entry.isIntersecting,
@@ -1177,12 +1168,12 @@ export default class Moonwalk {
     tweenOverlap,
     alphaTween
   ) {
-    const targetId =
+    const targetId = DEBUG && (
       target.getAttribute('data-testid') ||
       target.getAttribute('data-moonwalk') ||
-      target.className
+      target.className)
 
-    logMoonwalk('TweenJS', 'Starting tweenJS', {
+    if (DEBUG) logMoonwalk('TweenJS', 'Starting tweenJS', {
       target: targetId,
       duration: tweenDuration,
       overlap: tweenOverlap,
@@ -1190,7 +1181,7 @@ export default class Moonwalk {
     })
 
     if (Dom.hasAttribute(target, 'data-moonwalked')) {
-      logMoonwalk('TweenJS', 'Already moonwalked, skipping', { target: targetId })
+      if (DEBUG) logMoonwalk('TweenJS', 'Already moonwalked, skipping', { target: targetId })
       return
     }
 
@@ -1199,7 +1190,7 @@ export default class Moonwalk {
 
     // Initial state should already be set during ready()
     // Only log for debugging
-    logMoonwalk('TweenJS', 'Element should already have initial state', {
+    if (DEBUG) logMoonwalk('TweenJS', 'Element should already have initial state', {
       target: targetId,
       expectedFrom: tweenTransition.from,
     })
@@ -1209,7 +1200,7 @@ export default class Moonwalk {
     const { ease, ...toValues } = tweenTransition.to
     const easingOption = convertEasing(ease || 'easeOut')
 
-    logMoonwalk('TweenJS', 'Starting animation', {
+    if (DEBUG) logMoonwalk('TweenJS', 'Starting animation', {
       target: targetId,
       toValues,
       duration: tweenDuration,
@@ -1228,12 +1219,12 @@ export default class Moonwalk {
     if (animation && animation.finished) {
       animation.finished
         .then(() => {
-          logMoonwalk('TweenJS', 'Animation completed', { target: targetId })
+          if (DEBUG) logMoonwalk('TweenJS', 'Animation completed', { target: targetId })
           target.setAttribute('data-moonwalked', '')
         })
         .catch((err) => {
           // Animation cancelled or failed, still mark as walked
-          logMoonwalk('TweenJS', 'Animation failed/cancelled', {
+          if (DEBUG) logMoonwalk('TweenJS', 'Animation failed/cancelled', {
             target: targetId,
             error: err,
           })
@@ -1241,13 +1232,13 @@ export default class Moonwalk {
         })
     } else {
       // No animation object returned, mark immediately
-      logMoonwalk('TweenJS', 'No animation object returned', { target: targetId })
+      if (DEBUG) logMoonwalk('TweenJS', 'No animation object returned', { target: targetId })
       target.setAttribute('data-moonwalked', '')
     }
 
     // Optional separate alpha animation
     if (alphaTween) {
-      logMoonwalk('TweenJS', 'Adding alpha tween', {
+      if (DEBUG) logMoonwalk('TweenJS', 'Adding alpha tween', {
         target: targetId,
         duration: alphaTween.duration,
         delay: (delay + (alphaTween.delay || 0)).toFixed(3),
@@ -1292,9 +1283,9 @@ export default class Moonwalk {
       tweenOverlap
     )
 
-    const targetId = target.getAttribute('data-testid') || target.className
+    const targetId = DEBUG && (target.getAttribute('data-testid') || target.className)
 
-    logMoonwalk('TweenCSS', 'Scheduling CSS animation', {
+    if (DEBUG) logMoonwalk('TweenCSS', 'Scheduling CSS animation', {
       target: targetId,
       delay: calculatedDelay.toFixed(3),
       duration: tweenDuration,
@@ -1302,7 +1293,7 @@ export default class Moonwalk {
 
     // Add class after delay to trigger CSS transition
     delayedCall(calculatedDelay, () => {
-      logMoonwalk('TweenCSS', 'Adding moonwalked attribute', {
+      if (DEBUG) logMoonwalk('TweenCSS', 'Adding moonwalked attribute', {
         target: targetId,
       })
       target.classList.add('moonwalked')

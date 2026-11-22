@@ -1,5 +1,7 @@
 # Migration: FixedHeader Module
 
+> Archived 2025 migration plan. See the [current FixedHeader implementation](../../src/modules/FixedHeader/index.js) and [migration status](STATUS.md).
+
 **Tier**: 2 (Moderate) | **Complexity**: ⭐⭐⭐ | **Time**: 4-5 hours | **File**: `src/modules/FixedHeader/index.js`
 
 ---

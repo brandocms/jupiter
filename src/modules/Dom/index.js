@@ -1,3 +1,5 @@
+import { find, all } from './query'
+
 /**
  * DOM utility class for simplifying DOM operations
  */
@@ -16,31 +18,11 @@ class DOM {
   }
 
   find(arg1, arg2) {
-    if (typeof arg1 === 'string' && typeof arg2 === 'object') {
-      throw new Error('Dom.find: Wrong syntax, use -> Dom.find(node, selector)')
-    }
-
-    if (typeof arg1 === 'string') {
-      return document.querySelector(arg1)
-    }
-
-    if (typeof arg2 === 'string') {
-      return arg1.querySelector(arg2)
-    }
-
-    return null
+    return find(arg1, arg2)
   }
 
   all(arg1, arg2) {
-    if (typeof arg1 === 'string') {
-      return Array.from(document.querySelectorAll(arg1))
-    }
-
-    if (typeof arg2 === 'string') {
-      return Array.from(arg1.querySelectorAll(arg2))
-    }
-
-    return []
+    return all(arg1, arg2)
   }
 
   create(element, ...classes) {
@@ -84,25 +66,17 @@ class DOM {
   }
 
   overlapsVertically($div1, $div2) {
-    // Div 1 data
-    const d1Offset = $div1.getBoundingClientRect()
-    const d1Height = this.outerHeight($div1)
-    const d1DistanceFromTop = d1Offset.top + d1Height
-
-    // Div 2 data
-    const d2Offset = $div2.getBoundingClientRect()
-    const d2Height = this.outerHeight($div2)
-    const d2DistanceFromTop = d2Offset.top + d2Height
-
-    if (d1DistanceFromTop > d2Offset.top) {
-      return d1DistanceFromTop - d2Offset.top
+    const bounds = el => {
+      const rect = el.getBoundingClientRect()
+      const style = getComputedStyle(el)
+      return {
+        top: rect.top - (parseFloat(style.marginTop) || 0),
+        bottom: rect.bottom + (parseFloat(style.marginBottom) || 0)
+      }
     }
-
-    if (d1Offset.top > d2DistanceFromTop) {
-      return d1Offset.top - d2DistanceFromTop
-    }
-
-    return 0
+    const first = bounds($div1)
+    const second = bounds($div2)
+    return Math.max(0, Math.min(first.bottom, second.bottom) - Math.max(first.top, second.top))
   }
 
   outerHeight(el) {

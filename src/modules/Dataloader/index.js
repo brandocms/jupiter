@@ -1,5 +1,5 @@
-import Dom from '../Dom'
-import _defaultsDeep from 'lodash.defaultsdeep'
+import { all, find } from '../Dom/query'
+import applyDefaults from '../../utils/applyDefaults'
 import DataloaderUrlSync from './url-sync'
 
 /**
@@ -55,23 +55,22 @@ import DataloaderUrlSync from './url-sync'
  * @property {Object|null} urlSync - URL sync config keyed by loader ID
  * @property {function} onFetch - Callback after fetch completes, receives dataloader instance
  */
+const activeLoaders = new Set()
+
+function requireSuccess(response) {
+  if (!response.ok) throw new Error('HTTP ' + response.status)
+  return response
+}
+
 const DEFAULT_OPTIONS = {
   page: 0,
-  loaderParam: {},
   filter: '',
   filterDebounce: 650,
   urlSync: null,
   onFetch: dataloader => {
     /**
-     * Called after fetch complete. Do your DOM manipulation here
-     *
-     * Example:
-     *
-     *
-     *    const mw = new Moonwalk(dataloader.app, configureMoonwalk(dataloader.app), dataloader.$canvasEl)
-     *    new Lazyload(dataloader.app, { useNativeLazyloadIfAvailable: false }, dataloader.$canvasEl)
-     *    new EqualHeightImages(dataloader.app, {}, dataloader.$canvasEl)
-     *    mw.ready()
+     * Called after new markup is committed. For observer-based lazy loading,
+     * reuse the existing Lazyload instance with lazyload.observe(dataloader.$canvasEl).
      */
   },
 }
@@ -84,20 +83,20 @@ export default class Dataloader {
     this.id = $el.dataset.loaderId
 
     if ($el.hasAttribute('data-loader-canvas-target')) {
-      this.$canvasEl = Dom.find($el.getAttribute('data-loader-canvas-target'))
+      this.$canvasEl = find($el.getAttribute('data-loader-canvas-target'))
     } else {
-      this.$canvasEl = Dom.find($el, '[data-loader-canvas]')
+      this.$canvasEl = find($el, '[data-loader-canvas]')
     }
 
     // Support new pattern: data-loader-canvas-for
     if (!this.$canvasEl && this.id) {
-      this.$canvasEl = Dom.find(`[data-loader-canvas-for="${this.id}"]`)
+      this.$canvasEl = find(`[data-loader-canvas-for="${this.id}"]`)
     }
 
     if (!this.$canvasEl) {
       throw new Error('No canvas element found.')
     }
-    this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
+    this.opts = applyDefaults(opts, { ...DEFAULT_OPTIONS, loaderParam: {} })
     this.initialize()
   }
 
@@ -110,6 +109,7 @@ export default class Dataloader {
    */
   static replaceInnerHTML(el, url) {
     return fetch(url)
+      .then(requireSuccess)
       .then(res => res.text())
       .then(html => {
         el.innerHTML = html
@@ -119,12 +119,14 @@ export default class Dataloader {
 
   debounce(func, delay) {
     let timerId
-    return (...args) => {
+    const debounced = (...args) => {
       clearTimeout(timerId)
       timerId = setTimeout(() => {
         func.apply(this, args)
       }, delay)
     }
+    debounced.cancel = () => clearTimeout(timerId)
+    return debounced
   }
 
   updateBaseURL(url) {
@@ -132,55 +134,54 @@ export default class Dataloader {
   }
 
   setInitialParams() {
-    // Set initial parameters from pre-selected elements
-    this.$paramEls.forEach($paramEl => {
-      if ($paramEl.hasAttribute('data-loader-param-selected')) {
-        const key = $paramEl.dataset.loaderParamKey || 'defaultParam'
-        this.opts.loaderParam[key] = $paramEl.dataset.loaderParam
+    for (const el of this.$paramEls) {
+      if (el.type === 'checkbox') {
+        this.handleCheckboxParam(el)
+      } else if (el.hasAttribute('data-loader-param-selected')) {
+        if (el.hasAttribute('data-loader-param-multi')) this.handleMultiSelectParam(el)
+        else this.opts.loaderParam[this.getParamKey(el)] = el.dataset.loaderParam
       }
-    })
-    
-    // Update URL with initial params if URL sync is enabled
-    if (this.urlSync && this.opts.urlSync[this.id].updateOnInit !== false) {
-      this.urlSync.updateUrl(this.opts.loaderParam)
     }
   }
 
   initialize() {
     this.baseURL = this.$el.dataset.loader
-    this.$paramEls = Dom.all(this.$el, '[data-loader-param]')
+    this.$paramEls = all(this.$el, '[data-loader-param]')
 
     // Store bound handlers for cleanup in destroy()
     this._boundOnParam = this.onParam.bind(this)
     this._boundOnMore = this.onMore.bind(this)
     this._boundOnFilter = this.debounce(this.onFilterInput.bind(this), this.opts.filterDebounce)
 
+    this.setInitialParams()
+
     // Initialize URL sync if config exists for this dataloader ID
     if (this.opts.urlSync?.[this.id]) {
       this.urlSync = new DataloaderUrlSync(this, this.opts.urlSync[this.id])
     }
 
-    // Set initial parameters from pre-selected elements
-    this.setInitialParams()
+    if (this.urlSync && this.opts.urlSync[this.id].updateOnInit !== false) {
+      this.urlSync.updateUrl(this.opts.loaderParam)
+    }
 
     this.$paramEls.forEach($paramEl => {
       $paramEl.addEventListener('click', this._boundOnParam)
     })
 
-    this.$moreBtn = Dom.find(this.$el, '[data-loader-more]')
+    this.$moreBtn = find(this.$el, '[data-loader-more]')
 
     if (!this.$moreBtn && this.id) {
-      this.$moreBtn = Dom.find(`[data-loader-more-for="${this.id}"]`)
+      this.$moreBtn = find(`[data-loader-more-for="${this.id}"]`)
     }
 
     if (this.$moreBtn) {
       this.$moreBtn.addEventListener('click', this._boundOnMore)
     }
 
-    this.$filterInput = Dom.find(this.$el, '[data-loader-filter]')
+    this.$filterInput = find(this.$el, '[data-loader-filter]')
 
     if (!this.$filterInput && this.id) {
-      this.$filterInput = Dom.find(`[data-loader-filter-for="${this.id}"]`)
+      this.$filterInput = find(`[data-loader-filter-for="${this.id}"]`)
     }
 
     if (this.$filterInput) {
@@ -190,17 +191,15 @@ export default class Dataloader {
 
   onFilterInput(e) {
     e.preventDefault()
-    this.loading()
-    this.opts.page = 0
     this.opts.filter = this.$filterInput.value
-    this.fetch(false)
+    this.fetch(false, 0)
   }
 
   onMore(e) {
     e.preventDefault()
-    this.loading()
-    this.opts.page += 1
-    this.fetch(true)
+    if (this._abortController) return
+    if (this.replacementPage != null) this.fetch(false, this.replacementPage)
+    else if (this.status !== 'starved') this.fetch(true, this.opts.page + 1)
   }
 
   getParamKey(el) {
@@ -226,32 +225,22 @@ export default class Dataloader {
 
   handleMultiSelectParam(el) {
     const key = this.getParamKey(el)
-    if (!Object.hasOwn(this.opts.loaderParam, key)) {
-      this.opts.loaderParam[key] = []
-    }
-    this.opts.loaderParam[key].push(el.dataset.loaderParam)
+    const current = this.opts.loaderParam[key]
+    const values = Array.isArray(current) ? current : current == null ? [] : [current]
+    this.opts.loaderParam[key] = [...new Set([...values, el.dataset.loaderParam])]
     el.setAttribute('data-loader-param-selected', '')
   }
 
   handleSingleSelectParam(el) {
-    const paramKey = el.dataset.loaderParamKey
-    this.$paramEls.forEach($paramEl => {
-      if (paramKey) {
-        if ($paramEl.dataset.loaderParamKey === paramKey) {
-          $paramEl.removeAttribute('data-loader-param-selected')
-        }
-      } else {
-        $paramEl.removeAttribute('data-loader-param-selected')
-      }
-    })
-    el.setAttribute('data-loader-param-selected', '')
     const key = this.getParamKey(el)
+    for (const other of this.$paramEls) {
+      if (this.getParamKey(other) === key) other.removeAttribute('data-loader-param-selected')
+    }
+    el.setAttribute('data-loader-param-selected', '')
     this.opts.loaderParam[key] = el.dataset.loaderParam
   }
 
   onParam(e) {
-    this.loading()
-    this.opts.page = 0
 
     const el = e.currentTarget
     const multiVals = el.hasAttribute('data-loader-param-multi')
@@ -274,48 +263,45 @@ export default class Dataloader {
       this.urlSync.updateUrl(this.opts.loaderParam)
     }
 
-    this.fetch()
+    this.fetch(false, 0)
   }
 
-  fetch(addEntries = false) {
-    // Cancel any in-flight request to prevent race conditions
-    if (this._abortController) {
-      this._abortController.abort()
+  async fetch(addEntries = false, page = this.opts.page) {
+    this._abortController?.abort()
+    const controller = this._abortController = new AbortController()
+    if (!addEntries) this.replacementPage = page
+    this.loading()
+    const { defaultParam, ...params } = this.opts.loaderParam
+    const query = new URLSearchParams({ filter: this.opts.filter, ...params })
+    const prefix = defaultParam ? encodeURIComponent(defaultParam) + '/' : ''
+    try {
+      const res = requireSuccess(await fetch(
+        this.baseURL + '/' + prefix + page + '?' + query, { signal: controller.signal }
+      ))
+      const html = await res.text()
+      if (controller.signal.aborted) return
+      if (addEntries) this.$canvasEl.insertAdjacentHTML('beforeend', html)
+      else this.$canvasEl.innerHTML = html
+      this.replacementPage = null
+      this.opts.page = page
+      this.status = res.headers.get('jpt-dataloader') || 'available'
+      this.updateButton()
+      this.opts.onFetch(this)
+    } catch (error) {
+      if (!controller.signal.aborted) console.error('Dataloader fetch failed', error)
+    } finally {
+      if (this._abortController === controller) {
+        this._abortController = null
+        this.complete()
+      }
     }
-    this._abortController = new AbortController()
-
-    const { defaultParam, ...otherParams } = this.opts.loaderParam
-    const filter = this.opts.filter
-
-    const fetchUrl = `${this.baseURL}/${defaultParam ? defaultParam + '/' : ''}${this.opts.page}?` +
-        new URLSearchParams({ filter, ...otherParams })
-
-    fetch(fetchUrl, { signal: this._abortController.signal })
-      .then(res => {
-        this.status = res.headers.get('jpt-dataloader') || 'available'
-        this.updateButton()
-        return res.text()
-      })
-      .then(html => {
-        if (addEntries) {
-          this.$canvasEl.insertAdjacentHTML('beforeend', html)
-        } else {
-          this.$canvasEl.innerHTML = html
-        }
-        this.opts.onFetch(this)
-        this.complete()
-      })
-      .catch(err => {
-        if (err.name === 'AbortError') return
-        console.error(`Dataloader[${this.id}] fetch error:`, err)
-        this.complete()
-      })
   }
 
   /**
    * Set [data-loader-loading] on main el
    */
   loading() {
+    activeLoaders.add(this)
     document.documentElement.setAttribute('data-loading', '')
     this.$el.setAttribute('data-loader-loading', '')
   }
@@ -325,7 +311,8 @@ export default class Dataloader {
    */
   complete() {
     this.$el.removeAttribute('data-loader-loading')
-    document.documentElement.removeAttribute('data-loading')
+    activeLoaders.delete(this)
+    if (!activeLoaders.size) document.documentElement.removeAttribute('data-loading')
   }
 
   /**
@@ -349,6 +336,7 @@ export default class Dataloader {
    * Remove all event listeners and clean up resources
    */
   destroy() {
+    this._boundOnFilter.cancel()
     // Abort any in-flight fetch
     if (this._abortController) {
       this._abortController.abort()

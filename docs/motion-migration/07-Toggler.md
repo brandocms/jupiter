@@ -1,5 +1,7 @@
 # Migration: Toggler Module
 
+> Archived 2025 migration plan. See the [current Toggler implementation](../../src/modules/Toggler/index.js) and [migration status](STATUS.md).
+
 **Tier**: 2 (Moderate)
 **Complexity**: ⭐⭐⭐ Moderate
 **Estimated Time**: 4-6 hours

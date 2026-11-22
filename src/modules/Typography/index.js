@@ -25,21 +25,13 @@ export default class Typography {
       ...settings
     }
 
-    this.elems = []
-
-    // Either load from root or the passed parent element
-    if (typeof parent === 'undefined') {
-      this.elems = [...this.elems, ...document.querySelectorAll(this.settings.selector)]
-    } else {
-      this.elems = [...this.elems, ...parent.querySelectorAll(this.settings.selector)]
+    const root = parent || document
+    const elements = new Set(root.querySelectorAll(this.settings.selector))
+    for (const container of root.querySelectorAll('[data-typo-children]')) {
+      for (const child of container.children) elements.add(child)
     }
-
-    // load children
-    const typoParents = document.querySelectorAll('[data-typo-children]')
-    typoParents.forEach(typoParent => {
-      this.elems = [...this.elems, ...typoParent.children]
-    })
-
+    this.elems = [...elements]
+    this.edits = new Map()
     this.apply()
   }
 
@@ -48,40 +40,28 @@ export default class Typography {
    * @return void
    */
   apply() {
-    this.elems.map(elem => {
-      // Run the ignore checker nd bail if required
-      if (this.shouldElementBeIgnored(elem)) {
-        return false
+    for (const el of this.elems) {
+      if (this.shouldElementBeIgnored(el)) continue
+      const text = el.textContent
+      const boundary = /([^\S\u00a0]+)\S+\s*$/.exec(text)
+      if (!boundary || text.trim().split(/\s+/).length < this.settings.minWords) continue
+
+      // The last word and its preceding whitespace may occupy different inline nodes.
+      const start = boundary.index
+      const end = start + boundary[1].length
+      const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT)
+      let offset = 0
+      for (let node = walker.nextNode(); node && offset < end; node = walker.nextNode()) {
+        const original = node.data
+        const next = offset + original.length
+        if (next > start && offset < end) {
+          const from = Math.max(0, start - offset)
+          node.replaceData(from, Math.min(next, end) - offset - from, offset <= start ? '\u00a0' : '')
+          this.edits.set(node, { original, formatted: node.data })
+        }
+        offset = next
       }
-
-      // The result string will be tacked on to this
-      let result = ''
-
-      // Split words/tags into array
-      let textItems = elem.innerHTML
-        .trim()
-        .replace(/&nbsp;/g, ' ')
-        .split(/ (?=[^>]*(?:<|$))/)
-
-      // Check if the text warrants this module
-      if (textItems.length < this.settings.minWords) {
-        return false
-      }
-
-      // Run orphans filter
-      textItems = this.preventOrphans(textItems)
-
-      // Join the words back together
-      result = textItems.join(' ')
-
-      // Replace whitespace after no break spaces
-      result = result.replace(/&nbsp; /g, '&nbsp;')
-
-      // Set the content of the element with our shiny string
-      elem.innerHTML = result
-
-      return true
-    })
+    }
   }
 
   /**
@@ -103,15 +83,10 @@ export default class Typography {
    * @return void
    */
   reset() {
-    this.elems.map(elem => {
-      // Run the ignore checker nd bail if required
-      if (this.shouldElementBeIgnored(elem)) {
-        return false
-      }
-
-      elem.innerHTML = elem.innerHTML.replace(/&nbsp;/g, ' ')
-      return true
-    })
+    for (const [node, { original, formatted }] of this.edits) {
+      if (node.data === formatted) node.data = original
+    }
+    this.edits.clear()
   }
 
   /**
@@ -123,7 +98,7 @@ export default class Typography {
   shouldElementBeIgnored(elem) {
     // Check if the element already contains 1 or more &nbsp; characters and the
     // ignore setting is true. If so: bail.
-    if (elem.innerHTML.indexOf('&nbsp;') > -1 && this.settings.ignoreExistingSpaceChars) {
+    if (this.settings.ignoreExistingSpaceChars && elem.textContent.includes('\u00a0')) {
       return true
     }
 

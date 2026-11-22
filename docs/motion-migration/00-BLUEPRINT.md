@@ -1,5 +1,7 @@
 # GSAP to Motion Migration Blueprint
 
+> Archived 2025 migration blueprint. Estimates and checklists below record the original plan. See the [migration status](STATUS.md) and [measured bundle sizes](../codebase-audit.html).
+
 **Quick Technical Reference**
 
 ---

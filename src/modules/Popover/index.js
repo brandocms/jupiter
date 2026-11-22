@@ -1,6 +1,5 @@
-import { animate } from 'motion'
-import Dom from '../Dom'
-import _defaultsDeep from 'lodash.defaultsdeep'
+import animateStyles from '../../utils/animateStyles'
+import applyDefaults from '../../utils/applyDefaults'
 import * as Events from '../../events'
 
 const DEFAULT_OPTIONS = {
@@ -17,7 +16,7 @@ const activePopovers = []
 export default class Popover {
   constructor(app, trigger, opts = {}) {
     this.app = app
-    this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
+    this.opts = applyDefaults(opts, DEFAULT_OPTIONS)
 
     this.trigger = trigger
     this.position = this.trigger.getAttribute('data-popover-position') || 'top'
@@ -115,7 +114,7 @@ export default class Popover {
     if (this.opts.followTrigger) {
       // Use requestAnimationFrame to ensure the popover is fully rendered
       requestAnimationFrame(() => {
-        this.addScrollListener()
+        if (this.isVisible) this.addScrollListener()
       })
     }
 
@@ -167,53 +166,21 @@ export default class Popover {
       .slice(positionIndex)
       .concat(this.orderedPositions.slice(0, positionIndex))
       .map(pos => positions[pos])
-      .find(pos => {
-        // Temporarily set position to check viewport
-        if (!shouldAnimate) {
-          this.popover.style.top = `${pos.top}px`
-          this.popover.style.left = `${pos.left}px`
-        }
-        return Dom.inViewportStrict(this.popover)
-      })
+      .find(pos => pos.left >= 0 && pos.top >= 0 &&
+        pos.left + popoverWidth <= window.innerWidth &&
+        pos.top + popoverHeight <= window.innerHeight) || positions.bottom
 
-    // Remove previous position classes
-    this.orderedPositions.forEach(pos => {
-      this.popover.classList.remove(`${this.className}--${pos}`)
-    })
-
-    // Set position and apply appropriate class
-    if (position) {
-      if (shouldAnimate && this.isVisible) {
-        animate(this.popover, {
-          top: Math.max(0, position.top),
-          left: Math.max(0, position.left)
-        }, {
-          duration: this.opts.followSpeed,
-          ease: 'easeOut'
-        })
-      } else if (!shouldAnimate) {
-        this.popover.style.top = `${Math.max(0, position.top)}px`
-        this.popover.style.left = `${Math.max(0, position.left)}px`
-      }
-      this.popover.classList.add(`${this.className}--${position.name}`)
-      this.currentPosition = position.name
+    const top = Math.max(0, Math.min(position.top, window.innerHeight - popoverHeight))
+    const left = Math.max(0, Math.min(position.left, window.innerWidth - popoverWidth))
+    if (shouldAnimate && this.isVisible) {
+      animateStyles(this.popover, { top, left }, { duration: this.opts.followSpeed, ease: 'easeOut' })
     } else {
-      // Fallback to bottom if no position works
-      if (shouldAnimate && this.isVisible) {
-        animate(this.popover, {
-          top: Math.max(0, positions.bottom.top),
-          left: Math.max(0, positions.bottom.left)
-        }, {
-          duration: this.opts.followSpeed,
-          ease: 'easeOut'
-        })
-      } else if (!shouldAnimate) {
-        this.popover.style.top = `${Math.max(0, positions.bottom.top)}px`
-        this.popover.style.left = `${Math.max(0, positions.bottom.left)}px`
-      }
-      this.popover.classList.add(`${this.className}--bottom`)
-      this.currentPosition = 'bottom'
+      this.popover.style.top = top + 'px'
+      this.popover.style.left = left + 'px'
     }
+    this.popover.classList.remove(this.className + '--' + this.currentPosition)
+    this.currentPosition = position.name
+    this.popover.classList.add(this.className + '--' + position.name)
   }
 
   hide() {
@@ -263,7 +230,7 @@ export default class Popover {
 
   // Close all popovers except the specified one
   closeAllExcept(exceptPopover) {
-    activePopovers.forEach(popover => {
+    activePopovers.slice().forEach(popover => {
       if (popover !== exceptPopover) {
         popover.hide()
       }

@@ -1,17 +1,29 @@
-const DEFAULT_FPS = 60
-const SCOPES = new Map()
+export default function rafCallback(callback, fps = 60) {
+  const interval = fps > 0 ? 1000 / fps : 1000 / 60
+  let frame = null
+  let last = -Infinity
+  let args
 
-export default (callback, fps = DEFAULT_FPS) =>
-  (...passedArgs) =>
-    requestAnimationFrame(() => {
-      const msCurrent = new Date().getTime()
-      const fpsInterval = 1000 / fps
+  function run(now) {
+    if (now - last + 0.1 < interval) {
+      frame = requestAnimationFrame(run)
+      return
+    }
+    frame = null
+    last = now
+    const latest = args
+    args = undefined
+    callback(...latest)
+  }
 
-      const msLast = SCOPES.get(callback) || null
-      const msDelta = msLast ? msCurrent - msLast : null
-
-      if (msDelta === null || msDelta > fpsInterval) {
-        SCOPES.set(callback, msCurrent - (msDelta % fpsInterval))
-        callback(...passedArgs)
-      }
-    })
+  function schedule(...latest) {
+    args = latest
+    if (frame === null) frame = requestAnimationFrame(run)
+  }
+  schedule.cancel = () => {
+    args = undefined
+    cancelAnimationFrame(frame)
+    frame = null
+  }
+  return schedule
+}

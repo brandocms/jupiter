@@ -12,7 +12,7 @@ export default class Popup {
     app: any;
     opts: any;
     backdrop: HTMLElement;
-    currentPopup: string | HTMLElement;
+    currentPopup: any;
     popupKey: string;
     /**
      * Bind click handlers to popup triggers and close buttons

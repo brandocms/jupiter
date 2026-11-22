@@ -1,5 +1,76 @@
 import { animate, delay } from 'motion'
 
+// Properties that are unitless (don't need 'px')
+const unitless = new Set([
+  'opacity', 'zIndex', 'fontWeight', 'lineHeight', 'orphans',
+  'widows', 'order', 'flexGrow', 'flexShrink', 'columnCount',
+  'fillOpacity', 'strokeOpacity', 'tabSize',
+])
+
+// Already a valid Motion.js easing
+const validMotionEasings = [
+  'linear',
+  'easeIn',
+  'easeInOut',
+  'easeOut',
+  'circIn',
+  'circInOut',
+  'circOut',
+  'backIn',
+  'backInOut',
+  'backOut',
+  'anticipate',
+]
+
+// Convert GSAP easings to Motion.js equivalents
+const easingMap = {
+  // Power easings (most common)
+  'power1.in': 'easeIn',
+  'power1.out': 'easeOut',
+  'power1.inout': 'easeInOut',
+  'power2.in': 'easeIn',
+  'power2.out': 'easeOut',
+  'power2.inout': 'easeInOut',
+  'power3.in': 'easeIn',
+  'power3.out': 'easeOut',
+  'power3.inout': 'easeInOut',
+  'power4.in': 'easeIn',
+  'power4.out': 'easeOut',
+  'power4.inout': 'easeInOut',
+
+  // Sine easings
+  'sine.in': 'easeIn',
+  'sine.out': 'easeOut',
+  'sine.inout': 'easeInOut',
+
+  // Expo easings
+  'expo.in': 'easeIn',
+  'expo.out': 'easeOut',
+  'expo.inout': 'easeInOut',
+
+  // Circ easings (Motion.js has these!)
+  'circ.in': 'circIn',
+  'circ.out': 'circOut',
+  'circ.inout': 'circInOut',
+
+  // Back easings (Motion.js has these!)
+  'back.in': 'backIn',
+  'back.out': 'backOut',
+  'back.inout': 'backInOut',
+
+  // Elastic and bounce - no direct equivalent, use anticipate or backOut
+  'elastic.in': 'backIn',
+  'elastic.out': 'backOut',
+  'elastic.inout': 'backInOut',
+  'bounce.in': 'backIn',
+  'bounce.out': 'anticipate',
+  'bounce.inout': 'backInOut',
+
+  // Common aliases
+  none: 'linear',
+  'linear': 'linear',
+}
+
 /**
  * Set properties immediately (like gsap.set)
  * Uses direct DOM manipulation for synchronous style application
@@ -60,16 +131,9 @@ export function set(target, values) {
       element.style.transform = transformProps.join(' ')
     }
 
-    // Properties that are unitless (don't need 'px')
-    const unitless = new Set([
-      'opacity', 'zIndex', 'fontWeight', 'lineHeight', 'orphans',
-      'widows', 'order', 'flexGrow', 'flexShrink', 'columnCount',
-      'fillOpacity', 'strokeOpacity', 'tabSize',
-    ])
-
     // Apply other styles
     Object.entries(styleProps).forEach(([key, value]) => {
-      if (typeof value === 'number' && !unitless.has(key)) {
+      if (typeof value === 'number' && !unitless.has(key.replace(/-([a-z])/g, (_, c) => c.toUpperCase()))) {
         element.style[key] = value + 'px'
       } else {
         element.style[key] = value
@@ -136,7 +200,7 @@ export function clearProps(target, props = 'all') {
     } else {
       const properties = Array.isArray(props) ? props : [props]
       properties.forEach(prop => {
-        element.style.removeProperty(prop)
+        element.style.removeProperty(prop.startsWith('--') ? prop : prop.replace(/[A-Z]/g, c => '-' + c.toLowerCase()))
       })
     }
   })
@@ -260,73 +324,7 @@ export function convertEasing(easing) {
     return 'easeOut'
   }
 
-  // Already a valid Motion.js easing
-  const validMotionEasings = [
-    'linear',
-    'easeIn',
-    'easeInOut',
-    'easeOut',
-    'circIn',
-    'circInOut',
-    'circOut',
-    'backIn',
-    'backInOut',
-    'backOut',
-    'anticipate',
-  ]
-
-  if (validMotionEasings.includes(easing)) {
-    return easing
-  }
-
-  // Convert GSAP easings to Motion.js equivalents
-  const easingMap = {
-    // Power easings (most common)
-    'power1.in': 'easeIn',
-    'power1.out': 'easeOut',
-    'power1.inOut': 'easeInOut',
-    'power2.in': 'easeIn',
-    'power2.out': 'easeOut',
-    'power2.inOut': 'easeInOut',
-    'power3.in': 'easeIn',
-    'power3.out': 'easeOut',
-    'power3.inOut': 'easeInOut',
-    'power4.in': 'easeIn',
-    'power4.out': 'easeOut',
-    'power4.inOut': 'easeInOut',
-
-    // Sine easings
-    'sine.in': 'easeIn',
-    'sine.out': 'easeOut',
-    'sine.inOut': 'easeInOut',
-
-    // Expo easings
-    'expo.in': 'easeIn',
-    'expo.out': 'easeOut',
-    'expo.inOut': 'easeInOut',
-
-    // Circ easings (Motion.js has these!)
-    'circ.in': 'circIn',
-    'circ.out': 'circOut',
-    'circ.inOut': 'circInOut',
-
-    // Back easings (Motion.js has these!)
-    'back.in': 'backIn',
-    'back.out': 'backOut',
-    'back.inOut': 'backInOut',
-
-    // Elastic and bounce - no direct equivalent, use anticipate or backOut
-    'elastic.in': 'backIn',
-    'elastic.out': 'backOut',
-    'elastic.inOut': 'backInOut',
-    'bounce.in': 'backIn',
-    'bounce.out': 'anticipate',
-    'bounce.inOut': 'backInOut',
-
-    // Common aliases
-    none: 'linear',
-    'linear': 'linear',
-  }
+  if (validMotionEasings.includes(easing)) return easing
 
   // Try to find a mapping
   const converted = easingMap[easing.toLowerCase()]

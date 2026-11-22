@@ -1,4 +1,7 @@
-animate
+# animate
+
+> Archived Motion reference captured during the Jupiter migration. See the [migration status](STATUS.md) and [current Jupiter guide](../../README.md).
+
 The animate() function is a powerful tool for creating and controlling animations.
 
 animate("li", { opacity: 0 })

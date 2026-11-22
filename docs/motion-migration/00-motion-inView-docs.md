@@ -1,4 +1,7 @@
-inView
+# inView
+
+> Archived Motion reference captured during the Jupiter migration. See the [migration status](STATUS.md) and [current Jupiter guide](../../README.md).
+
 inView detects when elements enter and leave the viewport.
 
 inView("#carousel li", (element) => {

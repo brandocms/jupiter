@@ -399,6 +399,7 @@
           .join("");
 
         return {
+          ok: true,
           text: () => Promise.resolve(html),
           headers: {
             get: (name) => {

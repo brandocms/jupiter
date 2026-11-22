@@ -36,27 +36,30 @@ export default class Breakpoints {
   constructor(app, opts = {}) {
     this.app = app
     this.mediaQueries = {}
+    this.listeners = new AbortController()
+    this.mediaCleanups = []
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
     this.currentBreakpoint = null
     this.initialized = false
     window.addEventListener(Events.APPLICATION_PRELUDIUM, () => {
       this.initialize(false)
-    })
+    }, { signal: this.listeners.signal })
     window.addEventListener(Events.APPLICATION_REVEALED, () => {
       this.initialize(true)
-    })
+    }, { signal: this.listeners.signal })
   }
 
   initialize(reveal = false) {
     if (!reveal) {
+      this.mediaCleanups.splice(0).forEach(remove => remove())
       this.opts.breakpoints.forEach((size) => {
         this.mediaQueries[size] = this._getVal(`--breakpoint-${size}`)
       })
 
       const keys = Object.keys(this.mediaQueries)
-      keys.forEach((key) => {
+      keys.forEach((key, index) => {
         let query = ''
-        const next = keys[(keys.indexOf(key) + 1) % keys.length]
+        const next = keys[(index + 1) % keys.length]
         if (
           key === this.opts.breakpoints[0] &&
           this.mediaQueries[key] === '0'
@@ -98,7 +101,9 @@ export default class Breakpoints {
           }
         }
 
-        this.mediaQueries[key].addListener(combinedListener)
+        const mq = this.mediaQueries[key]
+        mq.addListener(combinedListener)
+        this.mediaCleanups.push(() => mq.removeListener(combinedListener))
       })
     }
 
@@ -148,6 +153,11 @@ export default class Breakpoints {
     }
 
     return null
+  }
+
+  destroy() {
+    this.listeners.abort()
+    this.mediaCleanups.splice(0).forEach(remove => remove())
   }
 
   defaultListener(e) {

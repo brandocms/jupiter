@@ -10,6 +10,8 @@ export default class Breakpoints {
     constructor(app: any, opts?: BreakpointsOptions);
     app: any;
     mediaQueries: {};
+    listeners: AbortController;
+    mediaCleanups: any[];
     opts: any;
     currentBreakpoint: string;
     initialized: boolean;
@@ -18,6 +20,7 @@ export default class Breakpoints {
         key: string;
         mq: any;
     };
+    destroy(): void;
     defaultListener(e: any): void;
     setCurrentBreakpoint(): void;
     _getVal(key: any): string;

@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Jupiter module contracts</title></head>
+<body>
+<script type="module">
+  import * as jupiter from '../src/index.js'
+  import { normalizeAlphaTween } from '../src/modules/Moonwalk/index.js'
+  import * as geometry from '../src/modules/Looper/geometry.js'
+  import { clearProps, convertEasing } from '../src/utils/motion-helpers.js'
+  window.contracts = { ...jupiter, normalizeAlphaTween, geometry, clearProps, convertEasing }
+</script>
+</body>
+</html>

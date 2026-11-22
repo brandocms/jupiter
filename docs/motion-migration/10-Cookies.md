@@ -1,5 +1,7 @@
 # Migration: Cookies Module
 
+> Archived 2025 migration plan. See the [current Cookies implementation](../../src/modules/Cookies/index.js) and [migration status](STATUS.md).
+
 **Tier**: 2 (Moderate) | **Complexity**: ⭐⭐ | **Time**: 2-3 hours | **File**: `src/modules/Cookies/index.js`
 
 ---

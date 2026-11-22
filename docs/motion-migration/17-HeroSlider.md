@@ -1,5 +1,7 @@
 # Migration: HeroSlider Module
 
+> Archived 2025 migration plan. See the [current HeroSlider implementation](../../src/modules/HeroSlider/index.js) and [migration status](STATUS.md).
+
 **Tier**: 2 (Moderate) | **Complexity**: ⭐⭐⭐ | **Time**: 5-6 hours | **File**: `src/modules/HeroSlider/index.js`
 
 ---

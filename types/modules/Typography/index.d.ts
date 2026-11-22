@@ -33,7 +33,8 @@ export default class Typography {
          */
         ignoreExistingSpaceChars: boolean;
     };
-    elems: any[];
+    elems: Element[];
+    edits: Map<any, any>;
     /**
      * Apply formatting to the loaded elements
      * @return void

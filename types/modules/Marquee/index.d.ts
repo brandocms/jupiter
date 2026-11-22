@@ -3,12 +3,12 @@ export default class Marquee {
     opts: any;
     app: any;
     elements: {};
-    position: any;
+    position: import("motion-dom").MotionValue<number>;
     holderWidth: number;
     duration: number;
-    timeline: any;
-    speedAnimation: any;
-    inertiaAnimation: any;
+    timeline: import("motion-dom").AnimationPlaybackControlsWithThen;
+    speedAnimation: import("motion-dom").AnimationPlaybackControlsWithThen;
+    inertiaAnimation: import("motion-dom").AnimationPlaybackControlsWithThen;
     observer: IntersectionObserver;
     playing: boolean;
     hovering: boolean;
@@ -16,7 +16,7 @@ export default class Marquee {
     _onReveal: any;
     _onMouseEnter: any;
     _onMouseLeave: any;
-    _positionUnsubscribe: any;
+    _positionUnsubscribe: VoidFunction;
     _dragCleanup: () => void;
     initialize(): void;
     /**
@@ -46,7 +46,7 @@ export default class Marquee {
      * the loop reset (repeat) invisible. Always recreated from the live position
      * so it stays correct after drags and throws.
      */
-    createCrawl(): any;
+    createCrawl(): import("motion-dom").AnimationPlaybackControlsWithThen;
     /**
      * The speed the crawl should settle at. Half speed while the pointer rests
      * on the marquee, so a crawl recreated after a drag or throw doesn't lose

@@ -7,7 +7,6 @@ const { test, expect } = require('@playwright/test')
 async function gotoLooper(page, pageName, testId) {
   await page.setViewportSize({ width: 1280, height: 720 })
   await page.goto(`/looper/${pageName}.html`)
-  await page.waitForLoadState('networkidle')
 
   // Wait for the looper wrapper to fade in (opacity: 1)
   const wrapper = page.locator(`[data-testid="${testId}"] [data-looper-container]`)

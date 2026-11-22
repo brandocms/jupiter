@@ -7,7 +7,6 @@ const { test, expect } = require('@playwright/test')
 async function gotoMarquee(page) {
   await page.setViewportSize({ width: 1280, height: 720 })
   await page.goto('/marquee/drag.html')
-  await page.waitForLoadState('networkidle')
 
   const dragMarquee = page.locator('[data-testid="marquee-drag"]')
   await expect(dragMarquee).toHaveCSS('opacity', '1', { timeout: 5000 })

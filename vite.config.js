@@ -1,7 +1,9 @@
 import { defineConfig } from 'vite'
 import { resolve } from 'path'
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  // Standalone browser builds have no Node process global.
+  define: command === 'build' ? { 'process.env.NODE_ENV': JSON.stringify('production') } : undefined,
   // Base public path when served in development or production
   base: '/',
   root: 'test-pages',
@@ -25,6 +27,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
+    minify: 'terser',
     // Handling for library mode
     lib: {
       entry: resolve(__dirname, 'src/index.js'),
@@ -36,9 +39,10 @@ export default defineConfig({
       // Bundle all dependencies
       external: [],
       output: {
+        inlineDynamicImports: true,
         // Global variable name to use in UMD builds
         globals: {},
       },
     },
   },
-})
+}))

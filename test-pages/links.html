@@ -57,7 +57,7 @@
   </head>
   <body>
     <div class="page-fader" data-page-fader data-testid="page-fader"></div>
-    <header data-testid="header">
+    <header data-nav data-testid="header">
       <h1>Jupiter Links Test</h1>
     </header>
     <main data-main data-testid="main">
@@ -66,7 +66,7 @@
         <p>Test smooth scrolling and page transitions</p>
         <a href="#section2" data-testid="link-to-section2">Scroll to Section 2</a>
         <a href="#section3" data-testid="link-to-section3">Scroll to Section 3</a>
-        <a href="https://example.com" data-testid="external-link" target="_blank">External Link</a>
+        <a href="https://example.com" data-testid="external-link">External Link</a>
       </section>
       <section id="section2" data-testid="section2">
         <h2>Section 2</h2>
@@ -84,7 +84,7 @@
     <script type="module">
       import { Application, Links } from "../src/index.js";
       const app = new Application({ respectReducedMotion: false });
-      new Links(app);
+      new Links(app, { scrollOffsetNav: true });
       app.initialize();
     </script>
   </body>

@@ -1,3 +1,15 @@
+#### Unreleased
+
+- Lazyload measures responsive image slots before assigning sources, shares observers across sections, and handles dynamically inserted images in native mode. In the Chromium fixture, a 240 px slot requests only the 320w candidate.
+- Application uses Web Animations for its default fader and loads debug animations on demand. The initial Application and Lazyload import fell from 34.81 to 14.40 kB gzipped in the production consumer fixture. Lazyload and Dataloader also support standalone imports without pulling in Lodash.
+- Dataloader preserves results after failed requests, retries the requested page, and coordinates the loading indicator across instances. Filter URLs round-trip multi-select values, encoded characters and empty intermediate filters through back and forward navigation.
+- Application lifecycle callbacks return an unsubscribe function. Scroll release restores previous inline styles, and forced scrolling clears its state even when event emission is disabled. Multiple callers can now wait for the same image.
+- Lightbox supports keyboard activation, moves focus into the dialog and restores focus on close. Captions render as text, and `onAfterClose` runs after the exit animation. Popup also cleans up its backdrop when switching between dialogs.
+- Looper, Parallax, headers and the equal-height modules do less repeated layout work. Typography preserves existing child elements and their event handlers when preventing orphans.
+- The published TypeScript entry point works in strict browser-only projects. `yarn size` reports the package download, standalone builds, initial imports and on-demand chunks.
+- CI runs the Moonwalk contracts in Chromium, checks generated declarations and bundles, and compiles a consumer of the packed package. Browser-test jobs use Ubuntu 24.04 for the locked Playwright release. Publishing verifies that the Git tag matches the package version.
+- The refreshed guides and demos document the current APIs. The [codebase audit](docs/codebase-audit.html) records all 40 findings, their fixes and the measurements.
+
 #### 5.0.0-beta.22
 
 - Looper: peek mode starts at the first item instead of the middle one. Peek turns on center mode, which opened on item 3 of 5, so a newest-first carousel hid its newest item off-screen or cut off at the left edge. The viewport now centres on the gap after item 1, which is the first full card. With loop on, the last item peeks in on the left. Plain `data-looper-center` still starts at the middle item

@@ -21,4 +21,4 @@ runs:
     # This is safe to run on every build; it’s a no-op when browsers are already there
     - name: Ensure Playwright browsers are present
       shell: bash
-      run: npx playwright install --with-deps
+      run: npx playwright install --with-deps chromium

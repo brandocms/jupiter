@@ -1,0 +1,33 @@
+export default class HeaderState {
+    constructor(defaultEvents: any);
+    defaultEvents: any;
+    listeners: AbortController;
+    subscriptions: any[];
+    listen(type: any, callback: any, options?: {}): void;
+    subscribe(type: any, callback: any): void;
+    destroy(): void;
+    lock(): void;
+    preventPin: boolean;
+    preventUnpin: boolean;
+    unlock(): void;
+    checkSize(force: any): void;
+    checkTop(force: any): void;
+    checkBot(force: any, height?: number): void;
+    notTop(): void;
+    _top: boolean;
+    top(): void;
+    notBottom(): void;
+    _bottom: boolean;
+    bottom(): void;
+    _updateHeaderHeight(): void;
+    isOutOfBounds(height?: number): boolean;
+    getScrollerPhysicalHeight(): number;
+    getScrollerHeight(): number;
+    getDocumentHeight(): number;
+    getViewportHeight(): number;
+    getElementHeight(el: any): number;
+    getElementPhysicalHeight(el: any): number;
+    getScrollY(): any;
+    toleranceExceeded(): boolean;
+    _getOptionsForSection(section: any, opts: any): any;
+}

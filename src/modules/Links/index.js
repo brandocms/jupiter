@@ -1,5 +1,5 @@
 import { animate } from 'motion'
-import _defaultsDeep from 'lodash.defaultsdeep'
+import applyDefaults from '../../utils/applyDefaults'
 import { set } from '../../utils/motion-helpers'
 
 /**
@@ -91,7 +91,7 @@ export default class Links {
    */
   constructor(app, opts = {}) {
     this.app = app
-    this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
+    this.opts = applyDefaults(opts, DEFAULT_OPTIONS)
     this.transitioned = false
 
     window.addEventListener('pageshow', this.onPageShow.bind(this))
@@ -141,7 +141,6 @@ export default class Links {
   }
 
   bindAnchors(anchors) {
-    let wait = false
     Array.from(anchors).forEach(anchor => {
       anchor.addEventListener('click', e => {
         e.preventDefault()
@@ -150,9 +149,9 @@ export default class Links {
           return
         }
 
-        if (document.body.classList.contains('open-menu')) {
+        const wait = document.body.classList.contains('open-menu')
+        if (wait) {
           this.app.mobileMenu.toggleMenuClosed()
-          wait = true
         }
 
         const move = () => {

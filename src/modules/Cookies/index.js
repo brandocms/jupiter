@@ -1,5 +1,5 @@
 import { animate } from 'motion'
-import _defaultsDeep from 'lodash.defaultsdeep'
+import applyDefaults from '../../utils/applyDefaults'
 import * as Events from '../../events'
 import { set } from '../../utils/motion-helpers'
 
@@ -90,6 +90,7 @@ import { set } from '../../utils/motion-helpers'
 
 /**
  * @typedef {Object} CookiesOptions
+ * @property {Document|HTMLElement} [root] - Container for the banner and consent toggles
  * @property {Function} [onAccept] - Called when cookies are accepted
  * @property {Function} [onRefuse] - Called when cookies are refused
  * @property {Function} [alreadyConsented] - Called if user has already consented to cookies
@@ -180,6 +181,8 @@ const DEFAULT_OPTIONS = {
 /**
  * Cookies module for handling cookie consent
  */
+const mountedRoots = new WeakMap()
+
 export default class Cookies {
   /**
    * Create a new Cookies instance
@@ -188,14 +191,19 @@ export default class Cookies {
    */
   constructor(app, opts = {}) {
     this.app = app
-    this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
+    this.root = opts.root || document
+    mountedRoots.get(this.root)?.destroy()
+    mountedRoots.set(this.root, this)
+    this.events = new AbortController()
+    this.ownedNodes = []
+    this.opts = applyDefaults(opts, DEFAULT_OPTIONS)
 
-    this.cc = document.querySelector('.cookie-container')
-    this.inner = document.querySelector('.cookie-container-inner')
-    this.text = document.querySelector('.cookie-law-text')
-    this.btns = document.querySelector('.cookie-law-buttons')
-    this.btn = document.querySelector('.dismiss-cookielaw')
-    this.btnRefuse = document.querySelector('.refuse-cookielaw')
+    this.cc = this.root.querySelector('.cookie-container')
+    this.inner = this.root.querySelector('.cookie-container-inner')
+    this.text = this.root.querySelector('.cookie-law-text')
+    this.btns = this.root.querySelector('.cookie-law-buttons')
+    this.btn = this.root.querySelector('.dismiss-cookielaw')
+    this.btnRefuse = this.root.querySelector('.refuse-cookielaw')
 
     this.setupConsentToggles()
 
@@ -204,17 +212,17 @@ export default class Cookies {
     }
 
     if (this.btn) {
-      this.app.registerCallback(Events.APPLICATION_REVEALED, () => {
+      this.unsubscribe = this.app.registerCallback(Events.APPLICATION_REVEALED, () => {
         this.opts.showCC(this)
       })
 
       this.btn.addEventListener('click', () => {
         this.opts.onAccept(this)
-      })
+      }, { signal: this.events.signal })
       if (this.btnRefuse) {
         this.btnRefuse.addEventListener('click', () => {
           this.opts.onRefuse(this)
-        })
+        }, { signal: this.events.signal })
       }
     }
   }
@@ -222,8 +230,15 @@ export default class Cookies {
   /**
    * Find all `[data-cookie-consent]` elements and wire them up.
    */
+  destroy() {
+    if (mountedRoots.get(this.root) === this) mountedRoots.delete(this.root)
+    this.events.abort()
+    this.unsubscribe?.()
+    this.ownedNodes.splice(0).forEach(el => el.remove())
+  }
+
   setupConsentToggles() {
-    this.consentToggles = [...document.querySelectorAll('[data-cookie-consent]')]
+    this.consentToggles = [...this.root.querySelectorAll('[data-cookie-consent]')]
 
     this.consentToggles.forEach(el => {
       const icon = document.createElement('span')
@@ -232,6 +247,7 @@ export default class Cookies {
       const label = document.createElement('span')
       label.setAttribute('data-cookie-consent-label', '')
 
+      this.ownedNodes.push(icon, label)
       el.appendChild(icon)
       el.appendChild(label)
 
@@ -239,7 +255,7 @@ export default class Cookies {
 
       el.addEventListener('click', () => {
         this.handleConsentToggle()
-      })
+      }, { signal: this.events.signal })
     })
   }
 

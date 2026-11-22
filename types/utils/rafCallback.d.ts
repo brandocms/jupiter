@@ -1,2 +1,4 @@
-declare function _default(callback: any, fps?: number): (...passedArgs: any[]) => number;
-export default _default;
+export default function rafCallback(callback: any, fps?: number): {
+    (...latest: any[]): void;
+    cancel(): void;
+};

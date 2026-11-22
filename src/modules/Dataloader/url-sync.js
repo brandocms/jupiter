@@ -20,17 +20,31 @@ export default class DataloaderUrlSync {
       // Add more languages as needed
     }
     
+    const templates = config.templates || {}
+    this.template = templates[this.language] || templates[this.defaultLanguage] || Object.values(templates)[0]
+    this.parts = this.template?.split('/').map(part => {
+      const tokens = part.split(/(:\w+)/)
+      const keys = []
+      const pattern = tokens.map(token => {
+        if (token.startsWith(':')) {
+          keys.push(token.slice(1))
+          return '(.*?)'
+        }
+        return token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      }).join('')
+      return { tokens, keys, pattern: new RegExp('^' + pattern + '$') }
+    })
     this.initialize()
   }
   
   initialize() {
-    // Set initial state from URL
-    this.syncFromUrl()
+    const initial = this.parseUrl()
+    if (initial && Object.keys(initial).length) this.syncFromUrl(initial)
     
     // Listen for browser navigation
     this.popstateHandler = () => {
       this.syncFromUrl()
-      this.dataloader.fetch()
+      this.dataloader.fetch(false, 0)
     }
     window.addEventListener('popstate', this.popstateHandler)
   }
@@ -44,34 +58,16 @@ export default class DataloaderUrlSync {
       return this.config.buildUrl(params, this.language, window.location.pathname)
     }
     
-    const template = this.config.templates[this.language] || 
-                    this.config.templates[this.defaultLanguage] || 
-                    Object.values(this.config.templates)[0] // Fallback to first template
-    
-    if (!template) {
-      console.error('No URL template found for dataloader:', this.dataloader.id)
-      return window.location.pathname
+    if (!this.template) return window.location.pathname
+    const omitted = this.omitFromUrl[this.language] || this.omitFromUrl[this.defaultLanguage] || []
+    const renderToken = token => {
+      if (!token.startsWith(':')) return token
+      const value = params[token.slice(1)]
+      if (value == null || value === false || omitted.includes(value)) return ''
+      return (Array.isArray(value) ? value : [value]).map(encodeURIComponent).join(',')
     }
-    
-    // Replace tokens in template
-    let url = template
-    Object.entries(params).forEach(([key, value]) => {
-      // Check if this value should be omitted from URL for the current language
-      const omitValues = this.omitFromUrl[this.language] || this.omitFromUrl[this.defaultLanguage] || []
-      const shouldOmit = !value || omitValues.includes(value)
-      
-      url = url.replace(`:${key}`, shouldOmit ? '' : value)
-    })
-    
-    // Clean up any remaining tokens and trailing slashes
-    url = url.replace(/\/:[^\/]+/g, '')
-    url = url.replace(/\/+$/, '') // Remove trailing slashes
-    
-    // Ensure we don't end up with empty path
-    if (!url || url === '') {
-      url = template.split(':')[0].replace(/\/+$/, '') || '/'
-    }
-    
+    let url = this.parts.map(part => part.tokens.map(renderToken).join('')).join('/').replace(/\/+$/, '') || '/'
+
     // Add language prefix if configured
     if (this.languageInPath) {
       const shouldAddLang = this.language !== this.defaultLanguage || !this.hideDefaultLanguage
@@ -92,86 +88,30 @@ export default class DataloaderUrlSync {
       return this.config.parseUrl(window.location.pathname, this.language)
     }
     
-    const template = this.config.templates[this.language] || 
-                    this.config.templates[this.defaultLanguage] || 
-                    Object.values(this.config.templates)[0]
-    
-    if (!template) {
-      return {}
-    }
-    
+    if (!this.parts) return {}
     let path = window.location.pathname
-    
-    // Strip language prefix if configured
-    if (this.languageInPath) {
-      const langPrefix = `/${this.language}/`
-      if (path.startsWith(langPrefix)) {
-        path = path.substring(langPrefix.length - 1)
-      } else if (this.hideDefaultLanguage && path.startsWith('/')) {
-        // Path might not have language prefix if it's the default language
-        // Continue with the path as-is
+    if (this.languageInPath && path.startsWith('/' + this.language + '/')) {
+      path = path.slice(this.language.length + 1)
+    }
+    const segments = path.replace(/\/+$/, '').split('/')
+    if (segments.length > this.parts.length) return {}
+    const params = Object.create(null)
+    for (const [index, part] of this.parts.entries()) {
+      const match = part.pattern.exec(segments[index] || '')
+      if (!match) return {}
+      for (const [i, key] of part.keys.entries()) {
+        if (!match[i + 1]) continue
+        try {
+          const values = match[i + 1].split(',').map(decodeURIComponent)
+          params[key] = values.length === 1 ? values[0] : values
+        } catch {
+          return {}
+        }
       }
     }
-    
-    // Convert template to regex pattern
-    // First escape special regex characters (except for our tokens)
-    let pattern = template.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    
-    // Extract parameter names from template
-    const paramNames = []
-    pattern = pattern.replace(/:(\w+)/g, (match, paramName) => {
-      paramNames.push(paramName)
-      return '([^/]+)'
-    })
-    
-    // Make trailing parameters optional by replacing them with optional groups
-    const templateParts = template.split('/')
-    const pathParts = path.split('/')
-    
-    // If path is shorter than template, try matching partial patterns
-    if (pathParts.length <= templateParts.length) {
-      const partialTemplate = templateParts.slice(0, pathParts.length).join('/')
-      let partialPattern = partialTemplate.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-      const partialParamNames = []
-      partialPattern = partialPattern.replace(/:(\w+)/g, (match, paramName) => {
-        partialParamNames.push(paramName)
-        return '([^/]+)'
-      })
-      
-      const partialRegex = new RegExp(`^${partialPattern}$`)
-      const partialMatch = path.match(partialRegex)
-      
-      if (partialMatch) {
-        // Build params object from partial matches
-        const params = {}
-        partialParamNames.forEach((name, index) => {
-          if (partialMatch[index + 1]) {
-            params[name] = decodeURIComponent(partialMatch[index + 1])
-          }
-        })
-        return params
-      }
-    }
-    
-    // Try full pattern match
-    const regex = new RegExp(`^${pattern}$`)
-    const match = path.match(regex)
-    
-    if (!match) {
-      return {}
-    }
-    
-    // Build params object from matches
-    const params = {}
-    paramNames.forEach((name, index) => {
-      if (match[index + 1]) {
-        params[name] = decodeURIComponent(match[index + 1])
-      }
-    })
-    
     return params
   }
-  
+
   /**
    * Update browser URL with current parameters
    */
@@ -183,7 +123,7 @@ export default class DataloaderUrlSync {
       history.pushState(
         { dataloaderId: this.dataloader.id, params }, 
         '', 
-        url
+        url.startsWith('//') ? location.origin + url : url
       )
     }
   }
@@ -191,42 +131,28 @@ export default class DataloaderUrlSync {
   /**
    * Sync dataloader parameters from current URL
    */
-  syncFromUrl() {
-    const params = this.parseUrl()
-    
-    // Clear all current selections first
-    this.dataloader.$paramEls.forEach($el => {
-      $el.removeAttribute('data-loader-param-selected')
-    })
-    
-    // Clear internal state
-    this.dataloader.opts.loaderParam = {}
-    
-    // Update dataloader parameters from URL
-    Object.entries(params).forEach(([key, value]) => {
-      // Find the corresponding data-loader-param element
-      const $paramEl = this.dataloader.$paramEls.find($el => {
-        const paramKey = $el.dataset.loaderParamKey || 'defaultParam'
-        return paramKey === key && $el.dataset.loaderParam === value
-      })
-      
-      
-      if ($paramEl) {
-        // Mark as selected
-        $paramEl.setAttribute('data-loader-param-selected', '')
-      }
-      
-      // Always update internal state, even if no UI element found
-      // This ensures the API gets the parameter for filtering
-      if (key === 'defaultParam') {
-        this.dataloader.opts.loaderParam.defaultParam = value
+  syncFromUrl(params = this.parseUrl() || {}) {
+
+    this.dataloader.opts.loaderParam = { ...params }
+    for (const el of this.dataloader.$paramEls) {
+      const key = this.dataloader.getParamKey(el)
+      const value = params[key]
+      let selected = false
+      if (el.type === 'checkbox') {
+        selected = value === true || value === 'true'
+        el.checked = selected
+        this.dataloader.opts.loaderParam[key] = selected
+      } else if (el.hasAttribute('data-loader-param-multi')) {
+        const values = Array.isArray(value) ? value : value == null ? [] : [value]
+        this.dataloader.opts.loaderParam[key] = values
+        selected = values.includes(el.dataset.loaderParam)
       } else {
-        this.dataloader.opts.loaderParam[key] = value
+        selected = el.dataset.loaderParam === value
       }
-    })
-    
+      el.toggleAttribute('data-loader-param-selected', selected)
+    }
   }
-  
+
   /**
    * Clean up event listeners
    */

@@ -1,5 +1,7 @@
 # Migration: MobileMenu Module
 
+> Archived 2025 migration plan. See the [current MobileMenu implementation](../../src/modules/MobileMenu/index.js) and [migration status](STATUS.md).
+
 **Tier**: 2 (Moderate) | **Complexity**: ⭐⭐⭐⭐ | **Time**: 5-7 hours | **File**: `src/modules/MobileMenu/index.js`
 
 ---

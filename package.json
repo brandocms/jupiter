@@ -23,6 +23,8 @@
   "scripts": {
     "test": "playwright test",
     "types": "tsc",
+    "verify:package": "bash scripts/verify-package.sh",
+    "size": "bash scripts/verify-package.sh --size",
     "playwright": "playwright test --project=chromium  --reporter line",
     "playwright:ui": "playwright test --ui",
     "playwright:report": "playwright show-report",
@@ -31,7 +33,7 @@
     "playwright:toggler": "playwright test e2e/toggler.spec.js --project=chromium  --reporter line",
     "playwright:breakpoints": "playwright test e2e/breakpoints.spec.js --project=chromium  --reporter line",
     "playwright:typography": "playwright test e2e/typography.spec.js --project=chromium  --reporter line",
-    "playwright:popover": "playwright test e2e/popover.spec.js e2e/popover.click.spec.js e2e/popover.follow.spec.js --project=chromium  --reporter line",
+    "playwright:popover": "playwright test e2e/popover.spec.js e2e/popover-click.spec.js e2e/popover-follow.spec.js --project=chromium  --reporter line",
     "playwright:popup": "playwright test e2e/popup.spec.js --project=chromium  --reporter line",
     "playwright:dataloader": "playwright test e2e/dataloader.spec.js --project=chromium  --reporter line",
     "playwright:dataloader-url-sync": "playwright test e2e/dataloader-url-sync.spec.js --project=chromium  --reporter line",
@@ -41,14 +43,16 @@
     "vite:build": "vite build",
     "vite:preview": "vite preview"
   },
-  "types": "types/index.d.ts",
+  "types": "types/public.d.ts",
   "dependencies": {
     "lodash.defaultsdeep": "^4.6.1",
-    "motion": "^12.35.2"
+    "motion": "^12.35.2",
+    "motion-dom": "^12.35.2"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
     "@types/node": "^22",
+    "terser": "^5.39.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.1"
   },

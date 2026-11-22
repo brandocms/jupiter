@@ -11,23 +11,10 @@ const _binarySearch = (a, b, maxIter, epsilon, property, unit) => {
   return _binarySearch(a, mid, maxIter - 1, epsilon, property, unit)
 }
 
-const _mediaQueryBinarySearch = (property, unit, a, b, maxIter, epsilon) => {
-  let head
-  let style
-  let div
-
-  const ratio = _binarySearch(a, b, maxIter, epsilon, property, unit)
-  if (div) {
-    head.removeChild(style)
-    document.body.removeChild(div)
-  }
-  return ratio
-}
-
 const calculateFirefox = () => {
   return (
     Math.round(
-      _mediaQueryBinarySearch('min--moz-device-pixel-ratio', '', 0, 10, 20, 0.0001) * 10
+      _binarySearch(0, 10, 20, 0.0001, 'min--moz-device-pixel-ratio', '') * 10
     ) / 10
   )
 }

@@ -1,4 +1,4 @@
-import _defaultsDeep from 'lodash.defaultsdeep'
+import applyDefaults from '../../utils/applyDefaults'
 import * as Events from '../../events'
 
 /**
@@ -34,17 +34,18 @@ export default class Parallax {
    */
   constructor(app, opts = {}) {
     this.app = app
-    this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
+    this.opts = applyDefaults(opts, DEFAULT_OPTIONS)
     this.elements = {}
     this.parallaxElements = []
     
+    if (app.PREFERS_REDUCED_MOTION && app.opts.respectReducedMotion) return
+
     // Get all elements to apply parallax to
     if (typeof this.opts.el === 'string') {
       if (this.opts.el.includes('[data-parallax-parent]')) {
         // Handle multiple elements within parent
-        const parent = document.querySelector(this.opts.el)
-        if (parent) {
-          this.elements.parent = parent
+        for (const parent of document.querySelectorAll(this.opts.el)) {
+          this.elements.parent ??= parent
           const children = parent.querySelectorAll('[data-parallax-factor]')
           children.forEach(el => this.setupParallaxElement(el))
         }
@@ -147,11 +148,10 @@ export default class Parallax {
    * @param {number} scrollPosition - Current scroll position
    * @returns {Object} Transform and opacity values
    */
-  calculateTransform(item, scrollPosition) {
-    const { element, factor, fadeContent, orientation } = item
+  calculateTransform(item, scrollPosition, rect = item.element.getBoundingClientRect()) {
+    const { factor, fadeContent, orientation } = item
     
     // Get element position
-    const rect = element.getBoundingClientRect()
     const windowHeight = this.app.size.height
     const windowMiddle = windowHeight / 2
     
@@ -254,16 +254,17 @@ export default class Parallax {
     
     const scrollPosition = window.pageYOffset
     
-    // Update each parallax element
+    const updates = []
+    // Measure every visible item before writing transforms.
     this.parallaxElements.forEach(item => {
       const rect = item.element.getBoundingClientRect()
       
       // Only apply parallax if the element is in or near the viewport
       if (rect.bottom > -100 && rect.top < this.app.size.height + 100) {
-        const transform = this.calculateTransform(item, scrollPosition)
-        this.applyTransform(item, transform)
+        updates.push([item, this.calculateTransform(item, scrollPosition, rect)])
       }
     })
+    for (const [item, transform] of updates) this.applyTransform(item, transform)
   }
   
   /**

@@ -1,5 +1,7 @@
 # Migration: Dropdown Module
 
+> Archived 2025 migration plan. See the [current Dropdown implementation](../../src/modules/Dropdown/index.js) and [migration status](STATUS.md).
+
 **Tier**: 2 (Moderate) | **Complexity**: ⭐⭐⭐ | **Time**: 4-6 hours | **File**: `src/modules/Dropdown/index.js`
 
 ---
