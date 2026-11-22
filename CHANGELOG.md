@@ -1,4 +1,4 @@
-#### Unreleased
+#### 5.0.0-beta.23
 
 - Lazyload measures responsive image slots before assigning sources, shares observers across sections, and handles dynamically inserted images in native mode. In the Chromium fixture, a 240 px slot requests only the 320w candidate.
 - Application uses Web Animations for its default fader and loads debug animations on demand. The initial Application and Lazyload import fell from 34.81 to 14.40 kB gzipped in the production consumer fixture. Lazyload and Dataloader also support standalone imports without pulling in Lodash.
