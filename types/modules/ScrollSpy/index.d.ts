@@ -14,7 +14,7 @@ export default class ScrollSpy {
      * Initialize ScrollSpy
      */
     initialize(): void;
-    triggers: any[];
+    triggers: any;
     /**
      * Handle intersection with viewport
      * @param {IntersectionObserverEntry} entry - Intersection observer entry

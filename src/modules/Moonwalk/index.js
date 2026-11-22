@@ -1,7 +1,7 @@
 /**
  * Vendor imports
  */
-import { gsap, CSSPlugin } from 'gsap/all'
+import { animate, stagger } from 'motion'
 import _defaultsDeep from 'lodash.defaultsdeep'
 
 /**
@@ -11,9 +11,31 @@ import * as Events from '../../events'
 import prefersReducedMotion from '../../utils/prefersReducedMotion'
 import imageIsLoaded from '../../utils/imageIsLoaded'
 import imagesAreLoaded from '../../utils/imagesAreLoaded'
+import { set, delayedCall, convertEasing } from '../../utils/motion-helpers'
 import Dom from '../Dom'
 
-gsap.registerPlugin(CSSPlugin)
+/**
+ * Debug logging
+ */
+const DEBUG = false
+let _idCounter = 0
+
+const MOONWALK_ATTRS = ['data-moonwalk', 'data-moonwalk-section', 'data-moonwalk-children']
+
+function logMoonwalk(category, message, data = {}) {
+  if (DEBUG) {
+    console.log(`[Moonwalk:${category}]`, message, data)
+  }
+}
+
+function logComputedStyle(element, props = ['opacity', 'transform']) {
+  if (DEBUG && element) {
+    const computed = window.getComputedStyle(element)
+    const values = {}
+    props.forEach((prop) => (values[prop] = computed[prop]))
+    console.log('[Moonwalk:ComputedStyle]', element, values)
+  }
+}
 
 /**
  * @typedef {Object} MoonwalkTransition
@@ -22,30 +44,42 @@ gsap.registerPlugin(CSSPlugin)
  */
 
 /**
+ * @typedef {Object} AlphaTweenConfig
+ * @property {number} [duration] - Duration of the alpha tween (defaults to walk duration)
+ * @property {string} [ease] - Easing function (defaults to 'easeIn')
+ * @property {number} [delay] - Additional delay before the alpha tween starts
+ */
+
+/**
  * @typedef {Object} MoonwalkWalk
  * @property {number} [startDelay=0] - Delay before the animation starts
  * @property {number} [interval=0.15] - Time between animations in a sequence
  * @property {number} [duration=0.65] - Duration of the animation
- * @property {boolean|Object} [alphaTween=false] - Whether to add a separate opacity tween
- * @property {MoonwalkTransition} transition - The transition configuration
- * @property {string} [sectionTargets] - CSS selector for targeting elements in named sections
+ * @property {boolean|AlphaTweenConfig} [alphaTween=false] - Whether to add a separate opacity tween. Pass `true` for defaults or an AlphaTweenConfig object for control.
+ * @property {MoonwalkTransition|null} transition - The transition configuration. Set to `null` for CSS-only mode (uses `data-moonwalked` attribute for CSS transitions).
+ * @property {string} [sectionTargets] - CSS selector for targeting elements in named sections (instead of using direct children)
+ */
+
+/**
+ * @typedef {Object} MoonwalkRunMeta
+ * @property {string|null} direction - The viewport entry/exit direction ('top', 'bottom', 'left', 'right', or null)
  */
 
 /**
  * @typedef {Object} MoonwalkRun
  * @property {number} [threshold=0] - IntersectionObserver threshold
- * @property {Function} callback - Function called when element enters viewport
- * @property {Function} [onExit] - Function called when element exits viewport
+ * @property {(el: HTMLElement, repeated: boolean, meta: MoonwalkRunMeta) => void} callback - Function called when element enters viewport
+ * @property {(el: HTMLElement, exited: boolean, meta: MoonwalkRunMeta) => void} [onExit] - Function called when element exits viewport
  * @property {boolean} [repeated=false] - Whether the run should repeat
  * @property {string} [rootMargin] - IntersectionObserver rootMargin
- * @property {Function} [initialize] - Function called during initialization
- * @property {Function} [onReady] - Function called when APPLICATION_REVEALED fires, before viewport observers start
+ * @property {(el: HTMLElement) => void} [initialize] - Function called during initialization
+ * @property {(el: HTMLElement) => void} [onReady] - Function called when APPLICATION_REVEALED fires, before viewport observers start
  */
 
 /**
  * @typedef {Object} MoonwalkOptions
- * @property {string|Function} [on=Events.APPLICATION_REVEALED] - Event to trigger animations
- * @property {number} [initialDelay=0.1] - Delay before starting animations
+ * @property {string|null} [on=Events.APPLICATION_REVEALED] - Event name to trigger animations. Set to `null` to trigger manually via `ready()`.
+ * @property {number} [initialDelay=100] - Delay in ms before starting animations
  * @property {boolean} [clearLazyload=false] - Clear data-ll-srcset attributes
  * @property {boolean} [clearNestedSections=true] - Remove nested data-moonwalk-section attributes
  * @property {boolean} [clearNestedWalks=true] - Remove nested data-moonwalk attributes
@@ -56,7 +90,7 @@ gsap.registerPlugin(CSSPlugin)
  * @property {boolean} [uniqueIds=false] - Generate unique IDs for moonwalk elements
  * @property {boolean} [addIndexes=false] - Add index attributes to elements
  * @property {Object.<string, MoonwalkRun>} [runs={}] - Run configurations
- * @property {Object.<string, MoonwalkWalk>} walks - Walk configurations
+ * @property {Object.<string, MoonwalkWalk>} [walks] - Walk configurations
  */
 
 /** @type {MoonwalkOptions} */
@@ -74,7 +108,7 @@ const DEFAULT_OPTIONS = {
    * Set a delay for the initial reveal. Could be useful if you want the reveal to happen
    * after for instance a header has been revealed
    */
-  initialDelay: 0.1,
+  initialDelay: 100,
 
   /**
    * Clear out all `data-ll-srcset` from moonwalk elements
@@ -147,7 +181,50 @@ const DEFAULT_OPTIONS = {
 }
 
 /**
- * Moonwalk animation system for scroll-based reveal animations
+ * Normalize alphaTween config into a consistent object form.
+ * Returns a new object (never mutates the original).
+ */
+export function normalizeAlphaTween(alphaTween, duration) {
+  if (typeof alphaTween === 'object' && alphaTween !== null) {
+    return { ...alphaTween, duration: alphaTween.duration || duration }
+  }
+  if (alphaTween === true) {
+    return { duration, ease: 'easeIn' }
+  }
+  return alphaTween
+}
+
+/**
+ * Moonwalk animation system for scroll-based reveal animations.
+ *
+ * ## HTML attributes
+ *
+ * - `data-moonwalk` / `data-moonwalk="{walkName}"` — marks an element for scroll-triggered animation
+ * - `data-moonwalk-section` / `data-moonwalk-section="{walkName}"` — groups elements; unnamed sections
+ *   animate children individually, named sections stagger-reveal all children at once
+ * - `data-moonwalk-children` / `data-moonwalk-children="{walkName}"` — converts direct children
+ *   into `data-moonwalk` (or `data-moonwalk="{walkName}"`) elements automatically
+ * - `data-moonwalk-stage="{walkName}"` — applies a walk transition to the section element itself
+ *   before its children animate (e.g. fade in a container, then reveal items)
+ * - `data-moonwalk-order="{number}"` — overrides the DOM order of children inside a named section;
+ *   elements with order are sorted first, unordered elements keep their relative position
+ * - `data-moonwalk-run="{runName}"` — standalone observer-based callback (not part of walk system)
+ * - `data-placeholder` / `data-ll-placeholder` — skip waiting for image load before tweening
+ *
+ * ## CSS-only mode
+ *
+ * Set `transition: null` on a walk to use CSS-only animations. Moonwalk will stagger-add the
+ * `data-moonwalked` attribute instead of running JS tweens. Style the reveal via CSS:
+ * ```css
+ * [data-moonwalk="fade"] { opacity: 0; transition: opacity 0.5s; }
+ * [data-moonwalk="fade"][data-moonwalked] { opacity: 1; }
+ * ```
+ *
+ * ## alphaTween
+ *
+ * Can be `true` (defaults: duration from walk, ease `'easeIn'`) or an object:
+ * `{ duration?: number, ease?: string, delay?: number }` for fine-grained control
+ * over a separate opacity animation layered on top of the main transition.
  */
 export default class Moonwalk {
   /**
@@ -159,7 +236,7 @@ export default class Moonwalk {
     this.app = app
     this.opts = _defaultsDeep(opts, DEFAULT_OPTIONS)
     if (container !== document.body) {
-      this.opts.on = () => {}
+      this.opts.on = null
     }
     this.initialize(container)
   }
@@ -195,6 +272,7 @@ export default class Moonwalk {
     }
 
     this.addClass()
+    this._observers = []
     this.sections = this.initializeSections(container)
     this.runs = this.initializeRuns(container)
 
@@ -206,8 +284,9 @@ export default class Moonwalk {
       this.removeAllWalks(container)
     }
 
-    if (this.opts.on) {
-      window.addEventListener(this.opts.on, this.onReady.bind(this))
+    if (this.opts.on && typeof this.opts.on === 'string') {
+      this._boundOnReady = this.onReady.bind(this)
+      window.addEventListener(this.opts.on, this._boundOnReady)
     }
   }
 
@@ -224,8 +303,14 @@ export default class Moonwalk {
    * `data-moonwalk-section-ready` on `data-moonwalk-section` elements.
    */
   walkToThisPoint(hash) {
-    // Find the target element using the hash
-    const targetElement = document.querySelector(hash)
+    // The hash names an id, which need not be a valid CSS selector (`#1-intro`)
+    let id
+    try {
+      id = decodeURIComponent(hash.slice(1))
+    } catch {
+      return
+    }
+    const targetElement = id && document.getElementById(id)
     if (!targetElement) return // Exit if the element is not found
 
     // Get all elements with the 'data-moonwalk' attribute
@@ -256,12 +341,7 @@ export default class Moonwalk {
    * Remove all moonwalks. Useful for clients who prefer reduced motion
    */
   removeAllWalks(container = document.body) {
-    const keys = [
-      'data-moonwalk',
-      'data-moonwalk-section',
-      'data-moonwalk-children',
-    ]
-    keys.forEach((key) => {
+    MOONWALK_ATTRS.forEach((key) => {
       const elems = container.querySelectorAll(`[${key}]`)
       Array.from(elems).forEach((el) => el.removeAttribute(key))
       container.removeAttribute(key)
@@ -269,12 +349,7 @@ export default class Moonwalk {
   }
 
   removeFor(container = document.body, selector) {
-    const keys = [
-      'data-moonwalk',
-      'data-moonwalk-section',
-      'data-moonwalk-children',
-    ]
-    keys.forEach((key) => {
+    MOONWALK_ATTRS.forEach((key) => {
       const elems = container.querySelectorAll(`${selector}[${key}]`)
       Array.from(elems).forEach((el) => el.removeAttribute(key))
     })
@@ -305,10 +380,7 @@ export default class Moonwalk {
    */
   addIds(section) {
     Array.from(section.querySelectorAll('[data-moonwalk]')).forEach((el) => {
-      el.setAttribute(
-        'data-moonwalk-id',
-        Math.random().toString(36).substring(7)
-      )
+      el.setAttribute('data-moonwalk-id', `mw-${++_idCounter}`)
     })
   }
 
@@ -326,7 +398,7 @@ export default class Moonwalk {
       Array.from(elements).forEach((element, index) => {
         element.setAttribute('data-moonwalk-idx', index + 1)
       })
-    }, this)
+    })
   }
 
   /**
@@ -336,25 +408,27 @@ export default class Moonwalk {
   initializeRuns(container = document.body) {
     const runs = container.querySelectorAll('[data-moonwalk-run]')
     return Array.from(runs).map((run) => {
-      const foundRun = this.opts.runs[run.getAttribute('data-moonwalk-run')]
-      if (foundRun) {
-        if (foundRun.initialize) {
-          foundRun.initialize(run)
-        }
-        return {
-          el: run,
-          threshold: foundRun.threshold || 0,
-          initialize: foundRun.initialize,
-          onReady: foundRun.onReady,
-          callback: foundRun.callback,
-          onExit: foundRun.onExit,
-          repeated: foundRun.repeated,
-          rootMargin: foundRun.rootMargin,
-        }
+      const runName = run.getAttribute('data-moonwalk-run')
+      const foundRun = this.opts.runs[runName]
+      if (!foundRun) {
+        console.warn(`==> JUPITER/MOONWALK: Unknown run "${runName}" — not found in opts.runs`)
+        return null
       }
 
-      return null
-    })
+      if (foundRun.initialize) {
+        foundRun.initialize(run)
+      }
+      return {
+        el: run,
+        threshold: foundRun.threshold || 0,
+        initialize: foundRun.initialize,
+        onReady: foundRun.onReady,
+        callback: foundRun.callback,
+        onExit: foundRun.onExit,
+        repeated: foundRun.repeated,
+        rootMargin: foundRun.rootMargin,
+      }
+    }).filter(Boolean)
   }
 
   /**
@@ -388,16 +462,15 @@ export default class Moonwalk {
       this.addIndexes(section)
     }
 
-    const timeline = gsap.timeline({
-      autoRemoveChildren: false,
-      smoothChildTiming: false,
-    })
-
     return {
-      id: Math.random().toString(36).substring(7),
+      id: `mw-${++_idCounter}`,
       el: section,
       name: section.getAttribute('data-moonwalk-section') || null,
-      timeline,
+      animation: {
+        lastDelay: 0,
+        lastDuration: 0,
+        lastStartTime: null,
+      },
       observer: null,
       stage: {
         name: section.getAttribute('data-moonwalk-stage') || null,
@@ -446,7 +519,7 @@ export default class Moonwalk {
   setAttrs(element, val) {
     const affectedElements = []
 
-    Array.prototype.forEach.call(element.children, (c) => {
+    Array.from(element.children).forEach((c) => {
       c.setAttribute('data-moonwalk', val)
       affectedElements.push(c)
     })
@@ -464,13 +537,31 @@ export default class Moonwalk {
   setupNamesAndStages(section) {
     section.el.setAttribute('data-moonwalk-section-ready', '')
 
-    if (!section.stage.name && !section.name) {
-      return
-    }
-
     const {
       opts: { walks },
     } = this
+
+    // An unknown name would throw here or in the observers, stopping every
+    // later section: report it, and treat the section as a plain one.
+    if (section.name && !walks[section.name]) {
+      console.error(
+        '==> JUPITER/MOONWALK: MISSING referenced moonwalk section walk',
+        section.name
+      )
+      section.name = null
+    }
+
+    if (section.stage.name && !walks[section.stage.name]?.transition) {
+      console.error(
+        '==> JUPITER/MOONWALK: MISSING referenced moonwalk stage, or it has no transition',
+        section.stage.name
+      )
+      section.stage.name = null
+    }
+
+    if (!section.stage.name && !section.name) {
+      return
+    }
 
     if (section.name) {
       // set initial tweens
@@ -483,30 +574,48 @@ export default class Moonwalk {
         section.children = this.orderChildren(section.el.children)
       }
 
-      const fromTransition = sectionWalk.alphaTween
-        ? {
-            ...sectionWalk.transition.from,
-            opacity: 0,
-          }
-        : sectionWalk.transition.from
+      // Only set initial states for JS animations (transition !== null)
+      if (sectionWalk.transition) {
+        const fromTransition = sectionWalk.alphaTween
+          ? {
+              ...sectionWalk.transition.from,
+              opacity: 0,
+            }
+          : sectionWalk.transition.from
 
-      gsap.set(section.children, fromTransition)
+        logMoonwalk('InitialState', 'Setting initial state for named section', {
+          section: section.name,
+          childCount: section.children.length,
+          fromTransition,
+        })
+        set(section.children, fromTransition)
+
+        // Check if styles were actually applied
+        if (section.children.length > 0) {
+          logComputedStyle(section.children[0])
+        }
+      } else {
+        logMoonwalk('InitialState', 'Skipping initial state for CSS-only section', {
+          section: section.name,
+          childCount: section.children.length,
+        })
+      }
     }
 
     if (section.stage.name) {
       // reset the element to its `from` state.
       const stageTween = walks[section.stage.name]
-      if (!stageTween) {
-        console.error(
-          '==> JUPITER/MOONWALK: MISSING referenced moonwalk stage',
-          section.stage.name
-        )
-      } else {
-        gsap.set(section.el, stageTween.transition.from)
-      }
+      logMoonwalk('InitialState', 'Setting stage initial state', {
+        stage: section.stage.name,
+        from: stageTween.transition.from,
+      })
+      set(section.el, stageTween.transition.from)
+      logComputedStyle(section.el)
     }
 
     const observer = this.sectionObserver(section)
+    section.observer = observer
+    this._observers.push(observer)
     observer.observe(section.el)
   }
 
@@ -532,12 +641,9 @@ export default class Moonwalk {
                 // run stage tween
                 const stageTween = walks[section.stage.name]
 
-                const to = {
-                  ...stageTween.transition.to,
+                animate(entry.target, stageTween.transition.to, {
                   duration: stageTween.duration,
-                }
-
-                section.timeline.to(entry.target, to, 0)
+                })
                 section.stage.firstTween = true
               }
             }
@@ -546,50 +652,66 @@ export default class Moonwalk {
             if (section.name) {
               const tween = walks[section.name]
 
-              if (!tween) {
-                console.error(
-                  `==> JUPITER: Walk [${section.name}] not found in config`
-                )
-              }
+              logMoonwalk('SectionObserver', 'Named section triggered', {
+                sectionName: section.name,
+                childCount: section.children.length,
+                interval: tween.interval,
+                duration: tween.duration,
+                hasAlphaTween: !!tween.alphaTween,
+                isCssOnly: !tween.transition,
+              })
 
-              if (typeof tween.alphaTween === 'object') {
-                tween.alphaTween.duration = tween.alphaTween.duration
-                  ? tween.alphaTween.duration
-                  : tween.duration
-              } else if (tween.alphaTween === true) {
-                tween.alphaTween = {
+              // Check if this is CSS-only animation (transition: null)
+              if (!tween.transition) {
+                // CSS-only mode - stagger adding the data-moonwalked attribute
+                logMoonwalk('SectionObserver', 'Using CSS-only mode', {
+                  sectionName: section.name,
+                })
+
+                section.children.forEach((child, index) => {
+                  const delay = (tween.startDelay || 0) + index * tween.interval
+                  delayedCall(delay, () => {
+                    child.setAttribute('data-moonwalked', '')
+                  })
+                })
+              } else {
+                // JS animation mode
+                const resolvedAlpha = normalizeAlphaTween(tween.alphaTween, tween.duration)
+
+                // Extract ease from to values and convert for Motion.js
+                const { ease: tweenEase, ...toValues } = tween.transition.to
+                const convertedEase = convertEasing(tweenEase || 'easeOut')
+
+                const animationOptions = {
                   duration: tween.duration,
-                  ease: 'sine.in',
+                  ease: convertedEase,
+                  delay: stagger(tween.interval, {
+                    startDelay: tween.startDelay || 0,
+                  }),
                 }
-              }
 
-              if (tween.startDelay) {
-                tween.transition.to = {
-                  ...tween.transition.to,
-                  delay: tween.startDelay,
+                logMoonwalk('SectionObserver', 'Starting stagger animation', {
+                  sectionName: section.name,
+                  to: toValues,
+                  ease: convertedEase,
+                  options: animationOptions,
+                })
+
+                animate(section.children, toValues, animationOptions)
+
+                if (resolvedAlpha) {
+                  animate(
+                    section.children,
+                    { opacity: 1 },
+                    {
+                      duration: resolvedAlpha.duration,
+                      ease: convertEasing(resolvedAlpha.ease || 'easeIn'),
+                      delay: stagger(tween.interval, {
+                        startDelay: tween.startDelay || 0,
+                      }),
+                    }
+                  )
                 }
-              }
-
-              section.timeline.staggerTo(
-                section.children,
-                tween.duration,
-                tween.transition.to,
-                tween.interval,
-                0
-              )
-
-              if (tween.alphaTween) {
-                section.timeline.staggerTo(
-                  section.children,
-                  tween.alphaTween.duration,
-                  {
-                    opacity: 1,
-                    ease: tween.alphaTween.ease,
-                    delay: tween.startDelay || 0,
-                  },
-                  tween.interval,
-                  0
-                )
               }
             }
 
@@ -597,7 +719,7 @@ export default class Moonwalk {
           }
         }
       },
-      { rootMargin: opts.rootMargin }
+      { rootMargin: opts.rootMargin, threshold: opts.threshold }
     )
   }
 
@@ -611,7 +733,7 @@ export default class Moonwalk {
       const orderA = a.getAttribute('data-moonwalk-order')
         ? parseInt(a.getAttribute('data-moonwalk-order'))
         : null
-      const orderB = a.getAttribute('data-moonwalk-order')
+      const orderB = b.getAttribute('data-moonwalk-order')
         ? parseInt(b.getAttribute('data-moonwalk-order'))
         : null
 
@@ -629,6 +751,94 @@ export default class Moonwalk {
 
       return orderA - orderB
     })
+  }
+
+  /**
+   * Calculate the delay for the next animation in the section.
+   * This replaces GSAP's timeline.recent() logic.
+   *
+   * @param {*} section - The section object
+   * @param {*} duration - Duration of the animation to add
+   * @param {*} overlap - How much the animations should overlap
+   * @returns {number} The delay in seconds
+   */
+  calculateDelay(section, duration, overlap) {
+    if (!section.animation.lastStartTime) {
+      // First animation in section
+      logMoonwalk('DelayCalc', 'First animation in section', { delay: 0 })
+      return 0
+    }
+
+    const now = performance.now()
+    const elapsed = (now - section.animation.lastStartTime) / 1000
+    // overlap is negative when animations should stagger (start before previous ends)
+    // So we ADD overlap (which is negative) to get the correct next start time
+    const idealNextStart =
+      section.animation.lastDelay + section.animation.lastDuration + overlap
+    const actualDelay = Math.max(0, idealNextStart - elapsed)
+
+    logMoonwalk('DelayCalc', 'Calculating delay', {
+      elapsed: elapsed.toFixed(3),
+      lastDelay: section.animation.lastDelay,
+      lastDuration: section.animation.lastDuration,
+      overlap,
+      idealNextStart,
+      actualDelay: actualDelay.toFixed(3),
+    })
+
+    return actualDelay
+  }
+
+  /**
+   * Update the animation state after adding an animation.
+   *
+   * @param {*} section - The section object
+   * @param {*} delay - The delay that was used
+   * @param {*} duration - The duration of the animation
+   */
+  updateAnimationState(section, delay, duration) {
+    const previousState = { ...section.animation }
+
+    section.animation.lastDelay = delay
+    section.animation.lastDuration = duration
+    section.animation.lastStartTime = performance.now()
+
+    logMoonwalk('StateUpdate', 'Updating animation state', {
+      delay,
+      duration,
+      previousState,
+      newState: { ...section.animation },
+    })
+  }
+
+  destroy() {
+    if (this.opts.on && typeof this.opts.on === 'string' && this._boundOnReady) {
+      window.removeEventListener(this.opts.on, this._boundOnReady)
+      this._boundOnReady = null
+    }
+
+    if (this._observers) {
+      this._observers.forEach(obs => obs.disconnect())
+      this._observers = []
+    }
+
+    if (this.sections) {
+      this.sections.forEach(section => {
+        section.el = null
+        section.elements = []
+        section.children = null
+        section.observer = null
+      })
+      this.sections = []
+    }
+
+    if (this.runs) {
+      this.runs.forEach(run => {
+        run.el = null
+        run.observer = null
+      })
+      this.runs = []
+    }
   }
 
   onReady() {
@@ -651,7 +861,7 @@ export default class Moonwalk {
     // Execute onReady callbacks for all runs
     for (let idx = 0; idx < this.runs.length; idx += 1) {
       const run = this.runs[idx]
-      if (run && run.onReady) {
+      if (run.onReady) {
         run.onReady(run.el)
       }
     }
@@ -659,14 +869,10 @@ export default class Moonwalk {
     for (let idx = 0; idx < this.runs.length; idx += 1) {
       const run = this.runs[idx]
 
-      if (!run) {
-        return
-      }
-
       // if this is the last section, set rootMargin to 0
       let rootMargin
 
-      if (idx === this.sections.length - 1) {
+      if (idx === this.runs.length - 1) {
         rootMargin = '0px'
       } else {
         if (run.rootMargin) {
@@ -677,6 +883,8 @@ export default class Moonwalk {
       }
 
       const runObserver = this.runObserver(run, rootMargin)
+      run.observer = runObserver
+      this._observers.push(runObserver)
       runObserver.observe(run.el)
     }
 
@@ -695,11 +903,96 @@ export default class Moonwalk {
 
       if (!section.name) {
         section.observer = this.observer(section, rootMargin)
+        this._observers.push(section.observer)
       }
 
       section.elements = section.el.querySelectorAll('[data-moonwalk]')
-      section.elements.forEach((box) => section.observer.observe(box))
+
+      // Only set initial states and observe individual elements for unnamed sections
+      // Named sections are observed at the section level via sectionObserver
+      if (!section.name) {
+        // Set initial states for tweenJS elements BEFORE observing
+        section.elements.forEach((element) => {
+          const walkName = element.getAttribute('data-moonwalk')
+          const cfg = this.walkConfig(walkName)
+
+          // Only set initial state if this uses tweenJS (has transition property)
+          if (cfg && cfg.transition) {
+            logMoonwalk('InitialState', 'Setting initial state for individual element', {
+              walkName: walkName || 'default',
+              from: cfg.transition.from,
+            })
+            set(element, cfg.transition.from)
+          }
+        })
+
+        section.elements.forEach((box) => section.observer.observe(box))
+      }
     }
+  }
+
+  /**
+   * The walk config for a `data-moonwalk` value. An unknown name is reported
+   * once and falls back to the default walk, so the element still reveals.
+   *
+   * @param {string} walkName
+   */
+  walkConfig(walkName) {
+    if (!walkName.length) return this.opts.walks.default
+
+    const cfg = this.opts.walks[walkName]
+    if (cfg) return cfg
+
+    this._missingWalks = this._missingWalks || new Set()
+    if (!this._missingWalks.has(walkName)) {
+      this._missingWalks.add(walkName)
+      console.error(
+        '==> JUPITER/MOONWALK: MISSING referenced moonwalk walk, using the default walk',
+        walkName
+      )
+    }
+
+    return this.opts.walks.default
+  }
+
+  /**
+   * Get the viewport entry direction based on current scroll direction.
+   * When entering, elements appear from the opposite side of scroll direction.
+   *
+   * @param {boolean} isEntry - Whether this is an entry (true) or exit (false)
+   * @returns {string|null}
+   */
+  getScrollDirection(isEntry) {
+    if (!this.app.state || !this.app.state.scrollDirection) {
+      return null
+    }
+
+    const entryMap = { down: 'bottom', up: 'top', right: 'left', left: 'right' }
+    const exitMap = { down: 'top', up: 'bottom', right: 'right', left: 'left' }
+    const map = isEntry ? entryMap : exitMap
+
+    return map[this.app.state.scrollDirection] || null
+  }
+
+  /**
+   * Get the exit direction for an element, falling back to position-based
+   * detection when scroll direction is unavailable.
+   *
+   * @param {IntersectionObserverEntry} entry
+   * @returns {string|null}
+   */
+  getExitDirection(entry) {
+    const scrollDir = this.getScrollDirection(false)
+    if (scrollDir) {
+      return scrollDir
+    }
+
+    const { boundingClientRect: rect } = entry
+    if (rect.bottom <= 0) return 'top'
+    if (rect.top >= window.innerHeight) return 'bottom'
+    if (rect.right <= 0) return 'left'
+    if (rect.left >= window.innerWidth) return 'right'
+    return null
   }
 
   /**
@@ -709,52 +1002,14 @@ export default class Moonwalk {
    * @param {*} rootMargin
    */
   runObserver(run, rootMargin) {
-    // Store the previous positions of observed elements to compare for exit direction
-    const elementPositions = new WeakMap()
-
     return new IntersectionObserver(
       (entries, self) => {
         for (let i = 0; i < entries.length; i += 1) {
           const entry = entries[i]
 
-          // Store the element's current position in the viewport
-          const boundingRect = entry.boundingClientRect
-          const viewportHeight = window.innerHeight
-          const viewportWidth = window.innerWidth
-
           if (entry.isIntersecting && run.callback) {
-            // Calculate entry direction
-            let meta = { direction: null }
-            
-            // Use the app's scroll direction for reliable detection
-            // If scrollDirection is null, the element was likely revealed on initial load
-            if (this.app.state && this.app.state.scrollDirection) {
-              // Map scroll direction to viewport entry direction
-              switch (this.app.state.scrollDirection) {
-                case 'down':
-                  meta.direction = 'bottom' // When scrolling down, elements enter from bottom
-                  break
-                case 'up':
-                  meta.direction = 'top' // When scrolling up, elements enter from top
-                  break
-                case 'right':
-                  meta.direction = 'left' // When scrolling right, elements enter from left
-                  break
-                case 'left':
-                  meta.direction = 'right' // When scrolling left, elements enter from right
-                  break
-              }
-            }
-            // If no scroll direction is available, direction remains null
-            
-            // Store the element's position when it enters the viewport
-            elementPositions.set(entry.target, {
-              top: boundingRect.top,
-              bottom: boundingRect.bottom,
-              left: boundingRect.left,
-              right: boundingRect.right
-            })
-            
+            const meta = { direction: this.getScrollDirection(true) }
+
             const runRepeated = entry.target.hasAttribute(
               'data-moonwalk-run-triggered'
             )
@@ -772,40 +1027,8 @@ export default class Moonwalk {
                 'data-moonwalk-run-exit-triggered'
               )
               entry.target.setAttribute('data-moonwalk-run-exit-triggered', '')
-              
-              // Calculate exit direction
-              let meta = { direction: null }
-              
-              // Use the app's scroll direction for reliable detection
-              // For exit direction, it's the opposite of the entry direction for the same scroll
-              if (this.app.state && this.app.state.scrollDirection) {
-                // Map scroll direction to viewport exit direction
-                switch (this.app.state.scrollDirection) {
-                  case 'down':
-                    meta.direction = 'top' // When scrolling down, elements exit from top
-                    break
-                  case 'up':
-                    meta.direction = 'bottom' // When scrolling up, elements exit from bottom
-                    break
-                  case 'right':
-                    meta.direction = 'right' // When scrolling right, elements exit from right
-                    break
-                  case 'left':
-                    meta.direction = 'left' // When scrolling left, elements exit from left
-                    break
-                }
-              } else {
-                // If no scroll direction is available, use the simplest position-based check
-                if (boundingRect.bottom <= 0) {
-                  meta.direction = 'top'
-                } else if (boundingRect.top >= viewportHeight) {
-                  meta.direction = 'bottom'
-                } else if (boundingRect.right <= 0) {
-                  meta.direction = 'left'
-                } else if (boundingRect.left >= viewportWidth) {
-                  meta.direction = 'right'
-                }
-              }
+
+              const meta = { direction: this.getExitDirection(entry) }
 
               run.onExit(entry.target, runExited, meta)
               if (!run.repeated) {
@@ -838,55 +1061,58 @@ export default class Moonwalk {
           const entry = entries[i]
 
           if (entry.isIntersecting || entry.intersectionRatio > 0) {
-            section.running = true
-
-            if (entry.target.dataset.moonwalkId) {
-              console.debug('-- intersecting', entry.target.dataset.moonwalkId)
-            }
-
             const walkName = entry.target.getAttribute('data-moonwalk')
-            const cfg = !walkName.length
-              ? opts.walks.default
-              : opts.walks[walkName]
+            const targetId =
+              entry.target.getAttribute('data-testid') ||
+              walkName ||
+              entry.target.className
 
-            const { duration, transition, interval, startDelay } = cfg
+            logMoonwalk('Observer', 'Element entered viewport', {
+              target: targetId,
+              walkName,
+              isIntersecting: entry.isIntersecting,
+              intersectionRatio: entry.intersectionRatio,
+            })
+            const cfg = this.walkConfig(walkName)
 
-            let { alphaTween } = cfg
-            let overlap = (duration - interval) * -1 // flip it
+            const { duration, transition, startDelay } = cfg
+            // Default interval to 0.15 if not specified (same as default walk)
+            const interval = cfg.interval !== undefined ? cfg.interval : 0.15
+
+            const alphaTween = normalizeAlphaTween(cfg.alphaTween, duration)
+            let overlap = interval - duration
 
             if (section.stage.firstTween) {
               overlap = 0
               section.stage.firstTween = false
             }
 
-            if (typeof alphaTween === 'object' && alphaTween !== null) {
-              alphaTween.duration = alphaTween.duration
-                ? alphaTween.duration
-                : duration
-            } else if (alphaTween === true) {
-              alphaTween = {
-                duration,
-                ease: 'sine.in',
-              }
-            }
-
-            const tween = transition ? this.tweenJS : this.tweenCSS
-
             const tweenFn = () => {
-              tween(
-                section,
-                entry.target,
-                duration,
-                interval,
-                transition,
-                overlap,
-                alphaTween
-              )
+              if (transition) {
+                this.tweenJS(
+                  section,
+                  entry.target,
+                  duration,
+                  interval,
+                  transition,
+                  overlap,
+                  alphaTween
+                )
+              } else {
+                this.tweenCSS(
+                  section,
+                  entry.target,
+                  duration,
+                  interval,
+                  transition,
+                  overlap
+                )
+              }
             }
 
             const wrappedTweenFn = () => {
               if (startDelay) {
-                gsap.delayedCall(startDelay, tweenFn)
+                delayedCall(startDelay, tweenFn)
               } else {
                 tweenFn()
               }
@@ -937,6 +1163,7 @@ export default class Moonwalk {
    * @param {*} section
    * @param {*} target
    * @param {*} tweenDuration
+   * @param {*} tweenInterval
    * @param {*} tweenTransition
    * @param {*} tweenOverlap
    * @param {*} alphaTween
@@ -950,56 +1177,90 @@ export default class Moonwalk {
     tweenOverlap,
     alphaTween
   ) {
-    let tweenPosition
-    const startingPoint = tweenDuration - tweenOverlap
+    const targetId =
+      target.getAttribute('data-testid') ||
+      target.getAttribute('data-moonwalk') ||
+      target.className
+
+    logMoonwalk('TweenJS', 'Starting tweenJS', {
+      target: targetId,
+      duration: tweenDuration,
+      overlap: tweenOverlap,
+      hasAlphaTween: !!alphaTween,
+    })
 
     if (Dom.hasAttribute(target, 'data-moonwalked')) {
+      logMoonwalk('TweenJS', 'Already moonwalked, skipping', { target: targetId })
       return
     }
 
-    if (section.timeline.isActive() && section.timeline.recent()) {
-      const currentTime = section.timeline.time()
-      const lastTweenTime = section.timeline.recent().time()
-      const lastTweenEndTime = section.timeline.recent().endTime()
-      if (lastTweenTime > startingPoint) {
-        /* We're late for this tween if it was supposed to be sequential,
-        so insert at current time in timeline instead */
-        tweenPosition = () => section.timeline.time()
-      } else {
-        if (currentTime + tweenOverlap * -1 < lastTweenEndTime) {
-          /* Still time, add as normal overlap at the end */
-          tweenPosition = () => `>${tweenOverlap}`
-        } else {
-          /* Won't make it */
-          tweenPosition = () => section.timeline.time()
-        }
-      }
-    } else {
-      tweenPosition = () => '>'
-    }
+    // Calculate delay using our new helper method
+    const delay = this.calculateDelay(section, tweenDuration, tweenOverlap)
 
-    gsap.set(target, tweenTransition.from)
+    // Initial state should already be set during ready()
+    // Only log for debugging
+    logMoonwalk('TweenJS', 'Element should already have initial state', {
+      target: targetId,
+      expectedFrom: tweenTransition.from,
+    })
+    logComputedStyle(target, ['opacity', 'transform', 'x', 'y'])
 
-    const toTransition = {
-      ...tweenTransition.to,
+    // Extract ease from to values (GSAP format) and convert to Motion easing option
+    const { ease, ...toValues } = tweenTransition.to
+    const easingOption = convertEasing(ease || 'easeOut')
+
+    logMoonwalk('TweenJS', 'Starting animation', {
+      target: targetId,
+      toValues,
       duration: tweenDuration,
-      onComplete: () => target.setAttribute('data-moonwalked', ''),
+      delay: delay.toFixed(3),
+      ease: easingOption,
+    })
+
+    // Animate to final state
+    const animation = animate(target, toValues, {
+      duration: tweenDuration,
+      delay,
+      ease: easingOption,
+    })
+
+    // Use .finished promise for completion callback
+    if (animation && animation.finished) {
+      animation.finished
+        .then(() => {
+          logMoonwalk('TweenJS', 'Animation completed', { target: targetId })
+          target.setAttribute('data-moonwalked', '')
+        })
+        .catch((err) => {
+          // Animation cancelled or failed, still mark as walked
+          logMoonwalk('TweenJS', 'Animation failed/cancelled', {
+            target: targetId,
+            error: err,
+          })
+          target.setAttribute('data-moonwalked', '')
+        })
+    } else {
+      // No animation object returned, mark immediately
+      logMoonwalk('TweenJS', 'No animation object returned', { target: targetId })
+      target.setAttribute('data-moonwalked', '')
     }
 
-    section.timeline.to(target, toTransition, tweenPosition())
-
+    // Optional separate alpha animation
     if (alphaTween) {
-      section.timeline.to(
-        target,
-        {
-          duration: alphaTween.duration,
-          opacity: 1,
-          ease: alphaTween.ease,
-          delay: alphaTween.delay ? alphaTween.delay : 0,
-        },
-        '<'
-      )
+      logMoonwalk('TweenJS', 'Adding alpha tween', {
+        target: targetId,
+        duration: alphaTween.duration,
+        delay: (delay + (alphaTween.delay || 0)).toFixed(3),
+      })
+      animate(target, { opacity: 1 }, {
+        duration: alphaTween.duration,
+        ease: convertEasing(alphaTween.ease || 'easeIn'),
+        delay: delay + (alphaTween.delay || 0),
+      })
     }
+
+    // Update animation state for next element
+    this.updateAnimationState(section, delay, tweenDuration)
   }
 
   /**
@@ -1007,9 +1268,10 @@ export default class Moonwalk {
    *
    * @param {*} section
    * @param {*} target
-   * @param {*} duration
-   * @param {*} transition
-   * @param {*} overlap
+   * @param {*} tweenDuration
+   * @param {*} tweenInterval
+   * @param {*} tweenTransition
+   * @param {*} tweenOverlap
    */
   tweenCSS(
     section,
@@ -1019,47 +1281,35 @@ export default class Moonwalk {
     tweenTransition,
     tweenOverlap
   ) {
-    let tweenPosition
-    const startingPoint = tweenDuration - tweenOverlap * -1
-
     if (Dom.hasAttribute(target, 'data-moonwalked')) {
       return
     }
 
-    if (section.timeline.isActive() && section.timeline.recent()) {
-      const currentTime = section.timeline.time()
-      const lastTweenTime = section.timeline.recent().time()
-      const lastTweenEndTime = section.timeline.recent().endTime()
-      if (lastTweenTime > startingPoint) {
-        /* We're late for this tween if it was supposed to be sequential,
-        so insert at current time in timeline instead */
-        tweenPosition = () => section.timeline.time()
-      } else {
-        if (currentTime + tweenOverlap * -1 < lastTweenEndTime) {
-          /* Still time, add as normal overlap at the end */
-          tweenPosition = () => `>${tweenOverlap}`
-        } else {
-          /* Won't make it */
-          tweenPosition = () => section.timeline.time()
-        }
-      }
-    } else {
-      tweenPosition = () => '>'
-    }
+    // Calculate delay using our helper method for stagger effect
+    const calculatedDelay = this.calculateDelay(
+      section,
+      tweenDuration,
+      tweenOverlap
+    )
 
-    section.timeline
-      .to(
-        target,
-        {
-          css: {
-            className: target.className
-              ? `${target.className} moonwalked`
-              : 'moonwalked',
-          },
-          duration: tweenDuration,
-        },
-        tweenPosition()
-      )
-      .call(() => target.setAttribute('data-moonwalked', ''), null, '>')
+    const targetId = target.getAttribute('data-testid') || target.className
+
+    logMoonwalk('TweenCSS', 'Scheduling CSS animation', {
+      target: targetId,
+      delay: calculatedDelay.toFixed(3),
+      duration: tweenDuration,
+    })
+
+    // Add class after delay to trigger CSS transition
+    delayedCall(calculatedDelay, () => {
+      logMoonwalk('TweenCSS', 'Adding moonwalked attribute', {
+        target: targetId,
+      })
+      target.classList.add('moonwalked')
+      target.setAttribute('data-moonwalked', '')
+    })
+
+    // Update animation state for next element in section
+    this.updateAnimationState(section, calculatedDelay, tweenDuration)
   }
 }

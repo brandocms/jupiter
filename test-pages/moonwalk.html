@@ -41,8 +41,12 @@
         opacity: 0;
       }
 
-      [data-moonwalked],
-      [data-moonwalk-section-ready] [data-moonwalk] {
+      [data-moonwalk][data-moonwalked] {
+        opacity: 1;
+      }
+
+      /* Section ready state */
+      [data-moonwalk-section-ready] {
         opacity: 1;
       }
 
@@ -52,8 +56,7 @@
         transform: translateX(-50px);
       }
 
-      [data-moonwalked][data-moonwalk="slide"],
-      [data-moonwalk-section-ready] [data-moonwalk="slide"] {
+      [data-moonwalk="slide"][data-moonwalked] {
         opacity: 1;
         transform: translateX(0);
       }
@@ -63,8 +66,7 @@
         opacity: 0;
       }
 
-      [data-moonwalked][data-moonwalk="fade"],
-      [data-moonwalk-section-ready] [data-moonwalk="fade"] {
+      [data-moonwalk="fade"][data-moonwalked] {
         opacity: 1;
       }
 
@@ -74,8 +76,7 @@
         transform: scale(0.5);
       }
 
-      [data-moonwalked][data-moonwalk="scale"],
-      [data-moonwalk-section-ready] [data-moonwalk="scale"] {
+      [data-moonwalk="scale"][data-moonwalked] {
         opacity: 1;
         transform: scale(1);
       }
@@ -114,6 +115,20 @@
         font-size: 3rem;
         font-weight: bold;
         text-align: center;
+      }
+
+      /* CSS-only animation mode */
+      [data-moonwalk="css-only"] {
+        will-change: opacity, transform;
+        opacity: 0;
+        transform: translateY(30px);
+      }
+
+      [data-moonwalk="css-only"][data-moonwalked] {
+        opacity: 1;
+        transform: translateY(0);
+        transition: opacity 0.65s cubic-bezier(0.47, 0, 0.745, 0.715),
+                    transform 0.65s cubic-bezier(0.47, 0, 0.745, 0.715);
       }
     </style>
   </head>
@@ -357,6 +372,31 @@
       </div>
     </section>
 
+    <!-- CSS-only Animation Test -->
+    <section class="spacer">Spacer for CSS-only test</section>
+    <section data-moonwalk-section data-testid="css-only-section">
+      <h2 data-moonwalk="css-only">CSS-only Animation</h2>
+      <p data-moonwalk="css-only">
+        Testing CSS-only animations using transition: null. Each element
+        animates when it enters the viewport using pure CSS transitions.
+      </p>
+
+      <div class="boxes">
+        <div class="box" data-moonwalk="css-only" data-testid="css-only-box-1">
+          CSS Box 1
+        </div>
+        <div class="box" data-moonwalk="css-only" data-testid="css-only-box-2">
+          CSS Box 2
+        </div>
+        <div class="box" data-moonwalk="css-only" data-testid="css-only-box-3">
+          CSS Box 3
+        </div>
+        <div class="box" data-moonwalk="css-only" data-testid="css-only-box-4">
+          CSS Box 4
+        </div>
+      </div>
+    </section>
+
     <script type="module">
       // Import Jupiter modules directly - Vite will handle bundling properly
       import { Application, Moonwalk, Events } from "../src/index.js";
@@ -404,7 +444,7 @@
                 to: {
                   opacity: 1,
                   y: 0,
-                  ease: "power2.out",
+                  ease: "easeOut",
                 },
               },
             },
@@ -412,7 +452,7 @@
               duration: 0.8,
               transition: {
                 from: { opacity: 0 },
-                to: { opacity: 1, ease: "power1.out" },
+                to: { opacity: 1, ease: "easeOut" },
               },
             },
             slide: {
@@ -420,14 +460,14 @@
               interval: 0.1,
               transition: {
                 from: { opacity: 0, x: -30 },
-                to: { opacity: 1, x: 0, ease: "back.out(1.2)" },
+                to: { opacity: 1, x: 0, ease: "backOut" },
               },
             },
             scale: {
               duration: 0.6,
               transition: {
                 from: { opacity: 0, scale: 0.7 },
-                to: { opacity: 1, scale: 1, ease: "elastic.out(1, 0.5)" },
+                to: { opacity: 1, scale: 1, ease: "backOut" },
               },
             },
             stagger: {
@@ -436,7 +476,7 @@
               sectionTargets: "*",
               transition: {
                 from: { opacity: 0, y: 20 },
-                to: { opacity: 1, y: 0, ease: "power1.out" },
+                to: { opacity: 1, y: 0, ease: "easeOut" },
               },
             },
             ordered: {
@@ -445,8 +485,13 @@
               sectionTargets: ".boxes .box",
               transition: {
                 from: { opacity: 0, scale: 0.8, y: 20 },
-                to: { opacity: 1, scale: 1, y: 0, ease: "back.out(1.4)" },
+                to: { opacity: 1, scale: 1, y: 0, ease: "backOut" },
               },
+            },
+            "css-only": {
+              duration: 0.65,
+              interval: 0.1,
+              transition: null, // CSS-only mode - no JS animation
             },
           },
 

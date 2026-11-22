@@ -1,8 +1,8 @@
-import { Manager, Swipe } from '@egjs/hammerjs'
-import { gsap } from 'gsap/all'
+import { animate } from 'motion'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import imageIsLoaded from '../../utils/imageIsLoaded'
 import Dom from '../Dom'
+import { set, PausedTimeline } from '../../utils/motion-helpers'
 
 /**
  * @typedef {Object} LightboxElements
@@ -16,7 +16,6 @@ import Dom from '../Dom'
  * @typedef {Object} LightboxOptions
  * @property {boolean} [captions=false] - Enable captions
  * @property {boolean} [numbers=false] - Enable index numbers
- * @property {boolean} [swipe=true] - Enable swipe - this breaks native zoom
  * @property {string|boolean} [trigger=false] - Selector for trigger element to open the lightbox
  * @property {LightboxElements} [elements] - Custom elements configuration
  * @property {Function} [onClick] - Click handler for lightbox
@@ -40,9 +39,6 @@ const DEFAULT_OPTIONS = {
 
   /* enable index numbers */
   numbers: false,
-
-  /* enable swipe — this breaks native zoom! */
-  swipe: true,
 
   /* set to a selector if you want a specific trigger element to open the box */
   trigger: false,
@@ -128,23 +124,17 @@ const DEFAULT_OPTIONS = {
   onOpen: (h) => {
     h.app.scrollLock()
 
-    gsap.to(h.elements.wrapper, {
-      duration: 0.5,
-      opacity: 1,
-    })
+    animate(h.elements.wrapper, { opacity: 1 }, { duration: 0.5 })
   },
 
   onAfterClose: () => {},
 
   onClose: (h) => {
     if (h.opts.captions) {
-      gsap.to(h.elements.caption, {
-        duration: 0.45,
-        opacity: 0,
-      })
+      animate(h.elements.caption, { opacity: 0 }, { duration: 0.45 })
     }
 
-    gsap.to(
+    animate(
       [
         h.elements.imgWrapper,
         h.elements.nextArrow,
@@ -152,21 +142,14 @@ const DEFAULT_OPTIONS = {
         h.elements.close,
         h.elements.dots,
       ],
-      {
-        duration: 0.5,
-        opacity: 0,
-        onComplete: () => {
-          gsap.to(h.elements.wrapper, {
-            duration: 0.45,
-            opacity: 0,
-            onComplete: () => {
-              h.app.scrollRelease()
-              h.destroy()
-            },
-          })
-        },
-      }
-    )
+      { opacity: 0 },
+      { duration: 0.5 }
+    ).finished.then(() => {
+      animate(h.elements.wrapper, { opacity: 0 }, { duration: 0.45 }).finished.then(() => {
+        h.app.scrollRelease()
+        h.destroy()
+      })
+    })
   },
 }
 
@@ -191,8 +174,8 @@ export default class Lightbox {
     this.firstTransition = true
     this.previousCaption = null
     this.timelines = {
-      caption: gsap.timeline({ paused: true }),
-      image: gsap.timeline({ paused: true }),
+      caption: new PausedTimeline(),
+      image: new PausedTimeline(),
     }
 
     this.lightboxes.forEach((lightbox) => {
@@ -294,7 +277,8 @@ export default class Lightbox {
 
     this.sections[section].forEach((img, x) => {
       const imgElement = document.createElement('img')
-      gsap.set(imgElement, { autoAlpha: 0 })
+      set(imgElement, { opacity: 0 })
+      imgElement.style.visibility = 'hidden'
       imgElement.classList.add('lightbox-image', 'm-lg')
       imgElement.setAttribute('data-idx', x)
       this.elements.imgWrapper.appendChild(imgElement)
@@ -342,9 +326,6 @@ export default class Lightbox {
     document.body.appendChild(this.elements.wrapper)
 
     this.setImg(section, index, this.getPrevIdx(section))
-    if (this.opts.swipe) {
-      this.attachSwiper(section, this.elements.content, index)
-    }
 
     this.opts.onOpen(this)
 
@@ -500,24 +481,5 @@ export default class Lightbox {
       this.pointerDirection = 'right'
       this.opts.onPointerRight(this)
     }
-  }
-
-  attachSwiper(section, el, initialIdx) {
-    const hammerManager = new Manager(el)
-    const swipeHandler = new Swipe()
-
-    this.elements.content.setAttribute('data-current-idx', initialIdx)
-
-    hammerManager.add(swipeHandler)
-
-    hammerManager.on('swipeleft', () => {
-      const index = this.getNextIdx(section)
-      this.setImg(section, index)
-    })
-
-    hammerManager.on('swiperight', () => {
-      const index = this.getPrevIdx(section)
-      this.setImg(section, index)
-    })
   }
 }

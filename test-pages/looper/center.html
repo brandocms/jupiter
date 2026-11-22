@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Looper - Center</title>
+  <link rel="stylesheet" href="shared.css">
+</head>
+<body>
+  <div class="looper-container" data-testid="looper-center" data-moonwalk-run="loop" style="margin-bottom: 20px;">
+    <div class="looper-wrapper" data-looper-container>
+      <div data-looper data-looper-center data-looper-snap data-looper-crawl="false">
+        <div data-looper-item style="background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);">1</div>
+        <div data-looper-item style="background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);">2</div>
+        <div data-looper-item style="background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);">3</div>
+        <div data-looper-item style="background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);">4</div>
+        <div data-looper-item style="background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);">5</div>
+      </div>
+      <div class="controls">
+        <button data-panner-previous>Prev</button>
+        <span style="font-size: 18px; font-weight: 600;">
+          <span data-looper-slide-index></span> / <span data-looper-slide-count></span>
+        </span>
+        <button data-panner-next>Next</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="looper-container" data-testid="looper-center-nonloop" data-moonwalk-run="loop">
+    <div class="looper-wrapper" data-looper-container>
+      <div data-looper data-looper-center data-looper-loop="false" data-looper-snap data-looper-crawl="false">
+        <div data-looper-item style="background: linear-gradient(135deg, #55efc4 0%, #00b894 100%);">1</div>
+        <div data-looper-item style="background: linear-gradient(135deg, #55efc4 0%, #00b894 100%);">2</div>
+        <div data-looper-item style="background: linear-gradient(135deg, #55efc4 0%, #00b894 100%);">3</div>
+        <div data-looper-item style="background: linear-gradient(135deg, #55efc4 0%, #00b894 100%);">4</div>
+        <div data-looper-item style="background: linear-gradient(135deg, #55efc4 0%, #00b894 100%);">5</div>
+      </div>
+      <div class="controls">
+        <button data-panner-previous>Prev</button>
+        <span style="font-size: 18px; font-weight: 600;">
+          <span data-looper-slide-index></span> / <span data-looper-slide-count></span>
+        </span>
+        <button data-panner-next>Next</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initLooper } from './shared.js'
+    initLooper()
+  </script>
+</body>
+</html>

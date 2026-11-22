@@ -19,10 +19,20 @@ export default class HeroSlider {
      * Switches between slides
      */
     slide(type: any): void;
+    _currentAnimation: any;
     /**
      * Add a window resize handler that resizes slide widths
      */
     _addResizeHandler(): void;
     observer: IntersectionObserver;
     _resizeSlides(): void;
+    resizeAnimation: any;
+    /**
+     * Add a visibility change handler to restart animations when tab becomes visible
+     */
+    _addVisibilityHandler(): void;
+    /**
+     * Reset slide states and restart the animation cycle
+     */
+    _resetAndRestart(): void;
 }

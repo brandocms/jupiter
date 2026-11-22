@@ -41,13 +41,16 @@
       }
 
       .toggle-target {
+        display: none;
+        overflow: hidden;
+      }
+
+      .toggle-target-inner {
         margin-top: 1rem;
         padding: 1rem;
         background-color: white;
         border: 1px solid #ddd;
         border-radius: 4px;
-        display: none;
-        overflow: hidden;
       }
 
       .toggle-target.is-active {
@@ -69,8 +72,11 @@
       }
 
       .accordion-content {
-        padding: 1rem;
         display: none;
+      }
+
+      .accordion-content-inner {
+        padding: 1rem;
       }
 
       .accordion-content.is-active {
@@ -104,10 +110,12 @@
         data-toggle-content="toggle-example"
         data-testid="basic-toggle-target"
       >
-        <p>This content can be toggled with the button above.</p>
-        <p>
-          The toggler uses data attributes to control which elements to toggle.
-        </p>
+        <div class="toggle-target-inner">
+          <p>This content can be toggled with the button above.</p>
+          <p>
+            The toggler uses data attributes to control which elements to toggle.
+          </p>
+        </div>
       </div>
     </section>
 
@@ -129,7 +137,9 @@
           data-toggle-content="multi-toggle"
           data-testid="multi-toggle-target-1"
         >
-          <p>This is the first target element.</p>
+          <div class="toggle-target-inner">
+            <p>This is the first target element.</p>
+          </div>
         </div>
 
         <div
@@ -137,7 +147,9 @@
           data-toggle-content="multi-toggle"
           data-testid="multi-toggle-target-2"
         >
-          <p>This is the second target element.</p>
+          <div class="toggle-target-inner">
+            <p>This is the second target element.</p>
+          </div>
         </div>
 
         <div
@@ -145,7 +157,9 @@
           data-toggle-content="multi-toggle"
           data-testid="multi-toggle-target-3"
         >
-          <p>This is the third target element.</p>
+          <div class="toggle-target-inner">
+            <p>This is the third target element.</p>
+          </div>
         </div>
       </div>
     </section>
@@ -168,8 +182,10 @@
           data-toggle-content="accordion-1"
           data-testid="accordion-content-1"
         >
-          <p>Content for section 1 of the accordion.</p>
-          <p>This content expands and collapses when the header is clicked.</p>
+          <div class="accordion-content-inner">
+            <p>Content for section 1 of the accordion.</p>
+            <p>This content expands and collapses when the header is clicked.</p>
+          </div>
         </div>
       </div>
 
@@ -186,8 +202,10 @@
           data-toggle-content="accordion-2"
           data-testid="accordion-content-2"
         >
-          <p>Content for section 2 of the accordion.</p>
-          <p>Each section operates independently.</p>
+          <div class="accordion-content-inner">
+            <p>Content for section 2 of the accordion.</p>
+            <p>Each section operates independently.</p>
+          </div>
         </div>
       </div>
 
@@ -204,8 +222,10 @@
           data-toggle-content="accordion-3"
           data-testid="accordion-content-3"
         >
-          <p>Content for section 3 of the accordion.</p>
-          <p>Click any header to toggle its content.</p>
+          <div class="accordion-content-inner">
+            <p>Content for section 3 of the accordion.</p>
+            <p>Click any header to toggle its content.</p>
+          </div>
         </div>
       </div>
     </section>

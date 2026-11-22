@@ -19,8 +19,8 @@ export default class Lightbox {
     firstTransition: boolean;
     previousCaption: any;
     timelines: {
-        caption: any;
-        image: any;
+        caption: PausedTimeline;
+        image: PausedTimeline;
     };
     showBox(section: any, index: any): void;
     buildBox(section: any, index: any): void;
@@ -36,7 +36,6 @@ export default class Lightbox {
     onKeyup(e: any, section: any): void;
     onMouseMove(e: any): void;
     pointerDirection: string;
-    attachSwiper(section: any, el: any, initialIdx: any): void;
 }
 export type LightboxElements = {
     /**
@@ -65,10 +64,6 @@ export type LightboxOptions = {
      * - Enable index numbers
      */
     numbers?: boolean;
-    /**
-     * - Enable swipe - this breaks native zoom
-     */
-    swipe?: boolean;
     /**
      * - Selector for trigger element to open the lightbox
      */
@@ -126,3 +121,4 @@ export type LightboxOptions = {
      */
     onClose?: Function;
 };
+import { PausedTimeline } from '../../utils/motion-helpers';

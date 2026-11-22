@@ -1,6 +1,7 @@
-import { gsap } from 'gsap/all'
+import { animate } from 'motion'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import * as Events from '../../events'
+import { set } from '../../utils/motion-helpers'
 
 /**
  * @module Cookies
@@ -104,29 +105,35 @@ const DEFAULT_OPTIONS = {
     const oneYearFromNow = new Date()
     oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1)
 
-    const timeline = gsap.timeline()
     c.setCookie('COOKIES_CONSENT_STATUS', 1, oneYearFromNow, '/')
     c.opts.setCookies(c)
     c.updateConsentToggles()
 
-    timeline
-      .to(c.cc, { duration: 0.35, y: '120%', ease: 'power3.in' }, '0')
-      .to(c.inner, { duration: 0.3, opacity: 0, ease: 'power3.in' }, '0')
-      .set(c.cc, { display: 'none' })
+    const timeline = [
+      [c.cc, { y: '120%' }, { duration: 0.35, ease: 'easeIn', at: 0 }],
+      [c.inner, { opacity: 0 }, { duration: 0.3, ease: 'easeIn', at: 0 }]
+    ]
+
+    animate(timeline).finished.then(() => {
+      c.cc.style.display = 'none'
+    })
   },
 
   onRefuse: (c) => {
     const oneYearFromNow = new Date()
     oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1)
 
-    const timeline = gsap.timeline()
     c.setCookie('COOKIES_CONSENT_STATUS', 0, oneYearFromNow, '/')
     c.updateConsentToggles()
 
-    timeline
-      .to(c.cc, { duration: 0.35, y: '120%', ease: 'power3.in' }, '0')
-      .to(c.inner, { duration: 0.3, opacity: 0, ease: 'power3.in' }, '0')
-      .set(c.cc, { display: 'none' })
+    const timeline = [
+      [c.cc, { y: '120%' }, { duration: 0.35, ease: 'easeIn', at: 0 }],
+      [c.inner, { opacity: 0 }, { duration: 0.3, ease: 'easeIn', at: 0 }]
+    ]
+
+    animate(timeline).finished.then(() => {
+      c.cc.style.display = 'none'
+    })
   },
 
   alreadyConsented: (c) => {
@@ -151,50 +158,22 @@ const DEFAULT_OPTIONS = {
       return
     }
 
-    const timeline = gsap.timeline()
+    // Set display block and reset state immediately
+    c.cc.style.display = 'block'
+    set(c.cc, { opacity: 1 })
+    set(c.inner, { opacity: 1 })
 
-    timeline
-      .fromTo(
-        c.cc,
-        {
-          duration: 0.5,
-          y: '120%',
-          display: 'block',
-        },
-        {
-          duration: 0.5,
-          y: '0%',
-          delay: '0.5',
-          ease: 'power3.out',
-        },
-        '0.5'
-      )
-      .fromTo(
-        c.text,
-        {
-          duration: 0.7,
-          opacity: 0,
-        },
-        {
-          duration: 0.7,
-          opacity: 1,
-          ease: 'power3.out',
-        },
-        '-=0.35'
-      )
-      .fromTo(
-        c.btns,
-        {
-          duration: 0.7,
-          opacity: 0,
-        },
-        {
-          duration: 0.7,
-          opacity: 1,
-          ease: 'power3.out',
-        },
-        '-=0.35'
-      )
+    // Calculate timeline positions:
+    // - c.cc: starts at 1s, duration 0.5s, ends at 1.5s
+    // - c.text: starts at 1.15s (0.15s after cc starts), duration 0.7s, ends at 1.85s
+    // - c.btns: starts at 1.5s (when cc finishes), duration 0.7s
+    const timeline = [
+      [c.cc, { y: ['120%', '0%'] }, { duration: 0.5, ease: 'easeOut', at: 1 }],
+      [c.text, { opacity: [0, 1] }, { duration: 0.7, ease: 'easeOut', at: 1.15 }],
+      [c.btns, { opacity: [0, 1] }, { duration: 0.7, ease: 'easeOut', at: 1.5 }]
+    ]
+
+    animate(timeline)
   },
 }
 
@@ -315,11 +294,14 @@ export default class Cookies {
     this.updateConsentToggles()
 
     if (this.cc && this.cc.style.display !== 'none') {
-      const timeline = gsap.timeline()
-      timeline
-        .to(this.cc, { duration: 0.35, y: '120%', ease: 'power3.in' }, '0')
-        .to(this.inner, { duration: 0.3, opacity: 0, ease: 'power3.in' }, '0')
-        .set(this.cc, { display: 'none' })
+      const timeline = [
+        [this.cc, { y: '120%' }, { duration: 0.35, ease: 'easeIn', at: 0 }],
+        [this.inner, { opacity: 0 }, { duration: 0.3, ease: 'easeIn', at: 0 }]
+      ]
+
+      animate(timeline).finished.then(() => {
+        this.cc.style.display = 'none'
+      })
     }
 
     this.opts.onConsentChanged(this)

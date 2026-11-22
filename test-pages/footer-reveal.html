@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jupiter FooterReveal Test</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        line-height: 1.5;
+        margin: 0;
+        padding: 0;
+      }
+
+      .page-header {
+        background-color: #4a90e2;
+        color: white;
+        padding: 2rem;
+        text-align: center;
+      }
+
+      .page-header h1 {
+        margin: 0;
+        font-size: 2rem;
+      }
+
+      .page-header p {
+        margin: 0.5rem 0 0 0;
+        opacity: 0.9;
+      }
+
+      .main-content {
+        background-color: #f9f9f9;
+        min-height: 200vh;
+      }
+
+      .content-section {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 2rem;
+      }
+
+      .intro {
+        background-color: white;
+        border-radius: 4px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .content-block {
+        background-color: white;
+        border-radius: 4px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .content-block h2 {
+        margin-top: 0;
+      }
+
+      .footer {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 3rem 2rem;
+      }
+
+      .footer-content {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+
+      .footer h2 {
+        margin-top: 0;
+      }
+
+      .footer-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 2rem;
+        margin-top: 2rem;
+      }
+
+      .footer-column h3 {
+        margin-top: 0;
+        font-size: 1.2rem;
+      }
+
+      .footer-column ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .footer-column ul li {
+        margin-bottom: 0.5rem;
+      }
+
+      .footer-column a {
+        color: rgba(255, 255, 255, 0.8);
+        text-decoration: none;
+      }
+
+      .footer-column a:hover {
+        color: white;
+      }
+
+      .footer-bottom {
+        text-align: center;
+        margin-top: 2rem;
+        padding-top: 2rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.2);
+        opacity: 0.8;
+      }
+
+      .state-indicator {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        background: rgba(255, 255, 255, 0.95);
+        padding: 1rem;
+        border-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        z-index: 101;
+        font-size: 0.9rem;
+        min-width: 150px;
+      }
+
+      .state-indicator h3 {
+        margin: 0 0 0.5rem 0;
+        font-size: 1rem;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 0.5rem;
+      }
+
+      .state-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.25rem 0;
+      }
+
+      .state-item .label {
+        color: #666;
+      }
+
+      .state-item .value {
+        font-weight: bold;
+        color: #4a90e2;
+      }
+
+      .scroll-position {
+        position: fixed;
+        bottom: 10px;
+        right: 10px;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        z-index: 101;
+      }
+
+      .toggle-shadow {
+        background-color: #4a90e2;
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1rem;
+        margin: 1rem 0;
+      }
+
+      .toggle-shadow:hover {
+        background-color: #3579c6;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-header">
+      <h1>Jupiter FooterReveal Test</h1>
+      <p>Scroll down to reveal the footer underneath the main content</p>
+    </div>
+
+    <div class="state-indicator" data-testid="state-indicator">
+      <h3>Module State</h3>
+      <div class="state-item">
+        <span class="label">Shadow:</span>
+        <span class="value" data-state="shadow">false</span>
+      </div>
+      <div class="state-item">
+        <span class="label">Footer Height:</span>
+        <span class="value" data-state="footerHeight">0</span>
+      </div>
+    </div>
+
+    <div class="scroll-position" data-testid="scroll-position">
+      Scroll: <span data-scroll-value>0</span>px
+    </div>
+
+    <main class="main-content" data-testid="main-content">
+      <div class="content-section">
+        <div class="intro" data-testid="intro-section">
+          <h2>FooterReveal Module Testing</h2>
+          <p>
+            This page tests the FooterReveal module's behavior. The footer is
+            fixed at the bottom with a negative z-index, and the main content
+            scrolls over it, revealing the footer underneath.
+          </p>
+          <ul>
+            <li>
+              <strong>Reveal Effect:</strong> As you scroll down, the footer is
+              gradually revealed from beneath the main content
+            </li>
+            <li>
+              <strong>Shadow Option:</strong> Toggle the shadow to add depth to
+              the main content as it scrolls over the footer
+            </li>
+            <li>
+              <strong>Responsive:</strong> The module automatically adjusts the
+              main content's margin based on the footer's height
+            </li>
+          </ul>
+
+          <button class="toggle-shadow" data-testid="toggle-shadow">
+            Toggle Shadow Effect
+          </button>
+        </div>
+
+        <div class="content-block" data-testid="content-block-1">
+          <h2>How It Works</h2>
+          <p>
+            The FooterReveal module creates a reveal effect where the footer
+            stays fixed at the bottom of the viewport. The main content gets a
+            bottom margin equal to the footer's height, allowing it to scroll
+            over the footer naturally.
+          </p>
+          <p>
+            This creates a sophisticated layering effect commonly seen in modern
+            web design, where content appears to lift up and slide away to reveal
+            what's underneath.
+          </p>
+        </div>
+
+        <div class="content-block" data-testid="content-block-2">
+          <h2>Configuration Options</h2>
+          <p>The FooterReveal module supports these options:</p>
+          <ul>
+            <li>
+              <strong>shadow:</strong> Enable or disable the shadow effect on the
+              main content (default: false)
+            </li>
+            <li>
+              <strong>shadowColor:</strong> Customize the shadow color (default:
+              'rgba(255, 255, 255, 1)')
+            </li>
+          </ul>
+          <p>
+            The module automatically handles window resize events to maintain
+            proper spacing and positioning.
+          </p>
+        </div>
+
+        <div class="content-block" data-testid="content-block-3">
+          <h2>Use Cases</h2>
+          <p>This effect works particularly well for:</p>
+          <ul>
+            <li>Landing pages with prominent calls-to-action in the footer</li>
+            <li>Portfolio sites showcasing contact information</li>
+            <li>Marketing pages with newsletter signups</li>
+            <li>Single-page applications with important footer content</li>
+          </ul>
+          <p>Keep scrolling to see the full reveal effect in action!</p>
+        </div>
+
+        <div class="content-block" data-testid="content-block-4">
+          <h2>Visual Design</h2>
+          <p>
+            The reveal effect adds depth and visual interest to your page. As
+            users scroll, they naturally discover the footer content, which can
+            encourage engagement with footer links, contact forms, or social
+            media connections.
+          </p>
+          <p>
+            The shadow option (which you can toggle with the button above) adds
+            an extra layer of depth, making the main content appear to float
+            above the footer.
+          </p>
+        </div>
+
+        <div class="content-block" data-testid="content-block-5">
+          <h2>Keep Scrolling!</h2>
+          <p>
+            Continue scrolling down to fully reveal the footer. Notice how the
+            main content smoothly slides over the fixed footer element. The
+            footer remains stationary while the content above it moves.
+          </p>
+          <p>
+            This technique is purely CSS-based once initialized, making it
+            extremely performant with no JavaScript overhead during scrolling.
+          </p>
+        </div>
+
+        <div class="content-block" data-testid="content-block-6">
+          <h2>Almost There!</h2>
+          <p>
+            You're nearly at the end of the main content. The footer should be
+            becoming more visible now. Notice how the entire footer is revealed
+            when you reach the bottom of the page.
+          </p>
+        </div>
+      </div>
+    </main>
+
+    <footer class="footer" data-footer-reveal data-testid="footer">
+      <div class="footer-content">
+        <h2>Footer Content Revealed!</h2>
+        <p>
+          This footer stays fixed at the bottom while the content scrolls over
+          it. Perfect for showcasing important information or calls-to-action.
+        </p>
+
+        <div class="footer-grid">
+          <div class="footer-column">
+            <h3>Products</h3>
+            <ul>
+              <li><a href="#">Product A</a></li>
+              <li><a href="#">Product B</a></li>
+              <li><a href="#">Product C</a></li>
+              <li><a href="#">Product D</a></li>
+            </ul>
+          </div>
+
+          <div class="footer-column">
+            <h3>Company</h3>
+            <ul>
+              <li><a href="#">About Us</a></li>
+              <li><a href="#">Team</a></li>
+              <li><a href="#">Careers</a></li>
+              <li><a href="#">Contact</a></li>
+            </ul>
+          </div>
+
+          <div class="footer-column">
+            <h3>Resources</h3>
+            <ul>
+              <li><a href="#">Documentation</a></li>
+              <li><a href="#">Blog</a></li>
+              <li><a href="#">Support</a></li>
+              <li><a href="#">FAQ</a></li>
+            </ul>
+          </div>
+
+          <div class="footer-column">
+            <h3>Connect</h3>
+            <ul>
+              <li><a href="#">Twitter</a></li>
+              <li><a href="#">LinkedIn</a></li>
+              <li><a href="#">GitHub</a></li>
+              <li><a href="#">Email</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="footer-bottom">
+          <p>&copy; 2025 Jupiter Framework. All rights reserved.</p>
+        </div>
+      </div>
+    </footer>
+
+    <script type="module">
+      import { Application, FooterReveal } from "../src/index.js";
+
+      document.addEventListener("DOMContentLoaded", () => {
+        // Initialize Application
+        const app = new Application({
+          respectReducedMotion: false,
+          breakpointConfig: {
+            breakpoints: [
+              "iphone",
+              "mobile",
+              "ipad_portrait",
+              "ipad_landscape",
+              "desktop_md",
+              "desktop_lg",
+              "desktop_xl",
+            ],
+          },
+        });
+
+        // Get elements
+        const footerEl = document.querySelector("[data-footer-reveal]");
+        const mainEl = document.querySelector("main");
+        const scrollValue = document.querySelector("[data-scroll-value]");
+        const toggleShadowBtn = document.querySelector(".toggle-shadow");
+
+        // Update state indicators
+        function updateState(stateName, value) {
+          const indicator = document.querySelector(
+            `[data-state="${stateName}"]`,
+          );
+          if (indicator) {
+            indicator.textContent = value;
+          }
+        }
+
+        // Initialize FooterReveal
+        let shadowEnabled = false;
+        let footerReveal = new FooterReveal(app, {
+          shadow: shadowEnabled,
+          shadowColor: "rgba(0, 0, 0, 0.2)",
+        });
+
+        // Update initial state
+        updateState("shadow", shadowEnabled);
+        setTimeout(() => {
+          const footerHeight = footerEl.offsetHeight;
+          updateState("footerHeight", `${footerHeight}px`);
+        }, 100);
+
+        // Toggle shadow effect
+        toggleShadowBtn.addEventListener("click", () => {
+          shadowEnabled = !shadowEnabled;
+
+          // Destroy and reinitialize with new shadow setting
+          // (FooterReveal doesn't have a dynamic update method)
+          footerReveal = new FooterReveal(app, {
+            shadow: shadowEnabled,
+            shadowColor: "rgba(0, 0, 0, 0.2)",
+          });
+
+          updateState("shadow", shadowEnabled);
+          console.log(`Shadow ${shadowEnabled ? "enabled" : "disabled"}`);
+
+          toggleShadowBtn.textContent = shadowEnabled
+            ? "Disable Shadow Effect"
+            : "Enable Shadow Effect";
+        });
+
+        // Update scroll position indicator
+        window.addEventListener("scroll", () => {
+          scrollValue.textContent = Math.round(window.scrollY);
+        });
+
+        // Handle window resize to update footer height display
+        window.addEventListener("resize", () => {
+          const footerHeight = footerEl.offsetHeight;
+          updateState("footerHeight", `${footerHeight}px`);
+        });
+
+        // Start the application
+        app.initialize();
+
+        // Expose for testing
+        window.footerReveal = footerReveal;
+        window.app = app;
+      });
+    </script>
+  </body>
+</html>

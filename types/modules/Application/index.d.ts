@@ -3,8 +3,8 @@ export default class Application {
     debugType: number;
     debugOverlay: Element;
     userAgent: string;
-    _lastWindowHeight: number;
     breakpoint: any;
+    root: HTMLElement;
     language: string;
     size: {
         width: number;
@@ -18,26 +18,29 @@ export default class Application {
     position: {
         top: number;
         left: number;
+        lastTop: number;
+        lastLeft: number;
     };
     state: {
         revealed: boolean;
         forcedScroll: boolean;
+        scrollDirection: any;
     };
     opts: any;
     focusableSelectors: any;
-    featureTests: FeatureTests;
-    breakpoints: Breakpoints;
-    fontLoader: Fontloader;
-    fader: any;
+    browser: any;
+    featureTests: any;
+    breakpoints: any;
+    fontLoader: any;
     callbacks: {};
     SCROLL_LOCKED: boolean;
     SCROLLBAR_WIDTH: number;
     INITIALIZED: boolean;
     PREFERS_REDUCED_MOTION: boolean;
-    beforeInitializedEvent: CustomEvent<any>;
-    initializedEvent: CustomEvent<any>;
-    readyEvent: CustomEvent<any>;
-    revealedEvent: CustomEvent<any>;
+    beforeInitializedEvent: CustomEvent<this>;
+    initializedEvent: CustomEvent<this>;
+    readyEvent: CustomEvent<this>;
+    revealedEvent: CustomEvent<this>;
     /**
      * Main init. Called from client application on DOMReady.
      */
@@ -107,7 +110,6 @@ export default class Application {
      * Ugly hacks
      */
     hacks(): void;
-    getIOSCurrentInnerHeight(): number;
     getIOSInnerHeightMax(): number;
     /**
      * Event emitters
@@ -141,7 +143,7 @@ export default class Application {
     onScroll(e: any): void;
     onVisibilityChange(e: any): void;
     pollForElement(selector: any, time?: number, callback?: () => void): void;
-    pollForVar(variable: any, time?: number, callback?: () => void): void;
+    pollForVar(getter: any, time?: number, callback?: () => void): void;
     setupDebug(): void;
     toggleDebug(): void;
     /**
@@ -163,6 +165,3 @@ export default class Application {
      */
     getFocusableSelectors(): any;
 }
-import FeatureTests from '../FeatureTests';
-import Breakpoints from '../Breakpoints';
-import Fontloader from '../Fontloader';

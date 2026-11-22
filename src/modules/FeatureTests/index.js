@@ -9,6 +9,7 @@ export default class FeatureTests {
     }
 
     this.results = {}
+    this.deviceLastTouched = 0
 
     if (this.testIE11()) {
       this.testFor('ie11', true)
@@ -118,7 +119,7 @@ export default class FeatureTests {
 
     const onMouseMove = () => {
       if (!this.results.mouse) {
-        if (Date.now() - this.devicelastTouched > 300) {
+        if (Date.now() - this.deviceLastTouched > 300) {
           this.results.touch = false
           this.results.mouse = true
           this.testFor('touch', false)

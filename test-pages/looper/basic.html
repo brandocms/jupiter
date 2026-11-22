@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Looper - Basic</title>
+  <link rel="stylesheet" href="shared.css">
+</head>
+<body>
+  <div class="looper-container" data-testid="looper-basic" data-moonwalk-run="loop" style="margin-bottom: 20px;">
+    <div class="looper-wrapper" data-looper-container>
+      <div data-looper>
+        <div data-looper-item style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">1</div>
+        <div data-looper-item style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">2</div>
+        <div data-looper-item style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">3</div>
+        <div data-looper-item style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">4</div>
+        <div data-looper-item style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">5</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="looper-container" data-testid="looper-reversed" data-moonwalk-run="loop">
+    <div class="looper-wrapper" data-looper-container>
+      <div data-looper data-looper-reverse>
+        <div data-looper-item style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">A</div>
+        <div data-looper-item style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">B</div>
+        <div data-looper-item style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">C</div>
+        <div data-looper-item style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">D</div>
+        <div data-looper-item style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">E</div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initLooper } from './shared.js'
+    initLooper()
+  </script>
+</body>
+</html>

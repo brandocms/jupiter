@@ -38,6 +38,15 @@ yarn vite:build
 yarn vite:preview
 ```
 
+## Publishing a New Version
+1. Update version in `package.json`
+2. Add changelog entry to `CHANGELOG.md`
+3. Commit changes with version as commit message (e.g., `5.0.0-beta.7`)
+4. Create a git tag matching the version: `git tag 5.0.0-beta.7`
+5. Push to GitHub with tags: `git push origin <branch> --tags`
+
+Publishing is triggered automatically when the tag is pushed to GitHub.
+
 ## Code Style Guidelines
 
 ### Imports
@@ -75,5 +84,5 @@ yarn vite:preview
 - All modules have been typed and organized into categories:
   - Core: Application, Breakpoints, Cookies, Dataloader, Dom, FeatureTests, Fontloader
   - Media: HeroSlider, HeroVideo, Lazyload, Lightbox, Marquee
-  - Navigation/UI: CoverOverlay, Dropdown, FixedHeader, Links, MobileMenu, Popover, Popup, ScrollSpy, StickyHeader, Toggler, Typography
+  - Navigation/UI: CoverOverlay, DoubleHeader, Dropdown, FixedHeader, Links, MobileMenu, Popover, Popup, ScrollSpy, StickyHeader, Toggler, Typography
   - Animation: EqualHeightElements, EqualHeightImages, FooterReveal, Moonwalk, Parallax, StackedBoxes

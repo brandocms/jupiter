@@ -3,17 +3,8 @@
  * @module jupiter
  */
 
-import {
-  CSSPlugin,
-  Draggable,
-  ScrollToPlugin,
-  ScrollTrigger,
-  SplitText,
-  InertiaPlugin,
-  gsap,
-} from 'gsap/all'
+import { animate, scroll, stagger, motionValue } from 'motion'
 
-import Hammer from '@egjs/hammerjs'
 import _defaultsDeep from 'lodash.defaultsdeep'
 
 import Application from './modules/Application'
@@ -22,6 +13,7 @@ import Cookies from './modules/Cookies'
 import CoverOverlay from './modules/CoverOverlay'
 import Dataloader from './modules/Dataloader'
 import Dom from './modules/Dom'
+import DoubleHeader from './modules/DoubleHeader'
 import Dropdown from './modules/Dropdown'
 import EqualHeightElements from './modules/EqualHeightElements'
 import EqualHeightImages from './modules/EqualHeightImages'
@@ -34,6 +26,7 @@ import HeroVideo from './modules/HeroVideo'
 import Lazyload from './modules/Lazyload'
 import Lightbox from './modules/Lightbox'
 import Links from './modules/Links'
+import Looper from './modules/Looper'
 import Marquee from './modules/Marquee'
 import MobileMenu from './modules/MobileMenu'
 import Moonwalk from './modules/Moonwalk'
@@ -58,7 +51,7 @@ export {
   CoverOverlay,
   Dataloader,
   Dom,
-  Draggable,
+  DoubleHeader,
   Dropdown,
   EqualHeightElements,
   EqualHeightImages,
@@ -71,6 +64,7 @@ export {
   Lazyload,
   Lightbox,
   Links,
+  Looper,
   Marquee,
   MobileMenu,
   Moonwalk,
@@ -90,13 +84,9 @@ export {
   rafCallback,
   _defaultsDeep,
 
-  // Export some of the libs we use,
-  // that can also be used in the main frontend.
-  Hammer,
-  gsap,
-  CSSPlugin,
-  ScrollToPlugin,
-  ScrollTrigger,
-  SplitText,
-  InertiaPlugin,
+  // Export Motion functions for animation
+  animate,
+  scroll,
+  stagger,
+  motionValue,
 }

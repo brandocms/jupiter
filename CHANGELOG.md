@@ -1,6 +1,205 @@
-#### 4.0.0-beta.2
+#### 5.0.0-beta.22
 
-- Update gsap - export InertiaPlugin, SplitText <3
+- Looper: peek mode starts at the first item instead of the middle one. Peek turns on center mode, which opened on item 3 of 5, so a newest-first carousel hid its newest item off-screen or cut off at the left edge. The viewport now centres on the gap after item 1, which is the first full card. With loop on, the last item peeks in on the left. Plain `data-looper-center` still starts at the middle item
+
+#### 5.0.0-beta.21
+
+- Moonwalk: a page loaded with a hash that is not a valid CSS selector (`#1-intro`) no longer throws in the constructor, which stopped Moonwalk for the whole page. The anchor is looked up by id
+- Moonwalk: a walk name missing from `walks` is logged instead of throwing. An element falls back to the `default` walk; a named section or a stage (also one whose walk has no `transition`) is treated as a plain section. Before, a missing section walk aborted `ready()` for every later section, and a missing element walk threw in the observer, skipping the other walks entering with it
+- Application: remove `no-js` and add `js` on `<html>` itself, so `.no-js` rules stop applying when a CSP blocks the inline head script that usually does it
+- README: correct Moonwalk's `clearMoonwalkOnAnchors` (default `true`, reveals up to the target) and `rootMargin` (`'-10% 0%'`, `'0px'` for the last section and run) defaults, and update the walk example to Motion easings and `transition: null`
+
+#### 5.0.0-beta.20
+
+- Links: fix a blank page after the browser's back button. Leaving through the default page transition put the page into the bfcache with `main`'s 0.8s `y` animation still running; on restore Motion completed it on the first frame and rendered `main` back at `opacity: 0` over the Application's visibility fix, leaving only header and footer. Links now animates `main`, header and footer to their resting values when such a page is restored, so Motion's own values match what is shown. Custom `onTransition` handlers are left alone
+
+#### 5.0.0-beta.19
+
+- Looper: a throw into either end of a non-looping row keeps its speed, runs past the edge and springs back. The inertia used to clamp its target to the row, so Motion rescaled the whole throw to the shorter distance and crawled the last stretch on the exponential tail — over two seconds. It now reaches the edge in under 100ms and settles in about half a second. New options `edgeStiffness` (260) and `edgeDamping` (29)
+- Looper: dragging past either end of a non-looping row stretches with resistance instead of stopping dead, and a release past the edge springs back. The rubber band is iOS's curve; `edgeElasticity` (0.55) sets the give, `0` restores the hard stop. Grabbing the row mid-bounce continues from where it is shown
+
+#### 5.0.0-beta.18
+
+- StickyHeader, DoubleHeader: honour `headerHeightTracksPin` too — both published `--header-height` as `0px` while unpinned with no way to opt out, so a header that never retracts resized the document on every change of scroll direction
+- DoubleHeader: document `headerHeightTracksPin` in the README, and point StickyHeader's "same options as FixedHeader" note at it
+
+#### 5.0.0-beta.17
+
+- FixedHeader: add `headerHeightTracksPin` option — `--header-height` drops to `0px` while unpinned, which resizes the document under a header configured never to retract. Set `false` to publish the measured height throughout
+
+#### 5.0.0-beta.16
+
+- Looper: bind drag listeners to the stationary wrapper — dragging translates the track, which took its hit area, `touch-action` and `grab` cursor out of the viewport and killed dragging between slides
+- Looper: don't arm a drag from `[data-panner-next]` / `[data-panner-previous]` — they sit inside the wrapper, which is now the drag surface. `[data-looper-no-drag]` opts out anything else placed there
+- Marquee: add `draggable` option — pointer drag with throw/inertia, sharing Looper's velocity sampling, axis locking and touch thresholds. Off by default
+- Marquee: add `reversed` option for crawling rightward, and detect `scaleX(-1)` rows so drag and throw map to the marquee's own direction
+- Marquee: rebuild position handling on a single `motionValue` — crawl, drag and inertia all write to it, and a modulo transform keeps the loop seamless from any position
+- Marquee: duplicate holders until they cover the viewport plus one holder width instead of cloning exactly once
+- Marquee: add `destroy()` — stops animations, disconnects the observer, unsubscribes the position listener and removes drag and window listeners
+- Marquee: drop the 40s duration cap and derive duration from holder width alone
+- Marquee: guard every `this.timeline` access so a killed tween can't throw
+- Marquee: `destroy()` now removes the `slowDownOnHover` listeners — they were bound inline and could not be detached, so hover kept animating a destroyed instance
+- Marquee: keep the hover slow-down across a drag or throw — the crawl is rebuilt from scratch on resume and used to ramp back to full speed while still hovered
+- Marquee: stop publishing `window.timeline` / `window.marquee` — debug globals that pointed at whichever instance initialised last and outlived `destroy()`
+- Marquee: catch the rejection from the pause ramp's `finished` promise, which is routinely stopped by `slowDown` / `play` / `resumeCrawl`
+- Types: regenerate `types/` — stale for Marquee, Moonwalk and the DoubleHeader/FixedHeader/StickyHeader `destroy()` methods
+
+#### 5.0.0-beta.15
+
+- Looper: replace pointer capture with window-level event listeners for reliable drag tracking
+- Looper: add `onReveal` callback option for custom reveal animation control
+
+#### 5.0.0-beta.14
+
+- Looper: fix tap-to-stop firing unwanted clicks on mobile (silent stop like native iOS scroll)
+- Looper: fix velocity reversal on iOS caused by pointercancel reporting clientX=0
+- Looper: fix "super fast" inertia from small diagonal gestures by using last pointermove for direction
+- Looper: add axis locking — vertical swipes pass through to page scroll, horizontal commits to drag
+- Looper: add pointer capture for reliable drag tracking when finger leaves container bounds
+- Looper: add touch-specific drag threshold (10px vs 3px for mouse) to prevent accidental drags
+- Looper: improve velocity tracking — use e.timeStamp, widen sample window to 150ms, 6-point average
+- Looper: reduce throwVelocityMultiplier to 0.8 for more natural inertia feel on release
+- Looper: delay crawl resume by 5s after tap-to-stop instead of immediately restarting
+- Looper: only preventDefault on pointerdown for mouse (allows browser scroll on touch)
+- Looper: remove dead `calculateInertiaTarget` function and fix inertia target formula
+- Looper: remove dead `scrollDirection` tracking (set but never read)
+- Looper: remove unused test-pages/looper.html, update index links
+
+#### 5.0.0-beta.13
+
+- Moonwalk: add `destroy()` method — disconnects all IntersectionObservers, removes event listeners, releases DOM references
+- Moonwalk: fix event listener leak — store bound handler for proper removal
+- Moonwalk: fix `on` option — use `null` instead of no-op function for non-body containers
+- Moonwalk: warn on unknown run names instead of silently returning null
+- Moonwalk: filter null runs during initialization instead of null-guarding in loops
+- Moonwalk: remove unused `animateAutoAlpha` import
+- Moonwalk: remove dead `section.running` flag (set but never read)
+- Moonwalk: replace `Math.random()` IDs with deterministic counter-based IDs
+- Moonwalk: extract shared `MOONWALK_ATTRS` constant for `removeAllWalks`/`removeFor`
+- Moonwalk: export `normalizeAlphaTween` for testability
+- Moonwalk: add `AlphaTweenConfig` and `MoonwalkRunMeta` types, refine callback signatures
+- Moonwalk: make `walks` optional and `transition` nullable in type definitions
+- Moonwalk: add JSDoc for `data-moonwalk-stage`, `data-moonwalk-order`, `data-moonwalk-children`, CSS-only mode, `alphaTween` object form
+- Application: fix `opts.bindScroll`/`opts.bindResize` reading raw input instead of merged opts
+- Application: fix `CustomEvent` constructor — second arg must be `{detail}`
+- Application: fix passive listener `preventDefault()` conflict
+- Application: fix `FeatureTests` `deviceLastTouched` typo
+- Application: replace broken `pollForVar` (pass-by-value) with getter function
+- Application: convert `window.onpageshow`/`document.onkeydown` to `addEventListener`
+- Application: wire up unused ease parameter in `scrollTo`
+- Application: replace deprecated `execCommand` with Clipboard API
+- Application: remove dead code (`fader`, `_lastWindowHeight`, `getIOSCurrentInnerHeight`)
+- Looper: preserve scroll position across resize instead of resetting to start
+- Looper: fix `next`/`prev` buttons on narrow scroll ranges via navigation index tracking
+- Looper: add `symmetricMod` for shortest-distance wrap calculation
+- Looper: fix hover/nav listener leaks — use event delegation, store cleanup refs
+- Looper: fix `resumeCrawl` race condition with generation counter
+- Looper: fix reversed crawl resume calculating wrong remaining distance
+- Looper: add `prefersReducedMotion` support (disable crawl, instant snaps, less inertia)
+- Looper: clean up clones, inline styles, and all animations in `destroy()`
+- Looper: replace magic numbers with named constants, remove dead code
+- Dataloader: fix `replaceInnerHTML` Promise constructor anti-pattern
+- Dataloader: add error handling to `fetch()` — loading state now clears on failure
+- Dataloader: replace `innerHTML +=` with `insertAdjacentHTML` to preserve existing DOM state
+- Dataloader: add `AbortController` to cancel in-flight requests on new fetch
+- Dataloader: add `destroy()` method for full event listener and URL sync cleanup
+- Dataloader: add configurable `filterDebounce` option (default: 650ms)
+- Dataloader: refactor `onParam` into smaller handler methods
+- Dataloader: store bound handlers for proper cleanup and GC
+
+#### 5.0.0-beta.12
+
+- Add `peek` option to Looper — centers viewport on the gap between two items (half | full | full | half)
+- Warn when `[data-looper]` has `overflow-x: clip` which hides looped items
+
+#### 5.0.0-beta.11
+
+- Add `reconfigure()` method to FixedHeader for SPA/view transition navigation — re-resolves section options, dynamic offsets, and resets scroll tracking state
+
+#### 5.0.0-beta.10
+
+- Defer reveal of Looper viewport images until after wrapper fade-in for nice per-image CSS transition
+- Pre-reveal off-screen Looper clone images immediately to prevent flash on scroll/loop
+- Add `reveal` option to Lazyload `forceLoad()` for loading without revealing
+- Update Motion.js to 12.35.1
+
+#### 5.0.0-beta.9
+
+- Add cookie consent toggle button for post-consent state changes
+- Force-load Looper clone images immediately to prevent flash on loop wrap
+- Fix Lazyload `forceLoad` not loading srcset sources before revealing
+- Add Playwright tests for cookie consent toggle and Looper lazyload clone behavior
+- Split Looper test pages into individual focused pages for test stability
+
+#### 5.0.0-beta.8
+
+- Rewrite Looper logic - place clones at front of container for more reliable wrapping
+- Add Playwright tests for Looper module
+
+#### 5.0.0-beta.7
+
+- Fix Looper wrap detection causing visual flash - no longer resets item transforms between render frames
+- Fix Looper position sync guard to prevent inertia bugs while dragging
+
+#### 5.0.0-beta.6
+
+- Remove unused dependencies: `body-scroll-lock`, `virtual-scroll`
+- Update dependencies: `motion`, `@playwright/test`, `typescript`, `vite`, `@types/node`
+
+#### 5.0.0-beta.5
+
+- Add `observe()` method to Lazyload for registering dynamically added elements
+- Fix Looper cloned images not being lazyloaded - clones now properly register with Lazyload observers
+
+#### 5.0.0-beta.4
+
+- Fix HeroSlider animations breaking after one cycle by using `animate()` with `duration: 0` instead of `set()` for proper Motion.js state synchronization
+- Fix Looper reverse scroll bug where items would disappear when dragging right - now tracks scroll direction and only wraps items during forward scroll
+
+#### 5.0.0-beta.3
+
+- Fix `yPercent` usage in header modules (GSAP-ism not supported by Motion)
+
+#### 5.0.0-beta.2
+
+- Remove GSAP dependency from package.json
+
+#### 5.0.0-beta.1
+
+- **BREAKING** Replace GSAP with Motion.js
+  - All animations now use Motion.js instead of GSAP
+  - Significantly smaller bundle size
+  - Native browser APIs for better performance
+  - GSAP exports removed - update imports if you were using GSAP directly from Jupiter
+- **FEATURE** New `Looper` module - horizontal infinite scrolling carousels
+  - Seamless horizontal looping with Motion.js (replaces GSAP Draggable + InertiaPlugin)
+  - Draggable interaction with momentum/inertia
+  - Auto-crawl (continuous scrolling) with configurable speed
+  - Snap-to-item behavior with `data-looper-snap`
+  - Next/Previous navigation buttons
+  - Responsive resize handling
+  - Moonwalk integration (play/pause on viewport entry/exit)
+  - Supports both looping and non-looping modes
+  - Configurable: `crawl`, `snap`, `loop`, `reverse`, `autoplay`, `centerSlide`
+- **BREAKING** Renamed `StickyHeader` to `DoubleHeader`
+  - The old StickyHeader module cloned the header element (dual-header architecture)
+  - Renamed to better reflect its behavior - it creates a clone/double of the header
+  - Update imports: `import { StickyHeader } from 'jupiter'` → `import { DoubleHeader } from 'jupiter'`
+- **FEATURE** New `StickyHeader` module based on FixedHeader
+  - Uses `position: sticky` instead of `position: fixed`
+  - Header stays in document flow - space is reserved even when hidden
+  - No padding-top needed on content below
+  - Same API as FixedHeader (hide on scroll down, reveal on scroll up)
+- **BREAKING** Lightbox: Removed Hammer.js dependency and swipe functionality
+  - The `swipe` option has been removed from LightboxOptions
+  - Swipe gestures are no longer supported - use keyboard arrows, click navigation, or native touch gestures
+  - This removes the @egjs/hammerjs dependency, reducing bundle size
+  - Lightbox now relies on click (arrows/dots), keyboard (arrow keys/ESC), and mouse-based navigation
+- **POTENTIALLY BREAKING** Toggler: Padding/margins on `[data-toggle-content]` may cause animation glitches
+  - For smooth animations, avoid applying padding/margins directly to `[data-toggle-content]` elements
+  - Instead, wrap content in a child element and apply padding/margins to that child
+  - Example: `<div data-toggle-content><div style="padding: 20px">Content</div></div>`
+  - This is a common pattern for height-based accordion animations
 - **FEATURE** Toggler: Add accordion functionality with group support
   - New `data-toggle-group` attribute enables accordion-like behavior where only one item can be open at a time
   - Add callbacks: `onOpen`, `onClose`, `onBeforeOpen`, `onBeforeClose` with toggler instance and group index
@@ -15,6 +214,11 @@
   - Configurable options: `updateOnInit`, `languageInPath`, `hideDefaultLanguage`, `defaultLanguage`
   - Optional `buildUrl` and `parseUrl` callbacks for custom URL logic
   - Centralized configuration - pass all URL configs once and dataloaders pick their config by ID
+
+
+#### 4.0.0-beta.2
+
+- Update gsap - export InertiaPlugin, SplitText <3
 
 
 #### 4.0.0-beta.1

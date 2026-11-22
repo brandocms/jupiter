@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Looper - Autoplay</title>
+  <link rel="stylesheet" href="shared.css">
+</head>
+<body>
+  <div class="looper-container" data-testid="looper-autoplay" data-moonwalk-run="loop">
+    <div class="looper-wrapper" data-looper-container>
+      <div data-looper data-looper-snap data-looper-crawl="false" data-looper-autoplay="3">
+        <div data-looper-item style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">1</div>
+        <div data-looper-item style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">2</div>
+        <div data-looper-item style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">3</div>
+        <div data-looper-item style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">4</div>
+        <div data-looper-item style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">5</div>
+      </div>
+      <div class="controls">
+        <button data-panner-previous>Prev</button>
+        <button data-panner-next>Next</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initLooper } from './shared.js'
+    initLooper()
+  </script>
+</body>
+</html>

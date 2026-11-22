@@ -5,6 +5,7 @@ export default class FeatureTests {
         touch: () => boolean;
     };
     results: {};
+    deviceLastTouched: number;
     runTests(tests: any): void;
     testFor(feature: any, result: any): void;
     /**
@@ -17,7 +18,6 @@ export default class FeatureTests {
      * listen for events as well
      */
     testTouchMouseEvents(): void;
-    deviceLastTouched: number;
     bindEventTests(): void;
     testTouch(): boolean;
     testIE11(): boolean;

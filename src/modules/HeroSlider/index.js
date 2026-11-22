@@ -9,13 +9,12 @@
  *
  */
 
-import { gsap, CSSPlugin } from 'gsap/all'
+import { animate } from 'motion'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import prefersReducedMotion from '../../utils/prefersReducedMotion'
 import * as Events from '../../events'
 import imageIsLoaded from '../../utils/imageIsLoaded'
-
-gsap.registerPlugin(CSSPlugin)
+import { set, delayedCall } from '../../utils/motion-helpers'
 
 const DEFAULT_OPTIONS = {
   el: '[data-hero-slider]',
@@ -47,19 +46,20 @@ const DEFAULT_OPTIONS = {
   onInitialize: (/* hs */) => {},
 
   onFadeIn: (hs, callback) => {
-    if (hs.slides.length > 1) {
-      gsap.to(hs.el, {
-        duration: 0.25,
-        opacity: 1,
-        onComplete: () => {
-          callback()
-        },
-      })
-    } else {
-      gsap.to(hs.el, {
-        duration: 0.25,
-        opacity: 1,
-      })
+    // Get the first slide's image to start zooming during reveal
+    const firstSlideImg = hs.slides[hs._currentSlideIdx].querySelector('.hero-slide-img')
+
+    // Fade in the container
+    animate(hs.el, { opacity: 1 }, { duration: 0.25 })
+
+    // Start zoom immediately as container fades in
+    if (firstSlideImg && hs.slides.length > 1) {
+      // Animate with linear easing - MUST specify type: "tween"!
+      animate(
+        firstSlideImg,
+        { scale: [1, hs.opts.transition.scale] },
+        { type: "tween", duration: hs.opts.interval, ease: "linear" }
+      ).finished.then(callback)
     }
   },
 }
@@ -84,8 +84,9 @@ export default class HeroSlider {
 
   initialize() {
     this._addResizeHandler()
+    this._addVisibilityHandler()
     // style the container
-    gsap.set(this.el, {
+    set(this.el, {
       position: 'absolute',
       top: 0,
       left: 0,
@@ -101,25 +102,30 @@ export default class HeroSlider {
     this._currentSlideIdx = this.opts.initialSlideNumber
 
     // style the slides
-    Array.from(this.slides).forEach((s) => {
-      gsap.set(s, {
+    Array.from(this.slides).forEach((s, index) => {
+      set(s, {
         zIndex: this.opts.zIndex.regular,
         position: 'absolute',
         top: 0,
         left: 0,
         width: '100%',
         height: '100%',
+        opacity: index === 0 ? 1 : 0, // Only first slide visible initially
       })
 
       const img = s.querySelector('.hero-slide-img')
 
       if (img) {
-        gsap.set(img, {
+        set(img, {
           width: document.body.clientWidth,
           height: '100%',
           top: 0,
           left: 0,
           position: 'absolute',
+          transition: 'none',
+          transformOrigin: 'center center',
+          willChange: 'transform',
+          scale: 1, // Initialize scale
         })
       } else {
         console.error(
@@ -128,6 +134,7 @@ export default class HeroSlider {
       }
     })
 
+    // Set proper z-indexes for first two slides
     this.slides[0].style.zIndex = this.opts.zIndex.visible
     if (this.slides[1]) {
       this.slides[1].style.zIndex = this.opts.zIndex.next
@@ -181,87 +188,151 @@ export default class HeroSlider {
    * Switches between slides
    */
   slide(type) {
-    const timeline = gsap.timeline()
-
     switch (type) {
       case 'fade':
-        timeline
-          .set(this._currentSlide, {
+        {
+          // Setup: set current slide invisible at correct z-index
+          set(this._currentSlide, {
             opacity: 0,
-            scale: 1,
             zIndex: this.opts.zIndex.visible,
           })
-          .set(this._nextSlide, {
-            opacity: 0,
-          })
-          .to(this._previousSlide, {
-            duration: this.opts.interval,
-            scale: this.opts.transition.scale,
-          })
-          .to(this._currentSlide, {
-            duration: this.opts.transition.duration,
-            opacity: 1,
-            delay: this.opts.interval - this.opts.transition.duration,
-            force3D: true,
-            ease: 'sine.inOut',
-          })
-          .set(this._previousSlide, {
-            opacity: 0,
-          })
-          .call(
-            () => {
-              this._nextSlide.style.zIndex = this.opts.zIndex.visible
-              this._currentSlide.style.zIndex = this.opts.zIndex.regular
-              this._previousSlide.style.zIndex = this.opts.zIndex.regular
-              this.next()
-            },
-            null,
-            this
-          )
+          set(this._nextSlide, { opacity: 0 })
 
+          // Get the images to animate
+          const previousSlideImg = this._previousSlide.querySelector('.hero-slide-img')
+          const currentSlideImg = this._currentSlide.querySelector('.hero-slide-img')
+
+          // Explicitly set starting scale for current slide
+          set(currentSlideImg, { scale: 1 })
+
+          // Build animation sequence
+          // Previous slide continues zooming at same rate during fade out
+          // Zoom rate: (scale - 1) / interval, so in transition.duration we zoom by that rate * duration
+          const zoomRate = (this.opts.transition.scale - 1) / this.opts.interval
+          const continueZoomAmount = zoomRate * this.opts.transition.duration
+          const continueZoomTarget = this.opts.transition.scale + continueZoomAmount
+
+          const sequence = [
+            // Previous slide continues zooming during fade at same rate
+            [
+              previousSlideImg,
+              { scale: [this.opts.transition.scale, continueZoomTarget] },
+              { type: "tween", duration: this.opts.transition.duration, ease: "linear", at: 0 },
+            ],
+            // Current slide fade-in (starts immediately)
+            [
+              this._currentSlide,
+              { opacity: 1 },
+              {
+                type: "tween",
+                duration: this.opts.transition.duration,
+                ease: [0.45, 0, 0.55, 1], // sine.inOut bezier
+                at: 0,
+              },
+            ],
+            // Current slide image zoom (starts immediately as it fades in)
+            [
+              currentSlideImg,
+              { scale: [1, this.opts.transition.scale] },
+              { type: "tween", duration: this.opts.interval, ease: "linear", at: 0 },
+            ],
+          ]
+
+          this._currentAnimation = animate(sequence)
+
+          this._currentAnimation.finished.then(() => {
+            // Cleanup after animation completes
+            set(this._previousSlide, { opacity: 0 })
+            set(this._currentSlide, { opacity: 1 })
+            set(previousSlideImg, { scale: 1 })
+            this._nextSlide.style.zIndex = this.opts.zIndex.visible
+            this._currentSlide.style.zIndex = this.opts.zIndex.regular
+            this._previousSlide.style.zIndex = this.opts.zIndex.regular
+            this.next()
+          })
+        }
         break
 
       case 'parallax':
-        timeline
-          .set(this._currentSlide, {
+        {
+          // Setup: current slide behind previous slide
+          set(this._currentSlide, {
             zIndex: this.opts.zIndex.next,
-            scale: 1.0,
             width: '100%',
+            opacity: 1, // Make sure it's visible underneath
           })
-          .fromTo(
-            this._previousSlide,
-            {
-              duration: this.opts.interval,
-              overflow: 'hidden',
-            },
-            {
-              duration: this.opts.interval,
-              scale: this.opts.transition.scale,
-            }
-          )
-          .to(this._previousSlide, {
-            duration: this.opts.transition.duration,
-            width: 0,
-            ease: 'power3.in',
-            autoRound: true,
-            overwrite: 'preexisting',
-          })
-          .set(this._nextSlide, {
-            zIndex: this.opts.zIndex.next,
-          })
-          .set(this._currentSlide, {
-            zIndex: this.opts.zIndex.visible,
-            width: '100%',
-          })
-          .set(this._previousSlide, {
-            zIndex: this.opts.zIndex.regular,
-            scale: 1.0,
-            width: '100%',
-          })
-          .call(() => {
+          set(this._previousSlide, { overflow: 'hidden' })
+
+          // Get the current slide's image to animate
+          const previousSlideImg = this._previousSlide.querySelector('.hero-slide-img')
+          const currentSlideImg = this._currentSlide.querySelector('.hero-slide-img')
+
+          // Explicitly set starting scale for current slide
+          set(currentSlideImg, { scale: 1 })
+
+          // Build animation sequence
+          // Previous slide continues zooming at same rate during collapse
+          // Zoom rate: (scale - 1) / interval, so in transition.duration we zoom by that rate * duration
+          const zoomRate = (this.opts.transition.scale - 1) / this.opts.interval
+          const continueZoomAmount = zoomRate * this.opts.transition.duration
+          const continueZoomTarget = this.opts.transition.scale + continueZoomAmount
+
+          const sequence = [
+            // Previous slide continues zooming during collapse at same rate
+            [
+              previousSlideImg,
+              { scale: [this.opts.transition.scale, continueZoomTarget] },
+              { type: "tween", duration: this.opts.transition.duration, ease: "linear", at: 0 },
+            ],
+            // Previous slide width collapse (starts immediately)
+            [
+              this._previousSlide,
+              { width: 0 },
+              {
+                type: "tween",
+                duration: this.opts.transition.duration,
+                ease: [0.895, 0.03, 0.685, 0.22], // power3.in bezier
+                at: 0,
+              },
+            ],
+            // Current slide image zoom (starts immediately as it's revealed)
+            [
+              currentSlideImg,
+              { scale: [1, this.opts.transition.scale] },
+              { type: "tween", duration: this.opts.interval, ease: "linear", at: 0 },
+            ],
+          ]
+
+          this._currentAnimation = animate(sequence)
+
+          this._currentAnimation.finished.then(() => {
+            // Reset ALL slides using instant animations to ensure Motion.js state is clean
+            Array.from(this.slides).forEach((slide) => {
+              if (slide === this._currentSlide) return
+              const img = slide.querySelector('.hero-slide-img')
+              if (img) {
+                // Use animate with duration 0 to reset Motion.js internal state
+                animate(img, { scale: 1 }, { duration: 0 })
+              }
+              const isNext = slide === this._nextSlide
+              // Reset slide using animate with duration 0
+              animate(slide, {
+                width: '100%',
+                opacity: isNext ? 1 : 0,
+              }, { duration: 0 })
+              slide.style.overflow = ''
+              slide.style.zIndex = isNext ? this.opts.zIndex.next : this.opts.zIndex.regular
+            })
+
+            animate(this._currentSlide, {
+              width: '100%',
+              opacity: 1,
+            }, { duration: 0 })
+            this._currentSlide.style.zIndex = this.opts.zIndex.visible
+
             this.next()
           })
-
+        }
         break
 
       default:
@@ -295,10 +366,65 @@ export default class HeroSlider {
   }
 
   _resizeSlides() {
-    gsap.to(this.images, {
-      duration: 0.15,
-      width: document.body.clientWidth,
-      overwrite: 'all',
+    // Stop any running resize animations
+    if (this.resizeAnimation) {
+      this.resizeAnimation.stop()
+    }
+
+    this.resizeAnimation = animate(
+      this.images,
+      { width: document.body.clientWidth },
+      { duration: 0.15 }
+    )
+  }
+
+  /**
+   * Add a visibility change handler to restart animations when tab becomes visible
+   */
+  _addVisibilityHandler() {
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        // Cancel running animation when tab becomes hidden
+        if (this._currentAnimation) {
+          this._currentAnimation.cancel()
+          this._currentAnimation = null
+        }
+      } else {
+        // Reset and restart when tab becomes visible
+        this._resetAndRestart()
+      }
     })
+  }
+
+  /**
+   * Reset slide states and restart the animation cycle
+   */
+  _resetAndRestart() {
+    // Reset all slides to initial state
+    Array.from(this.slides).forEach((s, index) => {
+      const nextSlideIdx = (this._currentSlideIdx + 1) % this.slides.length
+      set(s, {
+        width: '100%',
+        opacity: index === this._currentSlideIdx ? 1 : 0,
+        zIndex: index === this._currentSlideIdx ? this.opts.zIndex.visible :
+                index === nextSlideIdx ? this.opts.zIndex.next :
+                this.opts.zIndex.regular
+      })
+      const img = s.querySelector('.hero-slide-img')
+      if (img) {
+        set(img, { scale: 1 })
+      }
+    })
+
+    // Restart the zoom animation on current slide, then continue cycle
+    const currentSlideImg = this.slides[this._currentSlideIdx].querySelector('.hero-slide-img')
+    if (currentSlideImg && this.slides.length > 1) {
+      this._currentAnimation = animate(
+        currentSlideImg,
+        { scale: [1, this.opts.transition.scale] },
+        { type: "tween", duration: this.opts.interval, ease: "linear" }
+      )
+      this._currentAnimation.finished.then(() => this.next())
+    }
   }
 }

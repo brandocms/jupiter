@@ -1,4 +1,4 @@
-import { gsap } from 'gsap/all'
+import { set } from '../../utils/motion-helpers'
 import _defaultsDeep from 'lodash.defaultsdeep'
 
 const DEFAULT_OPTIONS = {}
@@ -62,10 +62,10 @@ export default class StackedBoxes {
   }
 
   pull(box, amnt) {
-    gsap.set(box, { y: amnt * -1, marginBottom: amnt * -1 })
+    set(box, { y: amnt * -1, marginBottom: amnt * -1 })
   }
 
   size(target, src) {
-    gsap.set(target, { height: src.clientHeight })
+    set(target, { height: src.clientHeight })
   }
 }

@@ -1,5 +1,7 @@
 /**
- * A header that stays fixed. Hides when scrolling down and is revealed on scrolling up.
+ * A header that uses position: sticky. Hides when scrolling down and is revealed on scrolling up.
+ * Unlike FixedHeader, the sticky header stays in document flow - when hidden via transform,
+ * its space is still reserved.
  *
  * You can pass different configs for different sections:
  *
@@ -23,96 +25,189 @@
  *
  */
 
-import { gsap } from 'gsap/all'
+import { animate, stagger } from 'motion'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import * as Events from '../../events'
+import Dom from '../Dom'
+import { set } from '../../utils/motion-helpers'
 
+/**
+ * @typedef {Object} StickyHeaderEvents
+ * @property {Function} [onPin] - Called when header is pinned
+ * @property {Function} [onUnpin] - Called when header is unpinned
+ * @property {Function} [onAltBg] - Called when alternate background is applied
+ * @property {Function} [onNotAltBg] - Called when regular background is applied
+ * @property {Function} [onSmall] - Called when header becomes small
+ * @property {Function} [onNotSmall] - Called when header becomes normal size
+ * @property {Function} [onTop] - Called when page is at the top
+ * @property {Function} [onNotTop] - Called when page is not at the top
+ * @property {Function} [onBottom] - Called when page is at the bottom
+ * @property {Function} [onNotBottom] - Called when page is not at the bottom
+ * @property {Function} [onMobileMenuOpen] - Called when mobile menu opens
+ * @property {Function} [onMobileMenuClose] - Called when mobile menu closes
+ * @property {Function} [onIntersect] - Called when header intersects with an element
+ * @property {Function} [onOutline] - Called when user tabs (outline mode)
+ */
+
+/**
+ * @typedef {Object} StickyHeaderSectionOptions
+ * @property {boolean} [unPinOnResize=true] - Whether to unpin header on window resize
+ * @property {boolean} [headerHeightTracksPin=true] - Whether --header-height drops to 0 when the header unpins. Set false for a header that never retracts.
+ * @property {Window|HTMLElement} [canvas=window] - Scrolling element
+ * @property {string|null} [intersects=null] - Selector for elements to check intersection with
+ * @property {Function} [beforeEnter] - Called before header enters
+ * @property {Function} [enter] - Called when header enters
+ * @property {number} [enterDelay=0] - Delay before enter animation
+ * @property {number} [tolerance=3] - Scroll tolerance before triggering hide/show
+ * @property {number|string|Function} [offset=0] - Offset from top before triggering hide
+ * @property {number|string|Function} [offsetSmall=50] - Offset from top before shrinking header
+ * @property {number|string|Function} [offsetBg=200] - Offset from top before changing background color
+ * @property {string|null} [regBgColor=null] - Regular background color
+ * @property {string|null} [altBgColor=null] - Alternate background color
+ */
+
+/**
+ * @typedef {Object} StickyHeaderOptions
+ * @property {string|HTMLElement} [el='header[data-nav]'] - Header element or selector
+ * @property {string} [on=Events.APPLICATION_REVEALED] - Event to initialize on
+ * @property {boolean} [unpinOnForcedScrollStart=true] - Whether to unpin on forced scroll start
+ * @property {boolean} [pinOnForcedScrollEnd=true] - Whether to pin on forced scroll end
+ * @property {boolean} [ignoreForcedScroll=false] - Whether to ignore forced scroll events
+ * @property {boolean} [rafScroll=true] - Whether to use requestAnimationFrame for scrolling
+ * @property {StickyHeaderSectionOptions} [default] - Default options for all sections
+ * @property {Object.<string, StickyHeaderSectionOptions>} [sections] - Section-specific options
+ */
+
+/** @type {StickyHeaderEvents} */
 const DEFAULT_EVENTS = {
-  onMainVisible: (h) => {
-    gsap.to(h.el, {
-      duration: 3,
-      opacity: 1,
-      delay: 0.5,
-    })
-  },
-
-  onMainInvisible: (h) => {
-    gsap.to(h.el, {
-      duration: 1,
-      opacity: 0,
-    })
-  },
-
   onPin: (h) => {
-    gsap.to(h.auxEl, {
+    animate(h.el, {
+      y: '0%'
+    }, {
       duration: 0.35,
-      yPercent: '0',
-      ease: 'sine.out',
-      autoRound: true,
+      ease: 'easeOut'
     })
   },
 
   onUnpin: (h) => {
     h._hiding = true
-    gsap.to(h.auxEl, {
+    animate(h.el, {
+      y: '-100%'
+    }, {
       duration: 0.25,
-      yPercent: '-100',
-      ease: 'sine.in',
-      autoRound: true,
-      onComplete: () => {
-        h._hiding = false
-      },
+      ease: 'easeIn'
+    }).finished.then(() => {
+      h._hiding = false
     })
   },
-  onSmall: () => {},
+
+  onAltBg: (h) => {
+    if (h.opts.altBgColor) {
+      animate(h.el, {
+        backgroundColor: h.opts.altBgColor
+      }, {
+        duration: 0.2
+      })
+    }
+  },
+
+  onNotAltBg: (h) => {
+    if (h.opts.regBgColor) {
+      animate(h.el, {
+        backgroundColor: h.opts.regBgColor
+      }, {
+        duration: 0.4
+      })
+    }
+  },
+
+  // eslint-disable-next-line no-unused-vars
+  onSmall: (h) => {},
+  // eslint-disable-next-line no-unused-vars
+  onNotSmall: (h) => {},
+  // eslint-disable-next-line no-unused-vars
+  onTop: (h) => {},
+  // eslint-disable-next-line no-unused-vars
+  onNotTop: (h) => {},
+  // eslint-disable-next-line no-unused-vars
+  onBottom: (h) => {},
+  // eslint-disable-next-line no-unused-vars
+  onNotBottom: (h) => {},
+  // eslint-disable-next-line no-unused-vars
+  onMobileMenuOpen: (h) => {},
+  // eslint-disable-next-line no-unused-vars
+  onMobileMenuClose: (h) => {},
+  // eslint-disable-next-line no-unused-vars
+  onIntersect: (h) => {},
+  onOutline: (h) => {
+    h.preventUnpin = true
+    h.pin()
+  },
 }
 
+/** @type {StickyHeaderOptions} */
 const DEFAULT_OPTIONS = {
   el: 'header[data-nav]',
   on: Events.APPLICATION_REVEALED,
-  pinOnOutline: false,
-  pinOnForcedScroll: true,
-  unPinOnResize: false,
+  unpinOnForcedScrollStart: true,
+  pinOnForcedScrollEnd: true,
+  ignoreForcedScroll: false,
+  rafScroll: true,
 
   default: {
-    onClone: (h) => h.el.cloneNode(true),
+    unPinOnResize: true,
+    headerHeightTracksPin: true,
     canvas: window,
+    intersects: null,
     beforeEnter: (h) => {
-      gsap.set(h.el, { opacity: 0 })
+      set(h.el, { y: '-100%' })
+      set(h.lis, { opacity: 0 })
     },
+
     enter: (h) => {
-      const timeline = gsap.timeline()
-      timeline
-        .set(h.auxEl, { yPercent: -100 })
-        .set(h.lis, { opacity: 0 })
-        .to(h.auxEl, 1, {
-          yPercent: 0,
-          delay: h.opts.enterDelay,
-          ease: 'power3.out',
-          autoRound: true,
-        })
-        .staggerTo(h.lis, 0.8, { opacity: 1, ease: 'sine.in' }, 0.1, '-=1')
+      // Header slides down
+      animate(h.el, {
+        y: '0%'
+      }, {
+        duration: 1,
+        delay: h.opts.enterDelay,
+        ease: 'easeOut'
+      })
+
+      // Menu items fade in with stagger (starts at same time as header: '-=1' means 1s overlap)
+      animate(h.lis, {
+        opacity: 1
+      }, {
+        duration: 0.8,
+        delay: stagger(0.1, { startDelay: h.opts.enterDelay }),
+        ease: 'easeIn'
+      })
     },
-    enterDelay: 1.2,
+
+    enterDelay: 0,
     tolerance: 3,
     offset: 0, // how far from the top before we trigger hide
     offsetSmall: 50, // how far from the top before we trigger the shrinked padding,
     offsetBg: 200, // how far down before changing backgroundcolor
+    regBgColor: null,
+    altBgColor: null,
     ...DEFAULT_EVENTS,
   },
 }
 
+/**
+ * StickyHeader component for sticky navigation headers with scroll behaviors.
+ * Uses position: sticky instead of position: fixed, keeping the header in document flow.
+ */
 export default class StickyHeader {
+  /**
+   * Create a new StickyHeader instance
+   * @param {Object} app - Application instance
+   * @param {StickyHeaderOptions} [opts={}] - StickyHeader options
+   */
   constructor(app, opts = {}) {
     this.app = app
     this.mainOpts = _defaultsDeep(opts, DEFAULT_OPTIONS)
-
-    if (this.mainOpts.pinOnOutline) {
-      window.addEventListener(Events.APPLICATION_OUTLINE, () => {
-        this.preventUnpin = true
-        this.pin()
-      })
-    }
 
     if (typeof this.mainOpts.el === 'string') {
       this.el = document.querySelector(this.mainOpts.el)
@@ -125,34 +220,36 @@ export default class StickyHeader {
     }
 
     const section = document.body.getAttribute('data-script')
+
     this.opts = this._getOptionsForSection(section, opts)
-
-    this.auxEl = this.opts.onClone(this)
-    this.auxEl.setAttribute('data-header-pinned', '')
-    this.auxEl.setAttribute('data-auxiliary-nav', '')
-    this.auxEl.removeAttribute('data-nav')
-
-    document.body.appendChild(this.auxEl)
-
-    this.small()
-    this.unpin()
-
     this.lis = this.el.querySelectorAll('li')
+
     this.preventPin = false
     this.preventUnpin = false
-    this._isResizing = false
     this._firstLoad = true
     this._pinned = true
     this._top = false
     this._bottom = false
     this._small = false
+    this._altBg = false
+    this._isResizing = false
     this._hiding = false // if we're in the process of hiding the bar
     this.lastKnownScrollY = 0
+    this.lastKnownScrollHeight = 0
+    this.currentScrollHeight = 0
     this.currentScrollY = 0
     this.mobileMenuOpen = false
     this.timer = null
     this.resetResizeTimer = null
-    this.firstReveal = true
+    this.scrollSettleTimeout = null
+
+    if (this.opts.intersects) {
+      this.intersectingElements = Dom.all('[data-intersect]')
+    }
+
+    window.addEventListener(Events.APPLICATION_OUTLINE, () => {
+      this.opts.onOutline(this)
+    })
 
     this.initialize()
   }
@@ -160,20 +257,96 @@ export default class StickyHeader {
   initialize() {
     // bind to canvas scroll
     this.lastKnownScrollY = this.getScrollY()
+    this.lastKnownScrollHeight = document.body.scrollHeight
     this.currentScrollY = this.lastKnownScrollY
+    this.currentScrollHeight = this.lastKnownScrollHeight
+    this.pageIsScrolledOnReady = false
 
     if (typeof this.opts.offsetBg === 'string') {
       // get offset of element, with height of header subtracted
-      const elm = document.querySelector(this.opts.offsetBg)
-      this.opts.offsetBg = elm.offsetTop - this.el.offsetHeight
+      const offsetBgElm = document.querySelector(this.opts.offsetBg)
+      this.opts.offsetBg = offsetBgElm.offsetTop
+    } else if (typeof this.opts.offsetBg === 'function') {
+      this.opts.offsetBg = this.opts.offsetBg(this) - 1
     }
 
-    this.setupObserver()
+    if (typeof this.opts.offset === 'string') {
+      // get offset of element, with height of header subtracted
+      const offsetElm = document.querySelector(this.opts.offset)
+      this.opts.offset = offsetElm.offsetTop - 1
+    } else if (typeof this.opts.offset === 'function') {
+      this.opts.offset = this.opts.offset(this) - 1
+    }
 
-    window.addEventListener(this.mainOpts.on, this.bindObserver.bind(this))
+    if (typeof this.opts.offsetSmall === 'string') {
+      // get offsetSmall of element, with height of header subtracted
+      const offsetSmallElm = document.querySelector(this.opts.offsetSmall)
+      this.opts.offsetSmall = offsetSmallElm.offsetTop - 1
+    } else if (typeof this.opts.offsetSmall === 'function') {
+      this.opts.offsetSmall = this.opts.offsetSmall(this) - 1
+    }
+
+    if (this.mainOpts.unpinOnForcedScrollStart) {
+      window.addEventListener(
+        Events.APPLICATION_FORCED_SCROLL_START,
+        this.unpin.bind(this),
+        false
+      )
+    }
+
+    if (this.mainOpts.pinOnForcedScrollEnd) {
+      window.addEventListener(
+        Events.APPLICATION_FORCED_SCROLL_END,
+        this.pin.bind(this),
+        false
+      )
+    }
+
+    this.app.registerCallback(Events.APPLICATION_REVEALED, () => {
+      let SCROLL_EVENT = Events.APPLICATION_SCROLL
+      if (!this.mainOpts.rafScroll) {
+        SCROLL_EVENT = 'scroll'
+      }
+
+      window.addEventListener(SCROLL_EVENT, this.redraw.bind(this), {
+        capture: false,
+        passive: true,
+      })
+
+      // Add debounced scroll listener for accurate top/bottom detection after scroll settles
+      // RAF-throttled events can lag behind actual scroll position during fast scrolls
+      window.addEventListener('scroll', () => {
+        clearTimeout(this.scrollSettleTimeout)
+        this.scrollSettleTimeout = setTimeout(() => {
+          // Get real-time scroll position after scroll has settled
+          const actualScrollY = this.opts.canvas === window || this.opts.canvas === document.body
+            ? window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop
+            : this.opts.canvas.scrollTop
+
+          // Update current scroll and force accurate boundary checks
+          this.currentScrollY = actualScrollY
+          this.checkTop(true)
+          this.checkBot(true)
+        }, 100)
+      }, {
+        capture: false,
+        passive: true,
+      })
+    })
+
+    this.app.registerCallback(
+      Events.APPLICATION_READY,
+      this.unpinIfScrolled.bind(this)
+    )
+
+    this.preflight()
+
+    window.addEventListener(this.mainOpts.on, this.enter.bind(this))
+
     this._bindMobileMenuListeners()
 
-    if (this.opts.unPinOnResize) {
+    // DON'T unpin on iOS since this will unpin when bottom menu bar appears on scrolling upwards!
+    if (this.opts.unPinOnResize && !this.app.featureTests.results.ios) {
       window.addEventListener(
         Events.APPLICATION_RESIZE,
         this.setResizeTimer.bind(this),
@@ -184,58 +357,59 @@ export default class StickyHeader {
     this.opts.beforeEnter(this)
   }
 
-  setupObserver() {
-    this.observer = new IntersectionObserver((entries) => {
-      const [{ isIntersecting }] = entries
+  preflight() {
+    if (!this.opts.enter) {
+      this.checkSize(true)
+      this.checkBg(true)
+      this.checkTop(true)
+    }
 
-      if (isIntersecting) {
-        if (this._navVisible !== true) {
-          this.opts.onMainVisible(this)
-          if (this.firstReveal) {
-            this.firstReveal = false
-          }
-        }
-        this._navVisible = true
-      } else {
-        if (this._navVisible === true) {
-          this.opts.onMainInvisible(this)
-        }
-        this._navVisible = false
-      }
+    this.app.registerCallback(Events.APPLICATION_REVEALED, () => {
+      setTimeout(() => {
+        this.el.setAttribute('data-header-transitions', '')
+      }, 350)
     })
+  }
 
-    window.addEventListener(
-      Events.APPLICATION_SCROLL,
-      this.update.bind(this),
-      false
+  lock() {
+    this.preventPin = true
+    this.preventUnpin = true
+  }
+
+  unlock() {
+    this.preventPin = false
+    this.preventUnpin = false
+  }
+
+  isScrolled() {
+    return (
+      (window.pageYOffset || document.documentElement.scrollTop) -
+        (document.documentElement.clientTop || 0) >
+      0
     )
+  }
 
-    if (this.mainOpts.pinOnForcedScroll) {
-      window.addEventListener(Events.APPLICATION_FORCED_SCROLL_START, () => {
-        this.preventUnpin = false
-        this.unpin()
-        this.preventPin = true
-      })
-      window.addEventListener(
-        Events.APPLICATION_FORCED_SCROLL_END,
-        () => {
-          this.preventPin = false
-          this.pin()
-          this.preventUnpin = false
-        },
-        false
-      )
+  unpinIfScrolled() {
+    if (this.isScrolled()) {
+      // page is scrolled on ready -- ensure we unpin
+      this.pageIsScrolledOnReady = true
+      this.unpin()
     }
   }
 
-  bindObserver() {
-    this.observer.observe(this.el)
+  enter() {
+    if (this.opts.enter) {
+      this.checkSize(true)
+      this.checkBg(true)
+      this.checkTop(true)
+      this.opts.enter(this)
+    }
   }
 
   setResizeTimer() {
     this._isResizing = true
     if (this._pinned) {
-      // unpin if resizing to prevent visual clutter
+      // unpin if resizing to prevent visual clutter.
       this.unpin()
     }
 
@@ -249,26 +423,8 @@ export default class StickyHeader {
     }, 500)
   }
 
-  _hideAlt() {
-    this.unpin()
-  }
-
-  _showAlt() {
-    this.pin()
-  }
-
   update() {
-    this.redraw(false)
-  }
-
-  lock() {
-    this.preventPin = true
-    this.preventUnpin = true
-  }
-
-  unlock() {
-    this.preventPin = false
-    this.preventUnpin = false
+    this.redraw()
   }
 
   checkSize(force) {
@@ -282,6 +438,20 @@ export default class StickyHeader {
       this.notSmall()
     } else if (this._small) {
       this.notSmall()
+    }
+  }
+
+  checkBg(force) {
+    if (this.currentScrollY > this.opts.offsetBg) {
+      if (force) {
+        this.altBg()
+      } else if (!this._altBg && !this._hiding) {
+        this.altBg()
+      }
+    } else if (force) {
+      this.notAltBg()
+    } else if (this._altBg) {
+      this.notAltBg()
     }
   }
 
@@ -317,29 +487,27 @@ export default class StickyHeader {
   }
 
   checkPin(force, toleranceExceeded) {
-    if (this._navVisible) {
-      if (this._pinned) {
-        this.unpin()
-        return
-      }
-    }
-
     if (this.shouldUnpin(toleranceExceeded)) {
       if (this.mobileMenuOpen) {
         return
       }
-      if (this._pinned) {
+      if (force) {
+        this.unpin()
+      } else if (this._pinned) {
         this.unpin()
       }
     } else if (this.shouldPin(toleranceExceeded)) {
-      if (!this._pinned) {
+      if (force) {
+        this.pin()
+      } else if (!this._pinned) {
         this.pin()
       }
     }
   }
 
-  redraw(force = false) {
+  redraw() {
     this.currentScrollY = this.getScrollY()
+    this.currentScrollHeight = document.body.scrollHeight
     const toleranceExceeded = this.toleranceExceeded()
 
     if (this.isOutOfBounds()) {
@@ -347,8 +515,31 @@ export default class StickyHeader {
       return
     }
 
-    this.checkPin(force, toleranceExceeded)
+    /* content-visibility: auto may CHANGE the scrollheight of the document
+    as we roll down/up. Try to avoid false positives here */
+    if (
+      this.currentScrollHeight !== this.lastKnownScrollHeight &&
+      !this._firstLoad
+    ) {
+      this.lastKnownScrollY = this.currentScrollY
+      this.lastKnownScrollHeight = this.currentScrollHeight
+      return
+    }
+
+    this.checkSize(false)
+    this.checkBg(false)
+    this.checkTop(false)
+    this.checkBot(false)
+
+    if (this.mainOpts.ignoreForcedScroll && this.app.state.forcedScroll) {
+      // ignore forced scroll
+    } else {
+      this.checkPin(false, toleranceExceeded)
+    }
+
     this.lastKnownScrollY = this.currentScrollY
+    this.lastKnownScrollHeight = this.currentScrollHeight
+
     this._firstLoad = false
   }
 
@@ -381,38 +572,81 @@ export default class StickyHeader {
   }
 
   unpin() {
-    if (!this.preventUnpin) {
-      this._pinned = false
-      this.opts.onUnpin(this)
+    if (this.preventUnpin) {
+      return
     }
+    this._pinned = false
+    this.el.setAttribute('data-header-unpinned', '')
+    this.el.removeAttribute('data-header-pinned')
+    this._updateHeaderHeight()
+    this.opts.onUnpin(this)
   }
 
   pin() {
-    if (!this.preventPin) {
-      this._pinned = true
-      this.opts.onSmall(this)
-      this.opts.onPin(this)
+    if (this.preventPin) {
+      return
     }
+    this._pinned = true
+    this.el.setAttribute('data-header-pinned', '')
+    this.el.removeAttribute('data-header-unpinned')
+    this._updateHeaderHeight()
+    this.opts.onPin(this)
   }
 
   notSmall() {
     this._small = false
-    this.auxEl.setAttribute('data-header-big', '')
-    this.auxEl.removeAttribute('data-header-small')
+    this.el.setAttribute('data-header-big', '')
+    this.el.removeAttribute('data-header-small')
+    this._updateHeaderHeight()
     this.opts.onNotSmall(this)
   }
 
   small() {
     this._small = true
-    this.auxEl.setAttribute('data-header-small', '')
-    this.auxEl.removeAttribute('data-header-big')
+    this.el.setAttribute('data-header-small', '')
+    this.el.removeAttribute('data-header-big')
+    this._updateHeaderHeight()
     this.opts.onSmall(this)
   }
 
+  /**
+   * Update the --header-height CSS variable on :root.
+   *
+   * By default this is how much header is *visible* — the measured height when
+   * pinned, 0 when unpinned — so anything positioned under the bar follows it
+   * out of the way as it retracts.
+   *
+   * That is wrong for a header configured never to retract, whether through
+   * `preventUnpin` or by no-opping `onPin` / `onUnpin`. The bar stays put, but
+   * `_pinned` still flips on every change of scroll direction, so the variable
+   * drops to 0 and back while nothing moves. Any layout sized from it then grows
+   * and shrinks the document under the reader. Scroll anchoring absorbs that
+   * mid-page, but not at the very bottom, where the scroll offset is clamped to
+   * the document and the page visibly jumps instead.
+   *
+   * `headerHeightTracksPin: false` publishes the measured height throughout.
+   */
+  _updateHeaderHeight() {
+    const tracksPin = this.opts.headerHeightTracksPin !== false
+    const height = tracksPin && !this._pinned ? '0px' : `${this.el.clientHeight}px`
+    document.documentElement.style.setProperty('--header-height', height)
+  }
+
+  notAltBg() {
+    this._altBg = false
+    this.el.setAttribute('data-header-reg-bg', '')
+    this.el.removeAttribute('data-header-alt-bg')
+    this.opts.onNotAltBg(this)
+  }
+
+  altBg() {
+    this._altBg = true
+    this.el.setAttribute('data-header-alt-bg', '')
+    this.el.removeAttribute('data-header-reg-bg')
+    this.opts.onAltBg(this)
+  }
+
   shouldUnpin(toleranceExceeded) {
-    if (this._navVisible) {
-      return true
-    }
     const scrollingDown = this.currentScrollY > this.lastKnownScrollY
     const pastOffset = this.currentScrollY >= this.opts.offset
 
@@ -423,8 +657,10 @@ export default class StickyHeader {
     if (this._isResizing) {
       return false
     }
+
     const scrollingUp = this.currentScrollY < this.lastKnownScrollY
     const pastOffset = this.currentScrollY <= this.opts.offset
+
     return (scrollingUp && toleranceExceeded) || pastOffset
   }
 
@@ -517,20 +753,22 @@ export default class StickyHeader {
 
   _bindMobileMenuListeners() {
     window.addEventListener(
-      Events.APPLICATION_MOBILE_MENU_OPEN,
+      'APPLICATION:MOBILE_MENU:OPEN',
       this._onMobileMenuOpen.bind(this)
     )
     window.addEventListener(
-      Events.APPLICATION_MOBILE_MENU_CLOSED,
+      'APPLICATION:MOBILE_MENU:CLOSED',
       this._onMobileMenuClose.bind(this)
     )
   }
 
   _onMobileMenuOpen() {
+    this.opts.onMobileMenuOpen(this)
     this.mobileMenuOpen = true
   }
 
   _onMobileMenuClose() {
+    this.opts.onMobileMenuClose(this)
     this.mobileMenuOpen = false
   }
 }

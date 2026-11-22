@@ -1,6 +1,6 @@
 {
   "name": "@brandocms/jupiter",
-  "version": "4.0.0-beta.2",
+  "version": "5.0.0-beta.22",
   "description": "Frontend helpers.",
   "author": "Univers/Twined",
   "license": "UNLICENSED",
@@ -36,23 +36,21 @@
     "playwright:dataloader": "playwright test e2e/dataloader.spec.js --project=chromium  --reporter line",
     "playwright:dataloader-url-sync": "playwright test e2e/dataloader-url-sync.spec.js --project=chromium  --reporter line",
     "playwright:parallax": "playwright test e2e/parallax.spec.js --project=chromium  --reporter line",
+    "playwright:looper": "playwright test e2e/looper.spec.js --project=chromium  --reporter line",
     "vite": "vite",
     "vite:build": "vite build",
     "vite:preview": "vite preview"
   },
   "types": "types/index.d.ts",
   "dependencies": {
-    "@egjs/hammerjs": "^2.0.17",
-    "body-scroll-lock": "^4.0.0-beta.0",
-    "gsap": "^3.13.0",
     "lodash.defaultsdeep": "^4.6.1",
-    "virtual-scroll": "^2.2.1"
+    "motion": "^12.35.2"
   },
   "devDependencies": {
-    "@playwright/test": "^1.52.0",
-    "@types/node": "^22.15.16",
-    "typescript": "^5.8.3",
-    "vite": "^6.3.5"
+    "@playwright/test": "^1.58.2",
+    "@types/node": "^22",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }

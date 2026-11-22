@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jupiter Dropdown Test</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        padding: 2rem;
+        background: #f5f5f5;
+        line-height: 1.6;
+      }
+
+      header {
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      h1 {
+        color: #333;
+        margin-bottom: 0.5rem;
+      }
+
+      h2 {
+        color: #555;
+        margin: 2rem 0 1rem 0;
+        font-size: 1.5rem;
+      }
+
+      section {
+        background: white;
+        padding: 2rem;
+        border-radius: 8px;
+        margin-bottom: 2rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+
+      .description {
+        color: #666;
+        margin-bottom: 1rem;
+      }
+
+      /* Dropdown Styles */
+      [data-dropdown] {
+        position: relative;
+        display: inline-block;
+        margin-right: 1rem;
+        margin-bottom: 1rem;
+      }
+
+      [data-dropdown-trigger] {
+        background: #4a90e2;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: background 0.2s;
+      }
+
+      [data-dropdown-trigger]:hover {
+        background: #357abd;
+      }
+
+      [data-dropdown-trigger][data-dropdown-active] {
+        background: #357abd;
+      }
+
+      [data-dropdown-trigger]::after {
+        content: "▼";
+        font-size: 0.75rem;
+        transition: transform 0.2s;
+      }
+
+      [data-dropdown-trigger][data-dropdown-active]::after {
+        transform: rotate(180deg);
+      }
+
+      [data-dropdown-menu] {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: white;
+        border-radius: 4px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        min-width: 200px;
+        margin-top: 0.5rem;
+        z-index: 1000;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      [data-dropdown-menu].zero-height {
+        height: 0;
+        overflow: hidden;
+      }
+
+      [data-dropdown-menu][data-dropdown-placement="top"] {
+        top: auto;
+        bottom: 100%;
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+      }
+
+      [data-dropdown-menu] > li {
+        list-style: none;
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        transition: background 0.2s;
+        border-bottom: 1px solid #eee;
+      }
+
+      [data-dropdown-menu] > li:last-child {
+        border-bottom: none;
+      }
+
+      [data-dropdown-menu] > li:hover {
+        background: #f5f5f5;
+      }
+
+      /* Layout helpers */
+      .dropdown-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 2rem;
+      }
+
+      .dropdown-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+      }
+
+      /* Position test area */
+      .position-test {
+        height: 300px;
+        border: 2px dashed #ccc;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: auto;
+      }
+
+      .position-test-inner {
+        min-height: 600px;
+        padding: 2rem;
+      }
+
+      .corner {
+        position: absolute;
+      }
+
+      .corner.top-left {
+        top: 1rem;
+        left: 1rem;
+      }
+
+      .corner.top-right {
+        top: 1rem;
+        right: 1rem;
+      }
+
+      .corner.bottom-left {
+        bottom: 1rem;
+        left: 1rem;
+      }
+
+      .corner.bottom-right {
+        bottom: 1rem;
+        right: 1rem;
+      }
+
+      /* Nested content example */
+      .nested-content {
+        padding: 1rem;
+        background: #f9f9f9;
+        border-radius: 4px;
+        margin: 0.5rem 0;
+      }
+
+      .nested-content h4 {
+        margin-bottom: 0.5rem;
+        color: #333;
+      }
+
+      .nested-content p {
+        color: #666;
+        font-size: 0.9rem;
+      }
+
+      /* Test controls */
+      .test-controls {
+        background: #f9f9f9;
+        padding: 1rem;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+      }
+
+      .test-controls button {
+        background: #50c878;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .test-controls button:hover {
+        background: #45b369;
+      }
+
+      /* Status indicator */
+      .status {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        margin-top: 1rem;
+        font-size: 0.9rem;
+      }
+
+      .status.active {
+        background: #d4edda;
+        border-color: #28a745;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Jupiter Dropdown Test</h1>
+      <p class="description">
+        Testing the Dropdown module with Motion.js migration
+      </p>
+    </header>
+
+    <!-- Basic Dropdowns -->
+    <section>
+      <h2>Basic Dropdowns</h2>
+      <p class="description">
+        Simple dropdown menus with default configuration
+      </p>
+
+      <div class="dropdown-row">
+        <ul data-dropdown data-testid="basic-dropdown-1">
+          <li data-dropdown-trigger data-testid="trigger-1">Menu 1</li>
+          <ul data-dropdown-menu data-testid="menu-1">
+            <li data-testid="menu-1-item-1">Item 1</li>
+            <li data-testid="menu-1-item-2">Item 2</li>
+            <li data-testid="menu-1-item-3">Item 3</li>
+            <li data-testid="menu-1-item-4">Item 4</li>
+          </ul>
+        </ul>
+
+        <ul data-dropdown data-testid="basic-dropdown-2">
+          <li data-dropdown-trigger data-testid="trigger-2">Menu 2</li>
+          <ul data-dropdown-menu data-testid="menu-2">
+            <li>Option A</li>
+            <li>Option B</li>
+            <li>Option C</li>
+          </ul>
+        </ul>
+
+        <ul data-dropdown data-testid="basic-dropdown-3">
+          <li data-dropdown-trigger data-testid="trigger-3">Menu 3</li>
+          <ul data-dropdown-menu data-testid="menu-3">
+            <li>Choice 1</li>
+            <li>Choice 2</li>
+            <li>Choice 3</li>
+            <li>Choice 4</li>
+            <li>Choice 5</li>
+          </ul>
+        </ul>
+      </div>
+
+      <div class="status" data-testid="basic-status">
+        Click any menu to test basic dropdown functionality
+      </div>
+    </section>
+
+    <!-- Nested Content -->
+    <section>
+      <h2>Dropdowns with Rich Content</h2>
+      <p class="description">
+        Dropdown menus containing more complex nested content
+      </p>
+
+      <div class="dropdown-row">
+        <ul data-dropdown data-testid="rich-dropdown">
+          <li data-dropdown-trigger data-testid="rich-trigger">
+            Rich Content Menu
+          </li>
+          <ul data-dropdown-menu data-testid="rich-menu">
+            <li>
+              <div class="nested-content">
+                <h4>Profile</h4>
+                <p>View and edit your profile</p>
+              </div>
+            </li>
+            <li>
+              <div class="nested-content">
+                <h4>Settings</h4>
+                <p>Manage your preferences</p>
+              </div>
+            </li>
+            <li>
+              <div class="nested-content">
+                <h4>Logout</h4>
+                <p>Sign out of your account</p>
+              </div>
+            </li>
+          </ul>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Position Testing -->
+    <section>
+      <h2>Viewport Position Testing</h2>
+      <p class="description">
+        Dropdowns automatically adjust position based on available viewport
+        space. Scroll the container to test positioning at edges.
+      </p>
+
+      <div class="position-test" data-testid="position-container">
+        <div class="position-test-inner">
+          <div class="corner top-left">
+            <ul data-dropdown data-testid="top-left-dropdown">
+              <li data-dropdown-trigger data-testid="top-left-trigger">
+                Top Left
+              </li>
+              <ul data-dropdown-menu data-testid="top-left-menu">
+                <li>Item 1</li>
+                <li>Item 2</li>
+                <li>Item 3</li>
+                <li>Item 4</li>
+                <li>Item 5</li>
+              </ul>
+            </ul>
+          </div>
+
+          <div class="corner top-right">
+            <ul data-dropdown data-testid="top-right-dropdown">
+              <li data-dropdown-trigger data-testid="top-right-trigger">
+                Top Right
+              </li>
+              <ul data-dropdown-menu data-testid="top-right-menu">
+                <li>Item 1</li>
+                <li>Item 2</li>
+                <li>Item 3</li>
+                <li>Item 4</li>
+                <li>Item 5</li>
+              </ul>
+            </ul>
+          </div>
+
+          <div class="corner bottom-left">
+            <ul data-dropdown data-testid="bottom-left-dropdown">
+              <li data-dropdown-trigger data-testid="bottom-left-trigger">
+                Bottom Left
+              </li>
+              <ul data-dropdown-menu data-testid="bottom-left-menu">
+                <li>Item 1</li>
+                <li>Item 2</li>
+                <li>Item 3</li>
+                <li>Item 4</li>
+                <li>Item 5</li>
+              </ul>
+            </ul>
+          </div>
+
+          <div class="corner bottom-right">
+            <ul data-dropdown data-testid="bottom-right-dropdown">
+              <li data-dropdown-trigger data-testid="bottom-right-trigger">
+                Bottom Right
+              </li>
+              <ul data-dropdown-menu data-testid="bottom-right-menu">
+                <li>Item 1</li>
+                <li>Item 2</li>
+                <li>Item 3</li>
+                <li>Item 4</li>
+                <li>Item 5</li>
+              </ul>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="status" data-testid="position-status">
+        Click dropdowns at different edges to test automatic repositioning
+      </div>
+    </section>
+
+    <!-- Multiple Active Test -->
+    <section>
+      <h2>Single vs Multiple Active Menus</h2>
+      <p class="description">
+        By default, only one menu can be open at a time. The test controls
+        below allow switching between modes.
+      </p>
+
+      <div class="test-controls">
+        <button
+          onclick="window.testDropdown.toggleMultipleMode()"
+          data-testid="toggle-multiple"
+        >
+          Toggle Multiple Mode
+        </button>
+        <span data-testid="mode-indicator">
+          Current Mode: <strong>Single</strong>
+        </span>
+      </div>
+
+      <div class="dropdown-row" data-testid="multiple-test-area">
+        <ul data-dropdown data-testid="multi-dropdown-1">
+          <li data-dropdown-trigger data-testid="multi-trigger-1">
+            Dropdown A
+          </li>
+          <ul data-dropdown-menu data-testid="multi-menu-1">
+            <li>Item 1</li>
+            <li>Item 2</li>
+            <li>Item 3</li>
+          </ul>
+        </ul>
+
+        <ul data-dropdown data-testid="multi-dropdown-2">
+          <li data-dropdown-trigger data-testid="multi-trigger-2">
+            Dropdown B
+          </li>
+          <ul data-dropdown-menu data-testid="multi-menu-2">
+            <li>Item 1</li>
+            <li>Item 2</li>
+            <li>Item 3</li>
+          </ul>
+        </ul>
+
+        <ul data-dropdown data-testid="multi-dropdown-3">
+          <li data-dropdown-trigger data-testid="multi-trigger-3">
+            Dropdown C
+          </li>
+          <ul data-dropdown-menu data-testid="multi-menu-3">
+            <li>Item 1</li>
+            <li>Item 2</li>
+            <li>Item 3</li>
+          </ul>
+        </ul>
+      </div>
+
+      <div class="status" data-testid="multiple-status">
+        In single mode, opening one menu closes others. In multiple mode,
+        several can be open.
+      </div>
+    </section>
+
+    <!-- External Trigger Test -->
+    <section>
+      <h2>External Triggers</h2>
+      <p class="description">
+        Triggers can be placed outside the dropdown container using
+        data-dropdown-target
+      </p>
+
+      <div class="dropdown-row">
+        <button
+          data-dropdown-trigger
+          data-dropdown-target="#external-menu"
+          data-testid="external-trigger"
+          style="
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+          "
+        >
+          External Trigger
+        </button>
+
+        <ul
+          data-dropdown-menu
+          id="external-menu"
+          data-testid="external-menu"
+          style="position: relative; display: none"
+        >
+          <li>External Item 1</li>
+          <li>External Item 2</li>
+          <li>External Item 3</li>
+        </ul>
+      </div>
+
+      <div class="status" data-testid="external-status">
+        Click the external trigger button
+      </div>
+    </section>
+
+    <script type="module">
+      import { Application, Dropdown } from "../src/index.js";
+
+      document.addEventListener("DOMContentLoaded", () => {
+        // Initialize Application
+        const app = new Application({
+          respectReducedMotion: false,
+        });
+
+        // Store dropdown instances for testing
+        window.dropdownInstances = [];
+        window.testDropdown = {
+          multipleMode: false,
+
+          toggleMultipleMode() {
+            this.multipleMode = !this.multipleMode;
+            const indicator = document.querySelector(
+              '[data-testid="mode-indicator"]'
+            );
+            indicator.innerHTML = this.multipleMode
+              ? 'Current Mode: <strong>Multiple</strong>'
+              : 'Current Mode: <strong>Single</strong>';
+
+            // Update all dropdowns
+            window.dropdownInstances.forEach((dropdown) => {
+              dropdown.opts.multipleActive = this.multipleMode;
+            });
+          },
+        };
+
+        // Initialize all dropdowns
+        const dropdowns = document.querySelectorAll("[data-dropdown]");
+        dropdowns.forEach((dropdown) => {
+          const instance = new Dropdown(app, {
+            el: dropdown,
+            multipleActive: false,
+            menuOpenDuration: 0.2,
+            tweens: {
+              items: {
+                duration: 0.15,
+                stagger: 0.03,
+              },
+            },
+            onBeforeOpen: async (dropdown) => {
+              console.log("Dropdown opening:", dropdown.element);
+            },
+            onAfterOpen: async (dropdown) => {
+              console.log("Dropdown opened:", dropdown.element);
+              updateStatus();
+            },
+            onBeforeClose: async (dropdown) => {
+              console.log("Dropdown closing:", dropdown.element);
+            },
+            onAfterClose: async (dropdown) => {
+              console.log("Dropdown closed:", dropdown.element);
+              updateStatus();
+            },
+          });
+          window.dropdownInstances.push(instance);
+        });
+
+        // Initialize external dropdown
+        const externalTrigger = document.querySelector(
+          '[data-testid="external-trigger"]'
+        );
+        const externalMenu = document.querySelector(
+          '[data-testid="external-menu"]'
+        );
+
+        if (externalTrigger && externalMenu) {
+          const externalDropdown = new Dropdown(app, {
+            el: externalTrigger,
+            multipleActive: false,
+          });
+          window.dropdownInstances.push(externalDropdown);
+        }
+
+        function updateStatus() {
+          const openDropdowns = window.dropdownInstances.filter(
+            (d) => d.open
+          ).length;
+          const statusElements = document.querySelectorAll(".status");
+          statusElements.forEach((status) => {
+            if (openDropdowns > 0) {
+              status.classList.add("active");
+            } else {
+              status.classList.remove("active");
+            }
+          });
+        }
+
+        console.log(
+          "Dropdown test page initialized with",
+          window.dropdownInstances.length,
+          "dropdowns"
+        );
+      });
+    </script>
+  </body>
+</html>

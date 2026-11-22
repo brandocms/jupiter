@@ -1,4 +1,4 @@
-import { gsap } from 'gsap/all'
+import { animate } from 'motion'
 import _defaultsDeep from 'lodash.defaultsdeep'
 
 const DEFAULT_OPTIONS = {}
@@ -35,18 +35,25 @@ export default class CoverOverlay {
       }
 
       btn.addEventListener('click', () => {
-        const timeline = gsap.timeline()
+        const timeline = [
+          [btn, { opacity: 0 }, { duration: 0.5, ease: 'easeIn', at: 0 }],
+          [overlay, { opacity: 0 }, { duration: 1, ease: 'easeIn', at: 0 }],
+          [iframe, { opacity: 1 }, { duration: 0.5, ease: 'easeOut', at: 0.5 }],
+          [overlay, { display: 'none' }, { duration: 0, at: 1 }]
+        ]
 
-        timeline
-          .set(iframe, { opacity: 1 })
-          .to(btn, { duration: 0.5, opacity: 0, ease: 'sine.in' })
-          .to(overlay, { duration: 1, opacity: 0, ease: 'sine.in' })
-          .set(overlay, { display: 'none' })
-          .call(() => {
-            if (player) {
-              player.play()
-            }
-          })
+        animate(timeline).finished.then(() => {
+          if (player) {
+            // Vimeo player
+            player.play()
+          } else if (iframe && iframe.src.includes('youtube.com')) {
+            // YouTube postMessage API
+            iframe.contentWindow.postMessage(
+              '{"event":"command","func":"playVideo","args":""}',
+              '*'
+            )
+          }
+        })
       })
     })
   }

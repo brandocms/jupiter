@@ -237,7 +237,6 @@ include images from this section. Otherwise, all lightboxed images will be inclu
 
 - `trigger` - `false` - selector representing an element you want to use as a trigger to open lightbox
 - `captions` - `false` - whether to show captions or not in the overlay
-- `swipe` - `true` – if swipe is true, native zoom won't work, so allow choosing
 - `elements` - `object` - switch out default elements in the overlay
   - `arrowRight` - `function` - returns an element
   - `arrowLeft` - `function` - returns an element
@@ -446,6 +445,7 @@ Components can be placed outside the main dataloader element:
 - `page` - `number` - Initial page number (default: 0)
 - `loaderParam` - `object` - Initial parameters
 - `filter` - `string` - Initial filter value
+- `filterDebounce` - `number` - Debounce delay in ms for filter input (default: 650)
 - `onFetch` - `function` - Called after content is fetched
 - `urlSync` - `object` - URL synchronization configuration:
   - `templates` - Language-specific URL templates with `:param` placeholders
@@ -472,6 +472,12 @@ Components can be placed outside the main dataloader element:
 - `data-loader-filter-for="id"` - Filter for specific dataloader (split layout)
 - `data-loader-loading` - Added during loading
 - `data-loader-starved` - Added to load more button when no more content
+
+### Methods
+
+- `destroy()` - Remove all event listeners, abort pending fetches, and clean up URL sync
+- `updateBaseURL(url)` - Change the base API URL
+- `Dataloader.replaceInnerHTML(el, url)` - Static method to replace an element's innerHTML with fetched content
 
 ### API Response Headers
 
@@ -518,11 +524,13 @@ syntax. If no value is provided, we run the `default` walk.
 - `clearNestedSections` - default `true`
   - Clear nested `data-moonwalk-sections` since they usually just break functionality.
 
-- `clearMoonwalkOnAnchors` - default `false`
-  - Removes all moonwalks if called from a link with hash/anchor.
+- `clearMoonwalkOnAnchors` - default `true`
+  - When the page loads with a hash, marks every walk before the target element, the
+    target and its ancestors as revealed, and the sections before it as ready.
 
-- `rootMargin` - default `'-15%'`
-  - Determines how early the IntersectionObserver triggers
+- `rootMargin` - default `'-10% 0%'`
+  - Determines how early the IntersectionObserver triggers. The last section and the
+    last run on the page always use `'0px'`.
 
 - `threshold` - default `0`
   - How much of the element must be visible before IO trigger. From 0 to 1 where 1 is the entire element
@@ -548,28 +556,28 @@ syntax. If no value is provided, we run the `default` walk.
   - Call this with `<div data-moonwalk-run="heroAnimation">`
 
 - `walks`
-  - Configures tweens
+  - Configures tweens. A walk name used in the markup but missing here is logged
+    as an error; an element falls back to the `default` walk, and a named section
+    or stage is treated as a plain section.
   - Example:
   ```es6
   walks: {
     default: {
-      /* How long between multiple entries in a moonwalk section */
-      interval: 0.1,
+      /* How long between multiple entries in a moonwalk section (default 0.15) */
+      interval: 0.15,
       /* How long each tween is */
       duration: 0.65,
-      /* Add a separate tween for opacity/visibility.
+      /* Add a separate tween for opacity.
       Can be set to `true` for the default tween, or `false` to skip */
-      alphaTween: { ease: Sine.easeIn, duration: 1 },
-      /* The transitions that will be tweened */
+      alphaTween: { ease: 'easeIn', duration: 1 },
+      /* The transitions that will be tweened. `null` animates nothing: Moonwalk
+      only adds `data-moonwalked` (and the `moonwalked` class) and CSS does the rest */
       transition: {
         from: {
           y: 5
         },
         to: {
-          /* skip autoAlpha here, since we have our own alphaTween that sets it for us */
-          // autoAlpha: 1,
-          ease: 'sine.out',
-          force3D: true,
+          ease: 'easeOut',
           y: 0
         }
       }
@@ -917,7 +925,15 @@ const customPopup = new Popup(app, '[data-popup][data-popup-key="custom"]', {
 </div>
 ```
 
-## StickyHeader
+## DoubleHeader
+
+A dual-header module that clones the original header element. The clone stays fixed and
+hides when scrolling down, revealing on scroll up. Uses IntersectionObserver to detect
+when the original header is visible.
+
+> **Note:** This module was previously named `StickyHeader`. It was renamed to `DoubleHeader`
+> to better reflect its dual-header/clone architecture. The new `StickyHeader` module uses
+> CSS `position: sticky` instead.
 
  * header element should not have position: fixed
 
@@ -935,6 +951,10 @@ const customPopup = new Popup(app, '[data-popup][data-popup-key="custom"]', {
   - Pin header when scroll is forced (`application.scrollTo`, clicking anchors etc)
 - `unPinOnResize` - default `false`
   - Unpin header when window is resized
+- `headerHeightTracksPin` - default `true`
+  - Set per section (under `default` / `sections`). Whether `--header-height` drops
+    to `0px` while the header is unpinned. Set `false` for a header that never
+    retracts — see [CSS variables](#css-variables) under FixedHeader.
 
 - Events
   - `onMainVisible`
@@ -950,6 +970,24 @@ const customPopup = new Popup(app, '[data-popup][data-popup-key="custom"]', {
       before tweening into view
 
 
+## StickyHeader
+
+A header that uses `position: sticky`. Hides when scrolling down and is revealed on scrolling up.
+Unlike FixedHeader, the sticky header stays in document flow - when hidden via transform,
+its space is still reserved.
+
+> **Note:** This is a new module. If you were using the old `StickyHeader` (which cloned the header),
+> you should now use `DoubleHeader` instead.
+
+ * header element needs `position: sticky; top: 0;`
+ * No padding-top needed on content below (header stays in document flow)
+
+### Options
+
+Same options as FixedHeader - see FixedHeader documentation below, including
+`headerHeightTracksPin` and the [CSS variables](#css-variables) section.
+
+
 ## FixedHeader
 
  * header element needs position: fixed;
@@ -963,6 +1001,8 @@ const customPopup = new Popup(app, '[data-popup][data-popup-key="custom"]', {
 - `sections`
   - Here you can set a config per section (body[data-script="section"])
   - `unPinOnResize` - auto unpin while resizing
+  - `headerHeightTracksPin` - default `true`. Whether `--header-height` drops to `0px`
+    while the header is unpinned. Set `false` for a header that never retracts.
   - `offset` - when is header triggered
   - `offsetBg` - when is offset background triggered (i.e. if there's another bg for content)
   - events are same as under default.
@@ -1002,6 +1042,22 @@ const customPopup = new Popup(app, '[data-popup][data-popup-key="custom"]', {
     - Triggers when mobile menu opens
   - `onMobileMenuClose`
     - Triggers when mobile menu closes
+
+### CSS variables
+
+`--header-height` is kept up to date on `:root`, republished whenever the header pins,
+unpins or toggles small/big. By default it is how much header is *visible* — the
+measured height while pinned, `0px` while unpinned — so anything positioned under the
+bar follows it out of the way as it retracts.
+
+For a header that never retracts — through `preventUnpin`, or by no-opping
+`onPin`/`onUnpin` — set `headerHeightTracksPin: false`. The bar stays put, but the
+pinned state still flips on every change of scroll direction, so the variable would
+otherwise drop to `0px` and back while nothing moves. Any layout sized from it (a
+`padding-top` standing in for the fixed bar, say) then grows and shrinks the document
+under the reader. Scroll anchoring absorbs that mid-page, but not at the very bottom,
+where the scroll offset is clamped to the document and the page visibly jumps.
+`headerHeightTracksPin: false` publishes the measured height throughout.
 
  ```
  header[data-nav] {

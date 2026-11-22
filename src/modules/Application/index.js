@@ -1,4 +1,4 @@
-import { gsap, ScrollToPlugin } from 'gsap/all'
+import { animate, stagger } from 'motion'
 import _defaultsDeep from 'lodash.defaultsdeep'
 import rafCallback from '../../utils/rafCallback'
 import prefersReducedMotion from '../../utils/prefersReducedMotion'
@@ -8,13 +8,9 @@ import Breakpoints from '../Breakpoints'
 import FeatureTests from '../FeatureTests'
 import Fontloader from '../Fontloader'
 import Dom from '../Dom'
+import { set, clearProps } from '../../utils/motion-helpers'
 
-gsap.registerPlugin(ScrollToPlugin)
-gsap.defaults({
-  ease: 'sine.out',
-})
-
-window.onpageshow = event => {
+window.addEventListener('pageshow', event => {
   // Fix for hash anchor navigation issues
   // When navigating to a page with #anchor, ensure overlay is removed and content is visible
   const hasHash = window.location.hash
@@ -23,33 +19,35 @@ window.onpageshow = event => {
   if (needsFix) {
     // Use setTimeout to ensure this runs after any initialization
     const fixVisibility = () => {
-      console.log('== fixVisibility')
       const f = document.querySelector('#fader')
       if (f) {
-        // Force remove the fader
-        gsap.set(f, { autoAlpha: 0, display: 'none' })
+        // Force remove the fader (autoAlpha: 0 = opacity: 0 + visibility: hidden)
+        set(f, { opacity: 0, display: 'none' })
+        f.style.visibility = 'hidden'
       }
 
       const dataFaders = document.querySelectorAll('[data-fader]')
       if (dataFaders.length) {
-        gsap.set(dataFaders, { autoAlpha: 0 })
+        // autoAlpha: 0 = opacity: 0 + visibility: hidden
+        set(dataFaders, { opacity: 0 })
+        dataFaders.forEach(el => (el.style.visibility = 'hidden'))
       }
 
       // Clear all opacity/transform issues
-      gsap.set(document.body, { clearProps: 'opacity' })
+      clearProps(document.body, ['opacity'])
       document.body.classList.remove('unloaded')
 
       // Ensure navigation is visible
       const $nav = Dom.find('header[data-nav]')
-      if ($nav) gsap.set($nav, { clearProps: 'opacity, transform' })
+      if ($nav) clearProps($nav, ['opacity', 'transform'])
 
       // Ensure main is visible
       const $main = Dom.find('main')
-      if ($main) gsap.set($main, { clearProps: 'opacity, transform' })
+      if ($main) clearProps($main, ['opacity', 'transform'])
 
       // Ensure footer is visible
       const $footer = Dom.find('footer')
-      if ($footer) gsap.set($footer, { clearProps: 'opacity, transform' })
+      if ($footer) clearProps($footer, ['opacity', 'transform'])
     }
 
     // Execute immediately for bfcache
@@ -62,7 +60,7 @@ window.onpageshow = event => {
       setTimeout(fixVisibility, 500)
     }
   }
-}
+})
 
 const DEFAULT_OPTIONS = {
   respectReducedMotion: false,
@@ -95,7 +93,7 @@ const DEFAULT_OPTIONS = {
   bindResize: true,
 
   // Big Sur + Safari 14 is now trying to display webp, but fails intermittently
-  disableWebpSafari: true,
+  disableWebpSafari: false,
 
   faderOpts: {
     fadeIn: (callback = () => {}) => {
@@ -108,19 +106,13 @@ const DEFAULT_OPTIONS = {
         callback()
         return
       }
-      gsap.to(fader, {
-        opacity: 0,
-        ease: 'power1.inOut',
-        delay: 0,
-        duration: 0.65,
-        onComplete: () => {
-          if (window.bfTO) {
-            clearTimeout(window.bfTO)
-          }
-          gsap.set(fader, { display: 'none' })
-          document.body.classList.remove('unloaded')
-          callback()
-        },
+
+      animate(fader, { opacity: 0 }, { duration: 0.65 }).finished.then(() => {
+        if (window.bfTO) {
+          clearTimeout(window.bfTO)
+        }
+        document.body.classList.remove('unloaded')
+        callback()
       })
     },
   },
@@ -131,8 +123,12 @@ export default class Application {
     this.debugType = 1
     this.debugOverlay = null
     this.userAgent = navigator.userAgent
-    this._lastWindowHeight = 0
     this.breakpoint = null
+    this.root = document.documentElement
+    // Usually done by an inline script in <head>; a CSP can block that while
+    // this bundle still runs, which would leave `.no-js` rules applying.
+    this.root.classList.remove('no-js')
+    this.root.classList.add('js')
     this.language = document.documentElement.lang
 
     this.size = {
@@ -168,6 +164,7 @@ export default class Application {
     this.opts.breakpointConfig = breakpointConfig || DEFAULT_OPTIONS.breakpointConfig
 
     this.focusableSelectors = this.opts.focusableSelectors
+    this.browser = null
     this.featureTests = new FeatureTests(this, this.opts.featureTests)
 
     if (typeof this.opts.breakpointConfig === 'object') {
@@ -182,7 +179,6 @@ export default class Application {
     this.setDims()
     this.fontLoader = new Fontloader(this)
 
-    this.fader = null
     this.callbacks = {}
 
     this.SCROLL_LOCKED = false
@@ -193,15 +189,15 @@ export default class Application {
 
     this.PREFERS_REDUCED_MOTION = prefersReducedMotion()
     if (this.PREFERS_REDUCED_MOTION && this.opts.respectReducedMotion) {
-      gsap.globalTimeline.timeScale(200)
+      // Motion respects prefers-reduced-motion automatically
       document.documentElement.classList.add('prefers-reduced-motion')
     }
     window.addEventListener(Events.BREAKPOINT_CHANGE, this.onBreakpointChanged.bind(this))
 
-    this.beforeInitializedEvent = new window.CustomEvent(Events.APPLICATION_PRELUDIUM, this)
-    this.initializedEvent = new window.CustomEvent(Events.APPLICATION_INITIALIZED, this)
-    this.readyEvent = new window.CustomEvent(Events.APPLICATION_READY, this)
-    this.revealedEvent = new window.CustomEvent(Events.APPLICATION_REVEALED, this)
+    this.beforeInitializedEvent = new window.CustomEvent(Events.APPLICATION_PRELUDIUM, { detail: this })
+    this.initializedEvent = new window.CustomEvent(Events.APPLICATION_INITIALIZED, { detail: this })
+    this.readyEvent = new window.CustomEvent(Events.APPLICATION_READY, { detail: this })
+    this.revealedEvent = new window.CustomEvent(Events.APPLICATION_REVEALED, { detail: this })
 
     /**
      * Grab common events and defer
@@ -212,14 +208,14 @@ export default class Application {
       passive: true,
     })
 
-    if (opts.bindScroll) {
+    if (this.opts.bindScroll) {
       window.addEventListener('scroll', rafCallback(this.onScroll.bind(this)), {
         capture: false,
         passive: true,
       })
     }
 
-    if (opts.bindResize) {
+    if (this.opts.bindResize) {
       window.addEventListener('resize', rafCallback(this.onResize.bind(this)), {
         capture: false,
         passive: true,
@@ -263,7 +259,7 @@ export default class Application {
         this._zoomSVG = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
         this._zoomSVG.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
         this._zoomSVG.setAttribute('version', '1.1')
-        gsap.set(this._zoomSVG, { display: 'none' })
+        set(this._zoomSVG, { display: 'none' })
         document.body.appendChild(this._zoomSVG)
         this._initialZoom = this._zoomSVG.currentScale
         break
@@ -372,13 +368,13 @@ export default class Application {
       return
     }
     const currentScrollbarWidth = this.getCurrentScrollBarWidth()
-    const ev = new window.CustomEvent(Events.APPLICATION_SCROLL_LOCKED, this)
+    const ev = new window.CustomEvent(Events.APPLICATION_SCROLL_LOCKED, { detail: this })
     this._scrollPaddedElements = [document.body, ...extraPaddedElements]
     window.dispatchEvent(ev)
     this.SCROLL_LOCKED = true
-    gsap.set(document.body, { overflow: 'hidden' })
-    gsap.set(this._scrollPaddedElements, {
-      paddingRight: currentScrollbarWidth,
+    set(document.body, { overflow: 'hidden' })
+    set(this._scrollPaddedElements, {
+      paddingRight: `${currentScrollbarWidth}px`,
     })
     document.addEventListener('touchmove', this.scrollVoid, false)
   }
@@ -387,11 +383,11 @@ export default class Application {
     if (!this.SCROLL_LOCKED) {
       return
     }
-    const ev = new window.CustomEvent(Events.APPLICATION_SCROLL_RELEASED, this)
+    const ev = new window.CustomEvent(Events.APPLICATION_SCROLL_RELEASED, { detail: this })
     window.dispatchEvent(ev)
     this.SCROLL_LOCKED = false
-    gsap.set(document.body, { overflow: defaultOverflow })
-    gsap.set(this._scrollPaddedElements, { clearProps: 'paddingRight' })
+    set(document.body, { overflow: defaultOverflow })
+    clearProps(this._scrollPaddedElements, ['paddingRight'])
     document.removeEventListener('touchmove', this.scrollVoid, false)
   }
 
@@ -402,32 +398,80 @@ export default class Application {
    * @param {*} time
    * @param {*} emitEvents
    */
-  scrollTo(target, time = 0.8, emitEvents = true, ease = 'sine.inOut') {
-    let scrollToData
+  scrollTo(target, time = 0.8, emitEvents = true, ease = 'easeInOut') {
     const forcedScrollEventStart = new window.CustomEvent(Events.APPLICATION_FORCED_SCROLL_START)
     this.state.forcedScroll = true
     if (emitEvents) {
       window.dispatchEvent(forcedScrollEventStart)
     }
 
-    if (typeof target === 'object') {
-      scrollToData = target
-    } else {
-      scrollToData = { y: target, autoKill: false }
+    // Calculate target position
+    let targetY = 0
+    if (typeof target === 'number') {
+      // Handle number
+      targetY = target
+    } else if (typeof target === 'string') {
+      // Handle selector string
+      const el = document.querySelector(target)
+      if (el) {
+        targetY = el.getBoundingClientRect().top + window.pageYOffset
+      }
+    } else if (target instanceof Element) {
+      // Handle DOM element
+      targetY = target.getBoundingClientRect().top + window.pageYOffset
+    } else if (typeof target === 'object') {
+      // Handle object format: {y: "#someID", offsetY: 50} or {y: element, offsetY: 50}
+      const yValue = target.y
+      if (yValue instanceof Element) {
+        targetY = yValue.getBoundingClientRect().top + window.pageYOffset
+      } else if (typeof yValue === 'string') {
+        const el = document.querySelector(yValue)
+        if (el) {
+          targetY = el.getBoundingClientRect().top + window.pageYOffset
+        }
+      } else if (typeof yValue === 'number') {
+        targetY = yValue
+      }
+      // Add offset if provided
+      if (target.offsetY) {
+        targetY += target.offsetY
+      }
     }
 
-    gsap.to(window, {
-      duration: time,
-      scrollTo: scrollToData,
-      onComplete: () => {
+    // Animate scroll using requestAnimationFrame
+    const startY = window.pageYOffset
+    const distance = targetY - startY
+    const duration = time * 1000 // convert to milliseconds
+    const startTime = performance.now()
+
+    const easingFns = {
+      linear: t => t,
+      easeIn: t => t * t,
+      easeOut: t => t * (2 - t),
+      easeInOut: t => (t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t),
+    }
+    const easeFn = easingFns[ease] || easingFns.easeInOut
+
+    const animateScroll = currentTime => {
+      const elapsed = currentTime - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      const eased = easeFn(progress)
+      const currentY = startY + distance * eased
+
+      window.scrollTo(0, currentY)
+
+      if (progress < 1) {
+        requestAnimationFrame(animateScroll)
+      } else {
         const forcedScrollEventEnd = new window.CustomEvent(Events.APPLICATION_FORCED_SCROLL_END)
         if (emitEvents) {
           window.dispatchEvent(forcedScrollEventEnd)
           requestAnimationFrame(() => (this.state.forcedScroll = false))
         }
-      },
-      ease,
-    })
+      }
+    }
+
+    requestAnimationFrame(animateScroll)
   }
 
   hardScrollToTop() {
@@ -483,17 +527,12 @@ export default class Application {
   hacks() {
     if (this.opts.disableWebpSafari) {
       if (this.browser === 'safari') {
-        console.debug('==> disable webp')
         const webps = Dom.all('source[type="image/webp"]')
         for (let i = 0; i < webps.length; i += 1) {
           webps[i].remove()
         }
       }
     }
-  }
-
-  getIOSCurrentInnerHeight() {
-    return window.innerHeight
   }
 
   getIOSInnerHeightMax() {
@@ -564,7 +603,7 @@ export default class Application {
   }
 
   setDims() {
-    const root = document.querySelector(':root')
+    const root = this.root
 
     this.size.initialInnerHeight = window.innerHeight
     this.size.initialOuterHeight = window.outerHeight
@@ -592,13 +631,13 @@ export default class Application {
   }
 
   setFontBaseVw() {
-    const root = document.querySelector(':root')
+    const root = this.root
     this.size.baseVW = this._getBaseVW()
     root.style.setProperty('--font-base-vw', `${this.size.baseVW}`)
   }
 
   setZoom() {
-    const root = document.querySelector(':root')
+    const root = this.root
     root.style.setProperty('--ec-zoom', `${this.size.zoom}`)
   }
 
@@ -606,14 +645,14 @@ export default class Application {
    * Inner height of mobiles may change when showing hiding bottom bar.
    */
   setvh100() {
-    const root = document.querySelector(':root')
+    const root = this.root
     const height = this.featureTests.results.ios ? screen.height : window.innerHeight
     root.style.setProperty('--vp-100vh', `${height}px`)
     root.style.setProperty('--vp-1vh', `${height * 0.01}px`)
   }
 
   setvw100() {
-    const root = document.querySelector(':root')
+    const root = this.root
     root.style.setProperty('--vp-100vw', `${window.innerWidth}px`)
     root.style.setProperty('--vp-1vw', `${window.innerWidth * 0.01}px`)
   }
@@ -622,7 +661,7 @@ export default class Application {
    * Get the max 100vh for iOS
    */
   setvh100Max() {
-    const root = document.querySelector(':root')
+    const root = this.root
     const vh100 = this.featureTests.results.ios
       ? this.getIOSInnerHeightMax()
       : this.size.initialInnerHeight
@@ -631,7 +670,7 @@ export default class Application {
   }
 
   setScrollHeight() {
-    const root = document.querySelector(':root')
+    const root = this.root
     root.style.setProperty('--scroll-h', `${document.body.scrollHeight}px`)
   }
 
@@ -669,7 +708,6 @@ export default class Application {
    */
   onScroll(e) {
     if (this.SCROLL_LOCKED) {
-      e.preventDefault()
       return
     }
 
@@ -704,14 +742,14 @@ export default class Application {
   }
 
   onVisibilityChange(e) {
-    let evt = new CustomEvent(Events.APPLICATION_VISIBILITY_CHANGE, e)
+    let evt = new CustomEvent(Events.APPLICATION_VISIBILITY_CHANGE, { detail: e })
     window.dispatchEvent(evt)
 
     if (document.visibilityState === 'hidden') {
-      evt = new CustomEvent(Events.APPLICATION_HIDDEN, e)
+      evt = new CustomEvent(Events.APPLICATION_HIDDEN, { detail: e })
       window.dispatchEvent(evt)
     } else if (document.visibilityState === 'visible') {
-      evt = new CustomEvent(Events.APPLICATION_VISIBLE, e)
+      evt = new CustomEvent(Events.APPLICATION_VISIBLE, { detail: e })
       window.dispatchEvent(evt)
     }
   }
@@ -727,12 +765,13 @@ export default class Application {
     }
   }
 
-  pollForVar(variable, time = 500, callback = () => {}) {
-    if (variable !== null) {
-      callback(variable)
+  pollForVar(getter, time = 500, callback = () => {}) {
+    const value = getter()
+    if (value !== null && value !== undefined) {
+      callback(value)
     } else {
       setTimeout(() => {
-        this.pollForVar(variable, time, callback)
+        this.pollForVar(getter, time, callback)
       }, time)
     }
   }
@@ -746,7 +785,7 @@ export default class Application {
     this.debugOverlay.addEventListener('click', this.toggleDebug.bind(this))
 
     const userAgent = this.debugOverlay.querySelector('.user-agent')
-    gsap.set(userAgent, { display: 'none' })
+    set(userAgent, { display: 'none' })
     userAgent.innerHTML = `<b>&rarr; ${this.userAgent}</b> >> <span>KOPIER</span>`
 
     const span = userAgent.querySelector('span')
@@ -757,8 +796,7 @@ export default class Application {
 
     span.addEventListener('click', () => {
       const copyText = userAgent.querySelector('b')
-      const textArea = document.createElement('textarea')
-      textArea.value = `
+      const text = `
 ${copyText.textContent}
 SCREEN >> ${window.screen.width}x${window.screen.height}
 WINDOW >> ${windowWidth}x${windowHeight}
@@ -766,10 +804,21 @@ WINDOW >> ${windowWidth}x${windowHeight}
 FEATURES >>
 ${JSON.stringify(this.featureTests.results, undefined, 2)}
       `
-      document.body.appendChild(textArea)
-      textArea.select()
-      document.execCommand('Copy')
-      textArea.remove()
+
+      const copyWithFallback = str => {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          return navigator.clipboard.writeText(str)
+        }
+        const textArea = document.createElement('textarea')
+        textArea.value = str
+        document.body.appendChild(textArea)
+        textArea.select()
+        document.execCommand('Copy')
+        textArea.remove()
+        return Promise.resolve()
+      }
+
+      copyWithFallback(text)
       span.innerHTML = 'OK!'
       setTimeout(() => {
         span.innerHTML = 'KOPIER'
@@ -778,7 +827,6 @@ ${JSON.stringify(this.featureTests.results, undefined, 2)}
   }
 
   toggleDebug() {
-    const tl = gsap.timeline()
     const breakpoint = this.debugOverlay.querySelector('.breakpoint')
     const userAgent = this.debugOverlay.querySelector('.user-agent')
 
@@ -791,28 +839,35 @@ ${JSON.stringify(this.featureTests.results, undefined, 2)}
     switch (this.debugType) {
       case 0:
         // hide all except branding
-        tl.to([breakpoint, userAgent], { duration: 0.3, autoAlpha: 0 })
-          .to([breakpoint, userAgent], { duration: 0.7, width: 0 })
-          .call(() => {
-            gsap.set([breakpoint, userAgent], { display: 'none' })
+        // First fade out (autoAlpha: 0 = opacity: 0 + visibility: hidden)
+        animate([breakpoint, userAgent], { opacity: 0 }, { duration: 0.3 }).finished.then(() => {
+          ;[breakpoint, userAgent].forEach(el => (el.style.visibility = 'hidden'))
+          // Then collapse width
+          animate([breakpoint, userAgent], { width: 0 }, { duration: 0.7 }).finished.then(() => {
+            set([breakpoint, userAgent], { display: 'none' })
           })
+        })
         break
 
       case 1:
-        //
-        gsap.set(breakpoint, { width: 'auto', display: 'block' })
-        tl.from(breakpoint, { duration: 0.7, width: 0 }).to(breakpoint, {
-          duration: 0.3,
-          autoAlpha: 1,
+        // Show breakpoint
+        set(breakpoint, { width: 'auto', display: 'block' })
+        breakpoint.style.visibility = 'visible'
+        // Animate from width: 0 to auto
+        animate(breakpoint, { width: [0, 'auto'] }, { duration: 0.7 }).finished.then(() => {
+          // Then fade in (autoAlpha: 1 = opacity: 1 + visibility: visible)
+          animate(breakpoint, { opacity: 1 }, { duration: 0.3 })
         })
         break
 
       case 2:
-        //
-        gsap.set(userAgent, { width: 'auto', display: 'block' })
-        tl.from(userAgent, { duration: 0.7, width: 0 }).to(userAgent, {
-          duration: 0.3,
-          autoAlpha: 1,
+        // Show userAgent
+        set(userAgent, { width: 'auto', display: 'block' })
+        userAgent.style.visibility = 'visible'
+        // Animate from width: 0 to auto
+        animate(userAgent, { width: [0, 'auto'] }, { duration: 0.7 }).finished.then(() => {
+          // Then fade in (autoAlpha: 1 = opacity: 1 + visibility: visible)
+          animate(userAgent, { opacity: 1 }, { duration: 0.3 })
         })
         break
 
@@ -835,29 +890,38 @@ ${JSON.stringify(this.featureTests.results, undefined, 2)}
         }
 
         if (Dom.hasClass(guides, 'visible')) {
-          gsap.set(cols, { width: 'auto' })
-          gsap.to(cols, {
-            duration: 0.35,
-            width: 0,
-            stagger: 0.02,
-            ease: 'sine.inOut',
-            onComplete: () => {
-              guides.classList.toggle('visible')
+          set(cols, { width: 'auto' })
+          animate(
+            cols,
+            {
+              width: 0,
             },
+            {
+              duration: 0.35,
+              delay: stagger(0.02),
+              ease: 'easeInOut',
+            }
+          ).finished.then(() => {
+            guides.classList.toggle('visible')
           })
         } else {
-          gsap.set(cols, { width: 0 })
+          set(cols, { width: 0 })
           guides.classList.toggle('visible')
-          gsap.to(cols, {
-            duration: 0.35,
-            width: '100%',
-            stagger: 0.02,
-            ease: 'sine.inOut',
-          })
+          animate(
+            cols,
+            {
+              width: '100%',
+            },
+            {
+              duration: 0.35,
+              delay: stagger(0.02),
+              ease: 'easeInOut',
+            }
+          )
         }
       }
     }
-    document.onkeydown = gridKeyPressed
+    document.addEventListener('keydown', gridKeyPressed)
   }
 
   /**
