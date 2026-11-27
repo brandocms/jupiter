@@ -151,6 +151,21 @@ test.describe('Jupiter SmartVideo Module', () => {
     await expect(cover).toBeVisible()
   })
 
+  test('the cover and play button sit on the video, with the caption below it', async ({ page }) => {
+    const wrapper = page.getByTestId('cover')
+    await wrapper.scrollIntoViewIfNeeded()
+    await expect(wrapper).toHaveCSS('opacity', '1')
+
+    const video = await wrapper.locator('video').boundingBox()
+    const cover = await wrapper.locator('[data-cover]').boundingBox()
+    const button = await wrapper.locator('.video-play-button-wrapper').boundingBox()
+    const caption = await wrapper.locator('figcaption').boundingBox()
+
+    expect(cover).toEqual(video)
+    expect(button.y + button.height / 2).toBeCloseTo(video.y + video.height / 2, 0)
+    expect(caption.y).toBeGreaterThanOrEqual(video.y + video.height)
+  })
+
   test('a click on a video without controls or a play button plays and pauses it', async ({ page }) => {
     const wrapper = page.getByTestId('lazy')
     const video = wrapper.locator('video')
