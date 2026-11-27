@@ -96,4 +96,18 @@ test.describe('Jupiter SmartVideo Module', () => {
 
     expect(error).toBeNull()
   })
+
+  test('an autoplay video just outside the viewport is loaded and paused', async ({ page }) => {
+    const wrapper = page.getByTestId('autoplay')
+    const video = wrapper.locator('video')
+
+    await expect.poll(() => playing(video)).toBe(true)
+
+    // Its bottom edge 20px above the viewport
+    await wrapper.evaluate(el => window.scrollTo(0, el.getBoundingClientRect().bottom + window.scrollY + 20))
+
+    await expect(video).toHaveJSProperty('paused', true)
+    await expect(wrapper).toHaveAttribute('data-revealed')
+    await expect(video).toHaveJSProperty('currentSrc', new URL('/videos/clip.webm?autoplay', page.url()).href)
+  })
 })
