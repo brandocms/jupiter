@@ -506,7 +506,7 @@ By default anchor links get added to the browser history. You can skip this by s
 
 ## SmartVideo
 
-`new SmartVideo(app)` handles the `[data-smart-video]` wrappers Brando renders for video blocks, `<.video>` and `{% video %}`. A wrapper with `data-preload` is lazy: its `<video>` gets the `data-src` source when the wrapper comes within `loadRootMargin` (`'300px 0px'`) of the viewport. Any other wrapper is loaded at once. Each wrapper gets `data-revealed` when it loads, so its CSS can keep it hidden until then. An `autoplay` video plays while it is in view and pauses when it leaves, and the wrapper has `data-playing` while its video plays. In a wrapper with a `.video-play-button`, a click on the button or the video plays or pauses it. Pass `target` to scope it to a container, and call `destroy()` when removing the view. See the [demo](test-pages/smart-video.html).
+`new SmartVideo(app)` handles the `[data-smart-video]` wrappers Brando renders for video blocks, `<.video>` and `{% video %}`. A wrapper with `data-preload` is lazy: its `<video>` gets the `data-src` source when the wrapper comes within `loadRootMargin` (`'300px 0px'`) of the viewport. Any other wrapper is loaded at once. Each wrapper gets `data-revealed` when it loads, so its CSS can keep it hidden until then. An `autoplay` video plays while it is in view and pauses when it leaves, and the wrapper has `data-playing` while its video plays. A click on a `.video-play-button` plays or pauses the video, and so does a click on a video without native `controls`. Pass `target` to scope it to a container, and call `destroy()` when removing the view. See the [demo](test-pages/smart-video.html).
 
 ## Looper and Marquee
 
