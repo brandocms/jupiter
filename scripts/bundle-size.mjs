@@ -69,7 +69,7 @@ async function measureConsumer(label, source, requestedModule) {
 
 const imports = [
   '*', 'Application', 'Lazyload', 'Dataloader', 'Application, Lazyload', 'Looper', 'Moonwalk', 'Parallax', 'Popup', 'Popover',
-  'Toggler', 'EqualHeightImages', 'FooterReveal', 'StackedBoxes', 'imageIsLoaded',
+  'Toggler', 'EqualHeightImages', 'FooterReveal', 'StackedBoxes', 'SmartVideo', 'imageIsLoaded',
   '_defaultsDeep', 'animate', 'Parallax, Popup, Popover, EqualHeightImages',
 ]
 for (const names of imports) {
