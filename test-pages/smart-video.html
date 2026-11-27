@@ -30,42 +30,107 @@
         margin: 2rem 0;
       }
 
-      /* The rules Brando's installer ships for these wrappers */
+      /* This page's own layout */
+      [data-smart-video] {
+        max-width: 640px;
+        background-color: #000;
+      }
+
+      /*
+       * Brando's installer ships these rules for the wrappers, in
+       * priv/templates/brando.install/assets/frontend/css/app.css; keep them the same.
+       */
+      .video-wrapper {
+        &.video-embed {
+          padding-bottom: calc(var(--aspect-ratio, .5625) * 100%);
+
+          video {
+            top: 0;
+            width: 100%;
+            position: absolute;
+            z-index: 1;
+          }
+
+          iframe {
+            top: 0;
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            z-index: 3;
+          }
+        }
+
+        video {
+          width: 100%;
+        }
+      }
+
+      /** Smart video **/
       [data-smart-video] {
         position: relative;
-        max-width: 640px;
-        aspect-ratio: var(--aspect-ratio-division);
         opacity: 0;
         visibility: hidden;
-        background-color: #000;
 
+        /* SmartVideo sets it when it gives the video its source */
         &[data-revealed] {
           opacity: 1;
           visibility: visible;
         }
 
-        video {
-          display: block;
+        /* Over the video until it plays; a click goes through to the video */
+        [data-cover] {
+          pointer-events: none;
+          position: absolute;
+          top: 0;
+          left: 0;
+          z-index: 2;
+          height: 100%;
           width: 100%;
-          height: auto;
+
+          figure {
+            height: 100%;
+            width: 100%;
+
+            picture {
+              height: 100%;
+              width: 100%;
+
+              img {
+                height: 100%;
+                width: 100%;
+                object-fit: cover;
+              }
+            }
+          }
+        }
+
+        video {
+          width: 100%;
         }
 
         .video-play-button-wrapper {
           position: absolute;
           top: 50%;
           left: 50%;
+          z-index: 3;
           transform: translate(-50%, -50%);
         }
 
-        &[data-playing] .video-play-button-wrapper {
-          opacity: 0;
-          pointer-events: none;
+        &[data-playing] {
+          [data-cover] {
+            visibility: hidden;
+          }
+
+          .video-play-button-wrapper {
+            opacity: 0;
+            pointer-events: none;
+          }
         }
       }
 
       .no-js [data-smart-video] {
-        opacity: 1;
-        visibility: visible;
+        opacity: 1 !important;
+        visibility: visible !important;
       }
     </style>
   </head>
@@ -181,6 +246,46 @@
         <button class="video-play-button">
           <div class="video-play-button-inside">▶︎</div>
         </button>
+      </div>
+    </div>
+
+    <div class="spacer"><p>Scroll down for the video with a cover</p></div>
+
+    <h2>Cover and play button</h2>
+    <div
+      class="video-wrapper video-file"
+      data-smart-video
+      data-orientation="landscape"
+      data-preload="videos/clip.webm?cover"
+      data-src="videos/clip.webm?cover"
+      style="--aspect-ratio: 0.5625; --aspect-ratio-division: 320/180;"
+      data-testid="cover"
+    >
+      <video
+        width="320"
+        height="180"
+        alt=""
+        tabindex="0"
+        preload="auto"
+        loop
+        playsinline
+        data-video
+        data-src="videos/clip.webm?cover"
+      ></video>
+      <noscript>
+        <video width="320" height="180" preload="metadata" loop playsinline src="videos/clip.webm?cover"></video>
+      </noscript>
+      <div class="video-play-button-wrapper">
+        <button class="video-play-button">
+          <div class="video-play-button-inside">▶︎</div>
+        </button>
+      </div>
+      <div data-cover aria-hidden="true">
+        <figure>
+          <picture>
+            <img width="320" height="180" alt="" src="data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20width%3D%27320%27%20height%3D%27180%27%20style%3D%27background%3A%23336%27%2F%3E" />
+          </picture>
+        </figure>
       </div>
     </div>
 
