@@ -193,6 +193,33 @@ test.describe('Jupiter SmartVideo Module', () => {
     await expect(video).not.toHaveAttribute('src')
   })
 
+  test('a failed hls.js load raises no error and leaves the video paused', async ({ page }) => {
+    await page.addInitScript(() => {
+      const canPlayType = HTMLMediaElement.prototype.canPlayType
+      HTMLMediaElement.prototype.canPlayType = function (type) {
+        return type === 'application/vnd.apple.mpegurl' ? '' : canPlayType.call(this, type)
+      }
+    })
+    const errors = []
+    page.on('pageerror', error => errors.push(error))
+    await page.route(hlsJs, route => route.abort())
+    requests.length = 0
+    await page.goto('/smart-video.html')
+    await expect(page.locator('body')).toHaveAttribute('data-app-revealed', 'true')
+
+    const wrapper = page.getByTestId('hls')
+    const video = wrapper.locator('video')
+    await wrapper.scrollIntoViewIfNeeded()
+    await wrapper.getByRole('button').click()
+    await expect.poll(() => requests.filter(hlsJs).length).toBeGreaterThan(0)
+
+    // A second play waits on the same failed load
+    await wrapper.getByRole('button').click()
+    await expect(wrapper).not.toHaveAttribute('data-playing')
+    expect(await video.evaluate(el => el.paused)).toBe(true)
+    expect(errors).toEqual([])
+  })
+
   test('an HLS stream plays natively where the browser can, without hls.js', async ({ page }) => {
     const wrapper = page.getByTestId('hls')
     const video = wrapper.locator('video')

@@ -109,7 +109,13 @@ export default class SmartVideo {
   load(el) {
     this.loadObserver.unobserve(el)
     el.setAttribute('data-revealed', '')
-    if (!this.sources.has(el)) this.sources.set(el, this.setSource(el, this.videos.get(el)))
+    if (!this.sources.has(el)) {
+      const source = this.setSource(el, this.videos.get(el))
+      // hls.js failed to load (the browser keeps the failed import until
+      // a reload): resolve to false, so play() does not start a video
+      // without a source.
+      this.sources.set(el, source && source.catch(() => false))
+    }
     return this.sources.get(el)
   }
 
@@ -163,8 +169,8 @@ export default class SmartVideo {
       return
     }
     this.waiting.add(el)
-    attaching.then(() => {
-      if (this.waiting.delete(el)) start()
+    attaching.then(attached => {
+      if (this.waiting.delete(el) && attached !== false) start()
     })
   }
 

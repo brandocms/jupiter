@@ -29,7 +29,7 @@ From a checkout, run `yarn install --frozen-lockfile` and `yarn vite`, then open
 
 ## Bundle size
 
-Import the components your page uses from `@brandocms/jupiter`. A production bundler can tree-shake the package’s ES module entry. The standalone ES and UMD files in `test-pages/dist` include the complete API and its dependencies.
+Import the components your page uses from `@brandocms/jupiter`. A production bundler can tree-shake the package’s ES module entry. The standalone ES and UMD files in `test-pages/dist` include the complete API and its dependencies, `hls.js` among them, which makes them about 840 kB (250 kB gzip); a bundled import of SmartVideo loads `hls.js` only on a page that needs it.
 
 Run `yarn size` from the repository to measure the npm tarball, both standalone builds, and production bundles for individual and combined imports. The default Application fader uses Web Animations. In a code-splitting build, the Motion fallback and debug-panel animations load on demand. The tarball value is its download size. For JavaScript the command reports raw, gzip and Brotli bytes, with on-demand chunks shown separately from the initial import. See the [audit measurements](docs/codebase-audit.html) for the before-and-after comparison.
 
