@@ -112,13 +112,15 @@ export default class SmartVideo {
 
   handleLoadEntries(entries) {
     for (const entry of entries) {
-      if (entry.isIntersecting) this.load(/** @type {HTMLElement} */ (entry.target))
+      const el = /** @type {HTMLElement} */ (entry.target)
+      if (entry.isIntersecting && this.videos.has(el)) this.load(el)
     }
   }
 
   handlePlayEntries(entries) {
     for (const entry of entries) {
       const el = /** @type {HTMLElement} */ (entry.target)
+      if (!this.videos.has(el)) continue
       if (entry.isIntersecting) this.play(el)
       else this.videos.get(el).pause()
     }

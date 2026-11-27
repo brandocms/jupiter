@@ -79,4 +79,21 @@ test.describe('Jupiter SmartVideo Module', () => {
     await expect(video).toHaveJSProperty('paused', true)
     await expect(wrapper).not.toHaveAttribute('data-playing')
   })
+
+  test('an intersection entry delivered after destroy() is ignored', async ({ page }) => {
+    const error = await page.evaluate(() => {
+      const smartVideo = window.__smartVideo
+      const target = document.querySelector('[data-testid="autoplay"]')
+      smartVideo.destroy()
+      try {
+        smartVideo.handlePlayEntries([{ target, isIntersecting: false }])
+        smartVideo.handleLoadEntries([{ target, isIntersecting: true }])
+        return null
+      } catch (e) {
+        return String(e)
+      }
+    })
+
+    expect(error).toBeNull()
+  })
 })
