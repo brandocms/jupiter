@@ -1,4 +1,4 @@
-#### Unreleased
+#### 5.0.0-beta.24
 
 - SmartVideo: a new module for the `[data-smart-video]` wrappers Brando renders. It sets a lazy video's source as it nears the viewport and a non-lazy one's at once, marks the wrapper `data-revealed`, plays an autoplay video only while it is in view, and plays or pauses a video when its play button, or a video without native controls, is clicked. An HLS playlist plays through `hls.js` (a new dependency) where the browser has no native HLS. The library is imported dynamically, so a bundler keeps it out of the main bundle and a page loads it only for such a video. The standalone files in `test-pages/dist` inline it and grow from 239 kB to about 837 kB.
 
