@@ -504,6 +504,10 @@ By default anchor links get added to the browser history. You can skip this by s
 
 `new Lazyload(app, { target: container })` scopes image handling to a container. The default target is `document.body`. On browsers with native lazy loading, the default path assigns the image sources and `loading="lazy"`. Call `lazyload.observe(container)` after inserting new images. Native mode assigns their sources and the observer path registers them for loading and reveal. Both paths measure images marked `data-sizes="auto"` before assigning sources, then update `sizes` when their width changes. Set `useNativeLazyloadIfAvailable: false` for Jupiter’s distance-based preload and section events. Call `destroy()` when removing the view. See the [responsive picture examples](test-pages/lazyload.html).
 
+## SmartVideo
+
+`new SmartVideo(app)` handles the `[data-smart-video]` wrappers Brando renders for video blocks, `<.video>` and `{% video %}`. A wrapper with `data-preload` is lazy: its `<video>` gets the `data-src` source when the wrapper comes within `loadRootMargin` (`'300px 0px'`) of the viewport. Any other wrapper is loaded at once. Each wrapper gets `data-revealed` when it loads, so its CSS can keep it hidden until then. An `autoplay` video plays while it is in view and pauses when it leaves, and the wrapper has `data-playing` while its video plays. In a wrapper with a `.video-play-button`, a click on the button or the video plays or pauses it. Pass `target` to scope it to a container, and call `destroy()` when removing the view. See the [demo](test-pages/smart-video.html).
+
 ## Looper and Marquee
 
 `new Looper(app)` scans `[data-moonwalk-run="loop"]` containers. Inside each, place a `[data-looper]` track with `[data-looper-item]` children inside a `[data-looper-container]` wrapper. Clip overflow on the wrapper. Looper measures and reveals the carousel when the application is revealed, or immediately if that already happened. Call `destroy()` when removing the view. See the [basic markup](test-pages/looper/basic.html), [peek layout](test-pages/looper/peek.html) and [teardown demo](test-pages/looper/destroy.html).

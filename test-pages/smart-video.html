@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jupiter SmartVideo Test</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: system-ui, sans-serif;
+        line-height: 1.5;
+        padding: 2rem;
+      }
+
+      h2 {
+        margin: 1rem 0;
+      }
+
+      .spacer {
+        height: 2500px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f4f4f4;
+        margin: 2rem 0;
+      }
+
+      /* The rules Brando's installer ships for these wrappers */
+      [data-smart-video] {
+        position: relative;
+        max-width: 640px;
+        aspect-ratio: var(--aspect-ratio-division);
+        opacity: 0;
+        visibility: hidden;
+        background-color: #000;
+
+        &[data-revealed] {
+          opacity: 1;
+          visibility: visible;
+        }
+
+        video {
+          display: block;
+          width: 100%;
+          height: auto;
+        }
+
+        .video-play-button-wrapper {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+        }
+
+        &[data-playing] .video-play-button-wrapper {
+          opacity: 0;
+          pointer-events: none;
+        }
+      }
+
+      .no-js [data-smart-video] {
+        opacity: 1;
+        visibility: visible;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Autoplay, lazy</h2>
+    <div
+      class="video-wrapper video-file"
+      data-smart-video
+      data-orientation="landscape"
+      data-preload="videos/clip.webm?autoplay"
+      data-src="videos/clip.webm?autoplay"
+      data-autoplay
+      style="--aspect-ratio: 0.5625; --aspect-ratio-division: 320/180;"
+      data-testid="autoplay"
+    >
+      <video
+        width="320"
+        height="180"
+        alt=""
+        tabindex="0"
+        preload="auto"
+        autoplay
+        muted
+        loop
+        playsinline
+        data-video
+        data-src="videos/clip.webm?autoplay"
+      ></video>
+      <noscript>
+        <video width="320" height="180" preload="metadata" autoplay muted loop playsinline src="videos/clip.webm?autoplay"></video>
+      </noscript>
+    </div>
+
+    <div class="spacer"><p>Scroll down for the lazy video</p></div>
+
+    <h2>Lazy</h2>
+    <div
+      class="video-wrapper video-file"
+      data-smart-video
+      data-orientation="landscape"
+      data-preload="videos/clip.webm?lazy"
+      data-src="videos/clip.webm?lazy"
+      style="--aspect-ratio: 0.5625; --aspect-ratio-division: 320/180;"
+      data-testid="lazy"
+    >
+      <video
+        width="320"
+        height="180"
+        alt=""
+        tabindex="0"
+        preload="auto"
+        loop
+        playsinline
+        data-video
+        data-src="videos/clip.webm?lazy"
+      ></video>
+      <noscript>
+        <video width="320" height="180" preload="metadata" loop playsinline src="videos/clip.webm?lazy"></video>
+      </noscript>
+    </div>
+
+    <div class="spacer"><p>Scroll down for the video that is not lazy</p></div>
+
+    <h2>Not lazy</h2>
+    <div
+      class="video-wrapper video-file"
+      data-smart-video
+      data-orientation="landscape"
+      data-src="videos/clip.webm?eager"
+      style="--aspect-ratio: 0.5625; --aspect-ratio-division: 320/180;"
+      data-testid="eager"
+    >
+      <video
+        width="320"
+        height="180"
+        alt=""
+        tabindex="0"
+        preload="auto"
+        loop
+        playsinline
+        data-video
+        src="videos/clip.webm?eager"
+      ></video>
+    </div>
+
+    <div class="spacer"><p>Scroll down for the video with a play button</p></div>
+
+    <h2>Play button</h2>
+    <div
+      class="video-wrapper video-file"
+      data-smart-video
+      data-orientation="landscape"
+      data-preload="videos/clip.webm?button"
+      data-src="videos/clip.webm?button"
+      style="--aspect-ratio: 0.5625; --aspect-ratio-division: 320/180;"
+      data-testid="button"
+    >
+      <video
+        width="320"
+        height="180"
+        alt=""
+        tabindex="0"
+        preload="auto"
+        loop
+        playsinline
+        data-video
+        data-src="videos/clip.webm?button"
+      ></video>
+      <noscript>
+        <video width="320" height="180" preload="metadata" loop playsinline src="videos/clip.webm?button"></video>
+      </noscript>
+      <div class="video-play-button-wrapper">
+        <button class="video-play-button">
+          <div class="video-play-button-inside">▶︎</div>
+        </button>
+      </div>
+    </div>
+
+    <script type="module">
+      import { Application, Events, SmartVideo } from '../src/index.js'
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const app = new Application({ respectReducedMotion: false })
+
+        app.registerCallback(Events.APPLICATION_READY, () => {
+          app.smartVideo = new SmartVideo(app)
+          window.__smartVideo = app.smartVideo
+        })
+
+        app.initialize()
+      })
+    </script>
+  </body>
+</html>

@@ -30,6 +30,7 @@
     "playwright:report": "playwright show-report",
     "playwright:moonwalk": "playwright test e2e/moonwalk.spec.js --project=chromium  --reporter line",
     "playwright:lazyload": "playwright test e2e/lazyload.spec.js --project=chromium  --reporter line",
+    "playwright:smart-video": "playwright test e2e/smart-video.spec.js --project=chromium  --reporter line",
     "playwright:toggler": "playwright test e2e/toggler.spec.js --project=chromium  --reporter line",
     "playwright:breakpoints": "playwright test e2e/breakpoints.spec.js --project=chromium  --reporter line",
     "playwright:typography": "playwright test e2e/typography.spec.js --project=chromium  --reporter line",

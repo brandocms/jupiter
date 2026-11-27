@@ -16,9 +16,10 @@ if [[ "${1:-}" == "--size" ]]; then
 fi
 
 cat > "$scratch/consumer.ts" <<'TS'
-import { Application, animate, imageIsLoaded, _defaultsDeep } from '@brandocms/jupiter'
+import { Application, SmartVideo, animate, imageIsLoaded, _defaultsDeep } from '@brandocms/jupiter'
 const app = new Application()
 app.initialize()
+new SmartVideo(app, { loadRootMargin: '200px 0px' }).destroy()
 animate(document.body, { opacity: 1 })
 imageIsLoaded(new Image())
 const config: { enabled: boolean } = _defaultsDeep({}, { enabled: true })
