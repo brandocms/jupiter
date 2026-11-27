@@ -24,9 +24,6 @@ const DEFAULT_OPTIONS = {
   loadRootMargin: '300px 0px',
 }
 
-// An autoplay video starts just before it scrolls into view.
-const PLAY_ROOT_MARGIN = '10% 0px'
-
 /**
  * SmartVideo class for lazy loading and in-view playback of videos
  */
@@ -46,9 +43,7 @@ export default class SmartVideo {
     this.loadObserver = new IntersectionObserver(this.handleLoadEntries.bind(this), {
       rootMargin: this.opts.loadRootMargin,
     })
-    this.playObserver = new IntersectionObserver(this.handlePlayEntries.bind(this), {
-      rootMargin: PLAY_ROOT_MARGIN,
-    })
+    this.playObserver = new IntersectionObserver(this.handlePlayEntries.bind(this))
 
     for (const el of this.target.querySelectorAll(this.opts.selector)) {
       const video = el.querySelector('video')
