@@ -33,6 +33,7 @@ import Moonwalk from './modules/Moonwalk'
 import Popover from './modules/Popover'
 import Popup from './modules/Popup'
 import ScrollSpy from './modules/ScrollSpy'
+import SmartVideo from './modules/SmartVideo'
 import StackedBoxes from './modules/StackedBoxes'
 import StickyHeader from './modules/StickyHeader'
 import Toggler from './modules/Toggler'
@@ -77,6 +78,7 @@ export {
   Popover,
   Popup,
   ScrollSpy,
+  SmartVideo,
   StackedBoxes,
   StickyHeader,
   Toggler,

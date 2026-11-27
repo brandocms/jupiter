@@ -1,3 +1,7 @@
+#### Unreleased
+
+- SmartVideo: a new module for the `[data-smart-video]` wrappers Brando renders. It sets a lazy video's source as it nears the viewport and a non-lazy one's at once, marks the wrapper `data-revealed`, plays an autoplay video only while it is in view, and plays or pauses a video with a play button on click.
+
 #### 5.0.0-beta.23
 
 - Lazyload measures responsive image slots before assigning sources, shares observers across sections, and handles dynamically inserted images in native mode. In the Chromium fixture, a 240 px slot requests only the 320w candidate.
