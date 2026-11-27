@@ -166,6 +166,17 @@ test.describe('Jupiter SmartVideo Module', () => {
     expect(caption.y).toBeGreaterThanOrEqual(video.y + video.height)
   })
 
+  test('the caption is drawn on a background other than its own colour', async ({ page }) => {
+    const caption = page.getByTestId('cover').locator('figcaption')
+    const [color, background] = await caption.evaluate(el => {
+      let node = el
+      while (node && getComputedStyle(node).backgroundColor === 'rgba(0, 0, 0, 0)') node = node.parentElement
+      return [getComputedStyle(el).color, node ? getComputedStyle(node).backgroundColor : 'rgb(255, 255, 255)']
+    })
+
+    expect(background).not.toBe(color)
+  })
+
   test('a click on a video without controls or a play button plays and pauses it', async ({ page }) => {
     const wrapper = page.getByTestId('lazy')
     const video = wrapper.locator('video')
