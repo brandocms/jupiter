@@ -110,4 +110,22 @@ test.describe('Jupiter SmartVideo Module', () => {
     await expect(wrapper).toHaveAttribute('data-revealed')
     await expect(video).toHaveJSProperty('currentSrc', new URL('/videos/clip.webm?autoplay', page.url()).href)
   })
+
+  test('a new instance after destroy() still plays an autoplay video in view', async ({ page }) => {
+    const wrapper = page.getByTestId('autoplay')
+    const video = wrapper.locator('video')
+
+    await expect.poll(() => playing(video)).toBe(true)
+    await page.getByTestId('button').scrollIntoViewIfNeeded()
+    await expect(video).toHaveJSProperty('paused', true)
+
+    await page.evaluate(() => {
+      const old = window.__smartVideo
+      old.destroy()
+      window.__smartVideo = new old.constructor(old.app)
+    })
+
+    await wrapper.scrollIntoViewIfNeeded()
+    await expect.poll(() => playing(video)).toBe(true)
+  })
 })

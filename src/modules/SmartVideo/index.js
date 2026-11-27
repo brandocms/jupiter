@@ -62,8 +62,10 @@ export default class SmartVideo {
     video.addEventListener('play', () => el.setAttribute('data-playing', ''), { signal })
     video.addEventListener('pause', () => el.removeAttribute('data-playing'), { signal })
 
-    if (video.autoplay) {
-      // The attribute would play the video wherever it is on the page.
+    // The attribute would play the video wherever it is on the page, so it
+    // goes, and `data-autoplay` keeps the intent for a later instance.
+    if (video.autoplay || 'autoplay' in video.dataset) {
+      video.dataset.autoplay = ''
       video.autoplay = false
       video.muted = true
       this.playObserver.observe(el)
