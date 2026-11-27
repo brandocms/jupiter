@@ -71,15 +71,13 @@ export default class SmartVideo {
       this.playObserver.observe(el)
     }
 
-    if (el.querySelector('.video-play-button')) {
-      el.addEventListener('click', event => {
-        const clicked = /** @type {Element} */ (event.target)
-        if (clicked === video && video.controls) return
-        if (!clicked.closest('.video-play-button, video')) return
-        if (video.paused) this.play(el)
-        else video.pause()
-      }, { signal })
-    }
+    el.addEventListener('click', event => {
+      const clicked = /** @type {Element} */ (event.target)
+      if (clicked === video && video.controls) return
+      if (!clicked.closest('.video-play-button, video')) return
+      if (video.paused) this.play(el)
+      else video.pause()
+    }, { signal })
 
     if (el.hasAttribute('data-preload')) this.loadObserver.observe(el)
     else this.load(el)

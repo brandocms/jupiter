@@ -1,6 +1,6 @@
 #### Unreleased
 
-- SmartVideo: a new module for the `[data-smart-video]` wrappers Brando renders. It sets a lazy video's source as it nears the viewport and a non-lazy one's at once, marks the wrapper `data-revealed`, plays an autoplay video only while it is in view, and plays or pauses a video with a play button on click.
+- SmartVideo: a new module for the `[data-smart-video]` wrappers Brando renders. It sets a lazy video's source as it nears the viewport and a non-lazy one's at once, marks the wrapper `data-revealed`, plays an autoplay video only while it is in view, and plays or pauses a video when its play button, or a video without native controls, is clicked.
 
 #### 5.0.0-beta.23
 

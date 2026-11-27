@@ -128,4 +128,18 @@ test.describe('Jupiter SmartVideo Module', () => {
     await wrapper.scrollIntoViewIfNeeded()
     await expect.poll(() => playing(video)).toBe(true)
   })
+
+  test('a click on a video without controls or a play button plays and pauses it', async ({ page }) => {
+    const wrapper = page.getByTestId('lazy')
+    const video = wrapper.locator('video')
+
+    await wrapper.scrollIntoViewIfNeeded()
+    await expect(wrapper).toHaveAttribute('data-revealed')
+
+    await video.click()
+    await expect.poll(() => playing(video)).toBe(true)
+
+    await video.click()
+    await expect(video).toHaveJSProperty('paused', true)
+  })
 })
