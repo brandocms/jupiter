@@ -6,7 +6,7 @@ trap 'rm -rf "$scratch"' EXIT
 name=$(npm pack --silent --pack-destination "$scratch")
 mkdir -p "$scratch/node_modules/@brandocms/jupiter"
 tar -xzf "$scratch/$name" --strip-components=1 -C "$scratch/node_modules/@brandocms/jupiter"
-for dep in motion motion-dom lodash.defaultsdeep; do
+for dep in motion motion-dom lodash.defaultsdeep hls.js; do
   ln -s "$PWD/node_modules/$dep" "$scratch/node_modules/$dep"
 done
 

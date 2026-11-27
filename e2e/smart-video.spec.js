@@ -2,6 +2,7 @@
 const { test, expect } = require('@playwright/test')
 
 const playing = video => video.evaluate(el => !el.paused && el.currentTime > 0)
+const hlsJs = url => /hls[._]+js/.test(url)
 
 test.describe('Jupiter SmartVideo Module', () => {
   /** @type {string[]} */
@@ -162,5 +163,47 @@ test.describe('Jupiter SmartVideo Module', () => {
 
     await video.click()
     await expect(video).toHaveJSProperty('paused', true)
+  })
+
+  test('an HLS stream plays through hls.js in a browser without native HLS', async ({ page }) => {
+    await page.addInitScript(() => {
+      const canPlayType = HTMLMediaElement.prototype.canPlayType
+      HTMLMediaElement.prototype.canPlayType = function (type) {
+        return type === 'application/vnd.apple.mpegurl' ? '' : canPlayType.call(this, type)
+      }
+    })
+    requests.length = 0
+    await page.goto('/smart-video.html')
+    await expect(page.locator('body')).toHaveAttribute('data-app-revealed', 'true')
+
+    const wrapper = page.getByTestId('hls')
+    const video = wrapper.locator('video')
+    expect(requests.some(hlsJs)).toBe(false)
+
+    await wrapper.scrollIntoViewIfNeeded()
+    await wrapper.getByRole('button').click()
+
+    await expect.poll(() => playing(video)).toBe(true)
+    await expect(wrapper).toHaveAttribute('data-playing')
+    expect(await video.evaluate(el => el.currentSrc)).toMatch(/^blob:/)
+    expect(requests.some(hlsJs)).toBe(true)
+
+    // destroy() destroys the hls.js player, which takes its source off the video.
+    await page.evaluate(() => window.__smartVideo.destroy())
+    await expect(video).not.toHaveAttribute('src')
+  })
+
+  test('an HLS stream plays natively where the browser can, without hls.js', async ({ page }) => {
+    const wrapper = page.getByTestId('hls')
+    const video = wrapper.locator('video')
+    const native = await video.evaluate(el => el.canPlayType('application/vnd.apple.mpegurl'))
+    test.skip(!native, 'this browser has no native HLS')
+
+    await wrapper.scrollIntoViewIfNeeded()
+    await wrapper.getByRole('button').click()
+
+    await expect.poll(() => playing(video)).toBe(true)
+    await expect(video).toHaveJSProperty('currentSrc', new URL('/videos/hls/clip.m3u8', page.url()).href)
+    expect(requests.some(hlsJs)).toBe(false)
   })
 })

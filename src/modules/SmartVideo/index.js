@@ -24,6 +24,9 @@ const DEFAULT_OPTIONS = {
   loadRootMargin: '300px 0px',
 }
 
+const HLS_TYPE = 'application/vnd.apple.mpegurl'
+const HLS_PLAYLIST = /\.m3u8(\?|$)/
+
 /**
  * SmartVideo class for lazy loading and in-view playback of videos
  */
@@ -39,6 +42,21 @@ export default class SmartVideo {
     this.target = this.opts.target || document.body
     /** @type {Map<HTMLElement, HTMLVideoElement>} */
     this.videos = new Map()
+    /**
+     * A wrapper's source, once set: null, or while hls.js loads, a promise.
+     * @type {Map<HTMLElement, Promise<void>|null>}
+     */
+    this.sources = new Map()
+    /**
+     * The hls.js players of the streams the browser cannot play itself
+     * @type {Map<HTMLElement, { destroy(): void }>}
+     */
+    this.streams = new Map()
+    /**
+     * Wrappers to play once hls.js has loaded
+     * @type {Set<HTMLElement>}
+     */
+    this.waiting = new Set()
     this.events = new AbortController()
     this.loadObserver = new IntersectionObserver(this.handleLoadEntries.bind(this), {
       rootMargin: this.opts.loadRootMargin,
@@ -76,7 +94,7 @@ export default class SmartVideo {
       if (clicked === video && video.controls) return
       if (!clicked.closest('.video-play-button, video')) return
       if (video.paused) this.play(el)
-      else video.pause()
+      else this.pause(el)
     }, { signal })
 
     if (el.hasAttribute('data-preload')) this.loadObserver.observe(el)
@@ -86,13 +104,49 @@ export default class SmartVideo {
   /**
    * Give a wrapper's video its source and reveal the wrapper.
    * @param {HTMLElement} el - The `[data-smart-video]` wrapper
+   * @returns {Promise<void>|null} A promise while hls.js loads for the video
    */
   load(el) {
-    const video = this.videos.get(el)
     this.loadObserver.unobserve(el)
-    const src = video.dataset.src || el.dataset.src
-    if (!video.hasAttribute('src') && src) video.src = src
     el.setAttribute('data-revealed', '')
+    if (!this.sources.has(el)) this.sources.set(el, this.setSource(el, this.videos.get(el)))
+    return this.sources.get(el)
+  }
+
+  /**
+   * @param {HTMLElement} el - The `[data-smart-video]` wrapper
+   * @param {HTMLVideoElement} video - The video inside it
+   * @returns {Promise<void>|null}
+   */
+  setSource(el, video) {
+    const src = video.getAttribute('src') || video.dataset.src || el.dataset.src
+    if (!src) return null
+    if (!HLS_PLAYLIST.test(src) || video.canPlayType(HLS_TYPE)) {
+      if (!video.hasAttribute('src')) video.src = src
+      return null
+    }
+    return this.attachStream(el, video, src)
+  }
+
+  /**
+   * Play an HLS playlist through hls.js, which is loaded only for it.
+   * @param {HTMLElement} el - The `[data-smart-video]` wrapper
+   * @param {HTMLVideoElement} video - The video inside it
+   * @param {string} src - The playlist
+   */
+  async attachStream(el, video, src) {
+    const { default: Hls } = await import('hls.js')
+    // destroy() may have run while hls.js loaded.
+    if (this.videos.get(el) !== video) return
+
+    if (Hls.isSupported()) {
+      const hls = new Hls()
+      this.streams.set(el, hls)
+      hls.loadSource(src)
+      hls.attachMedia(video)
+    } else if (!video.hasAttribute('src')) {
+      video.src = src
+    }
   }
 
   /**
@@ -100,9 +154,27 @@ export default class SmartVideo {
    * @param {HTMLElement} el - The `[data-smart-video]` wrapper
    */
   play(el) {
-    this.load(el)
+    const video = this.videos.get(el)
     // A pause before playback starts rejects the promise.
-    this.videos.get(el).play().catch(() => {})
+    const start = () => video.play().catch(() => {})
+    const attaching = this.load(el)
+    if (!attaching) {
+      start()
+      return
+    }
+    this.waiting.add(el)
+    attaching.then(() => {
+      if (this.waiting.delete(el)) start()
+    })
+  }
+
+  /**
+   * Pause a wrapper's video, or keep it from starting once hls.js has loaded.
+   * @param {HTMLElement} el - The `[data-smart-video]` wrapper
+   */
+  pause(el) {
+    this.waiting.delete(el)
+    this.videos.get(el).pause()
   }
 
   handleLoadEntries(entries) {
@@ -117,17 +189,21 @@ export default class SmartVideo {
       const el = /** @type {HTMLElement} */ (entry.target)
       if (!this.videos.has(el)) continue
       if (entry.isIntersecting) this.play(el)
-      else this.videos.get(el).pause()
+      else this.pause(el)
     }
   }
 
   /**
-   * Stop observing and remove the click handlers.
+   * Stop observing, remove the click handlers and destroy the hls.js players.
    */
   destroy() {
     this.events.abort()
     this.loadObserver.disconnect()
     this.playObserver.disconnect()
+    for (const hls of this.streams.values()) hls.destroy()
+    this.streams.clear()
+    this.waiting.clear()
+    this.sources.clear()
     this.videos.clear()
   }
 }

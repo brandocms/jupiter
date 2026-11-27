@@ -289,6 +289,39 @@
       </div>
     </div>
 
+    <div class="spacer"><p>Scroll down for the HLS stream</p></div>
+
+    <h2>HLS stream, play button</h2>
+    <div
+      class="video-wrapper video-file"
+      data-smart-video
+      data-orientation="landscape"
+      data-preload="videos/hls/clip.m3u8"
+      data-src="videos/hls/clip.m3u8"
+      style="--aspect-ratio: 0.5625; --aspect-ratio-division: 160/90;"
+      data-testid="hls"
+    >
+      <video
+        width="160"
+        height="90"
+        alt=""
+        tabindex="0"
+        preload="auto"
+        loop
+        playsinline
+        data-video
+        data-src="videos/hls/clip.m3u8"
+      ></video>
+      <noscript>
+        <video width="160" height="90" preload="metadata" loop playsinline src="videos/hls/clip.m3u8"></video>
+      </noscript>
+      <div class="video-play-button-wrapper">
+        <button class="video-play-button">
+          <div class="video-play-button-inside">▶︎</div>
+        </button>
+      </div>
+    </div>
+
     <script type="module">
       import { Application, Events, SmartVideo } from '../src/index.js'
 
